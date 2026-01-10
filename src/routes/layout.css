@@ -1,2 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
+
+@theme {
+	--font-patrick-hand: 'Patrick Hand', cursive;
+}

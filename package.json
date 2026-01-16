@@ -39,6 +39,7 @@
 	},
 	"dependencies": {
 		"@sentry/sveltekit": "^10.32.1",
+		"nanoid": "^5.1.6",
 		"svelte-persisted-store": "^0.12.0"
 	}
 }

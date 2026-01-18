@@ -39,6 +39,7 @@
 	},
 	"dependencies": {
 		"@sentry/sveltekit": "^10.32.1",
+		"doodle.css": "^0.0.2",
 		"nanoid": "^5.1.6",
 		"svelte-persisted-store": "^0.12.0"
 	}

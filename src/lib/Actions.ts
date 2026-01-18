@@ -16,6 +16,13 @@ export const dataActions = {
       activeProjectId: newProject.id
     }));
   },
+
+  setActiveProject: (projectId: string) => {
+    userNotes.update(state => ({
+      ...state,
+      activeProjectId: projectId
+    }));
+  },
     
 
     // deleteProject: (projectId:any) => {
@@ -27,6 +34,20 @@ export const dataActions = {
     //         return state;
     //     });
     // }
+
+    createNote: (projectId:string, title:string, color:string) => {
+        const newNote = {
+            id:  nanoid(),
+            title,
+            color,
+            projectId
+        };
+        console.log(newNote);
+        userNotes.update(state => ({
+      ...state,
+      projects: state.projects.map(p => p.id === projectId ? {...p, columns: {...p.columns, todo: [...p.columns.todo, newNote]}} : p)
+    }));
+  }
 };
 
 export const uiActions ={

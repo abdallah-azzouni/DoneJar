@@ -50,7 +50,10 @@
 			></g
 		>
 		<foreignObject x="20" y="20" width="200" height="160">
-			<span class="text-4xl font-bold" style="color: {textColorFromHex(color)}">{title}</span>
+			<span
+				class="text-4xl font-bold"
+				style="color: {textColorFromHex(color)}; word-break: break-all;">{title}</span
+			>
 		</foreignObject></svg
 	>
 </button>

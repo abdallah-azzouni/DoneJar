@@ -8,7 +8,7 @@ export const dataActions = {
             id:  nanoid(),
             name,
             color,
-            columns: { todo: [], doing: [], jar: [] }
+            columns: { todo: [], doing: [], done: [] }
         };
         userNotes.update(state => ({
       ...state,

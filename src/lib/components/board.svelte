@@ -1,6 +1,7 @@
 <script lang="ts">
 	// components
 	import StickyNote from '$lib/components/StickyNote.svelte';
+	import Crumple from '$lib/components/Crumple.svelte';
 	// popups
 	import CreateNote from '$lib/popups/CreateNote.svelte';
 	// external libraries
@@ -15,37 +16,33 @@
 
 	const flipDurationMs = 300;
 
+	function handleDnd(column: 'todo' | 'doing' | 'done', type: 'consider' | 'finalize', e: any) {
+		const items = e.detail.items;
+
+		// Update local state
+		if (column === 'todo') itemsTodo = items;
+		if (column === 'doing') itemsDoing = items;
+		if (column === 'done') itemsDone = items;
+
+		// Persist to store if finalized
+		if (type === 'finalize') {
+			userNotes.update((state) => {
+				const project = state.projects.find((p) => p.id === currentProject.id);
+				if (project) project.columns[column] = items;
+				return state;
+			});
+		}
+	}
+
 	let itemsTodo = $state(currentProject.columns.todo);
 	let itemsDoing = $state(currentProject.columns.doing);
+	let itemsDone = $state(currentProject.columns.done);
 
 	$effect(() => {
 		itemsTodo = currentProject.columns.todo;
 		itemsDoing = currentProject.columns.doing;
+		itemsDone = currentProject.columns.done;
 	});
-
-	function handleDndConsiderTodo(e: any) {
-		itemsTodo = e.detail.items;
-	}
-	function handleDndFinalizeTodo(e: any) {
-		itemsTodo = e.detail.items;
-		userNotes.update((state) => {
-			const project = state.projects.find((p) => p.id === currentProject.id);
-			if (project) project.columns.todo = e.detail.items;
-			return state;
-		});
-	}
-
-	function handleDndConsiderDoing(e: any) {
-		itemsDoing = e.detail.items;
-	}
-	function handleDndFinalizeDoing(e: any) {
-		itemsDoing = e.detail.items;
-		userNotes.update((state) => {
-			const project = state.projects.find((p) => p.id === currentProject.id);
-			if (project) project.columns.doing = e.detail.items;
-			return state;
-		});
-	}
 </script>
 
 <CreateNote bind:isOpen={showCreateNote} bind:projectId={currentProject.id} />
@@ -55,8 +52,8 @@
 		<div
 			class="doodle-border relative h-full w-full"
 			use:dndzone={{ items: itemsTodo, flipDurationMs: 0 }}
-			onconsider={handleDndConsiderTodo}
-			onfinalize={handleDndFinalizeTodo}
+			onconsider={(e) => handleDnd('todo', 'consider', e)}
+			onfinalize={(e) => handleDnd('todo', 'finalize', e)}
 		>
 			{#each itemsTodo as note (note.id)}
 				<StickyNote title={note.title} color={note.color} />
@@ -79,15 +76,29 @@
 		<div
 			class="doodle-border flex h-full w-full flex-col items-center"
 			use:dndzone={{ items: itemsDoing, flipDurationMs: 0 }}
-			onconsider={handleDndConsiderDoing}
-			onfinalize={handleDndFinalizeDoing}
+			onconsider={(e) => handleDnd('doing', 'consider', e)}
+			onfinalize={(e) => handleDnd('doing', 'finalize', e)}
 		>
 			{#each itemsDoing as note (note.id)}
 				<StickyNote title={note.title} color={note.color} />
 			{/each}
 		</div>
 	</div>
-	<div class="m-2 w-3/9 self-end">
-		<div><img src={beaker} alt="beaker" /></div>
+	<div class="relative m-2 aspect-777/1024 w-3/9 self-end">
+		<div
+			class="doodle-border relative z-10 flex h-full w-full flex-col items-center pt-20"
+			use:dndzone={{ items: itemsDone, flipDurationMs: 0 }}
+			onconsider={(e) => handleDnd('done', 'consider', e)}
+			onfinalize={(e) => handleDnd('done', 'finalize', e)}
+		>
+			{#each itemsDone as note (note.id)}
+				<Crumple color={note.color} />
+			{/each}
+		</div>
+		<img
+			src={beaker}
+			alt="beaker"
+			class="pointer-events-none absolute inset-0 h-full w-full object-contain select-none"
+		/>
 	</div>
 </div>

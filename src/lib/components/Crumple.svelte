@@ -10,8 +10,9 @@
 		style="filter: grayscale(100%) brightness(1.5);"
 	/>
 	<div
-		class="absolute inset-0 size-full mix-blend-multiply {color}"
+		class="absolute inset-0 size-full mix-blend-multiply"
 		style="
+		background-color: {color};
 
       -webkit-mask-image: url(src/lib/assets/elements/paper.png);
     mask-image: url(src/lib/assets/elements/paper.png);

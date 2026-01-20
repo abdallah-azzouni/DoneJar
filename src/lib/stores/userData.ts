@@ -17,5 +17,5 @@ if (browser) {
 export const userNotes = persisted('userNotes', {
   activeProjectId: '',
   projects : <{ id: string; name: string; color: string; 
-    columns: { todo: { title: string; color: string }[]; doing: { title: string; color: string }[]; jar: { title: string; color: string }[] } }[]>[]
+    columns: { todo: { title: string; color: string }[]; doing: { title: string; color: string }[]; done: { title: string; color: string }[] } }[]>[]
 });

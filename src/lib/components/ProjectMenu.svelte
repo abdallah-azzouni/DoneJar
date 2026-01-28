@@ -22,7 +22,9 @@
 			>{projectName[0].toUpperCase()}</span
 		>
 	</button>
-	<button class="{currentProject === projectId ? '' : 'invisible'} "
+	<button
+		class="{currentProject === projectId ? '' : 'invisible'} "
+		onclick={() => dataActions.deleteProject(projectId)}
 		><img
 			src="src/lib/assets/elements/kebabMenu.svg"
 			alt="menu"

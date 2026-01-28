@@ -4,7 +4,7 @@
 	let { isOpen = $bindable(false), projectId = $bindable('') } = $props();
 
 	let title: string = $state('');
-	let color: string = $state('');
+	let color: string = $state('#fab005');
 	let dialog: HTMLDialogElement;
 
 	$effect(() => {
@@ -17,6 +17,7 @@
 
 	function handleSubmit() {
 		dataActions.createNote(projectId, title.trim(), color);
+		title = '';
 		isOpen = false;
 	}
 </script>

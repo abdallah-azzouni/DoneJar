@@ -4,8 +4,8 @@
 	let { isOpen = $bindable(false) } = $props();
 
 	let dialog: HTMLDialogElement;
-	let project_name: String = $state('');
-	let project_color: String = $state('');
+	let project_name: string = $state('');
+	let project_color: string = $state('#495057');
 
 	$effect(() => {
 		if (isOpen) {
@@ -17,6 +17,7 @@
 
 	function handleSubmit() {
 		dataActions.createProject(project_name.trim(), project_color);
+		project_name = '';
 		isOpen = false;
 	}
 </script>

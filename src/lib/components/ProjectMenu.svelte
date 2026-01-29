@@ -1,4 +1,5 @@
 <script lang="ts">
+	import kebabMenu from '$lib/assets/elements/kebabMenu.svg';
 	import { dataActions } from '$lib/Actions';
 	export let projectName: string;
 	export let projectColor: string;
@@ -25,11 +26,7 @@
 	<button
 		class="{currentProject === projectId ? '' : 'invisible'} "
 		onclick={() => dataActions.deleteProject(projectId)}
-		><img
-			src="src/lib/assets/elements/kebabMenu.svg"
-			alt="menu"
-			class="pointer-events-none select-none"
-		/></button
+		><img src={kebabMenu} alt="menu" class="pointer-events-none select-none" /></button
 	>
 </div>
 

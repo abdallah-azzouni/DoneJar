@@ -1,4 +1,6 @@
 <script lang="ts">
+	import createButton from '$lib/assets/elements/create-button.svg';
+
 	// components
 	import ProjectMenu from '$lib/components/ProjectMenu.svelte';
 	import AppHeader from '$lib/components/AppHeader.svelte';
@@ -40,11 +42,7 @@
 				aria-label="Create new project"
 				onclick={() => (showCreateProject = true)}
 			>
-				<img
-					src="src/lib/assets/elements/create-button.svg"
-					alt="create"
-					class="pointer-events-none select-none"
-				/>
+				<img src={createButton} alt="create" class="pointer-events-none select-none" />
 			</button>
 		</div>
 	</div>

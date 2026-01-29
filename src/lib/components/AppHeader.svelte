@@ -1,4 +1,7 @@
 <script lang="ts">
+	import createButton from '$lib/assets/elements/create-button.svg';
+	import menu from '$lib/assets/icons/menu.svg';
+
 	export let onCreateProject: () => void;
 	export let textColorFromHex: (hex: string) => string;
 
@@ -27,19 +30,11 @@
 					aria-label="Create new project"
 					onclick={onCreateProject}
 				>
-					<img
-						src="src/lib/assets/elements/create-button.svg"
-						alt="create"
-						class="pointer-events-none select-none"
-					/>
+					<img src={createButton} alt="create" class="pointer-events-none select-none" />
 				</button>
 
 				<button class="size-12 cursor-pointer rounded-full border border-black bg-transparent p-2">
-					<img
-						src="src/lib/assets/icons/menu.svg"
-						alt="menu"
-						class="pointer-events-none size-full select-none"
-					/>
+					<img src={menu} alt="menu" class="pointer-events-none size-full select-none" />
 				</button>
 			</div>
 		</div>

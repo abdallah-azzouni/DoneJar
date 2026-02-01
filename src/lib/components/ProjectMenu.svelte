@@ -27,7 +27,7 @@
 <div
 	class="doodle-border relative flex items-center gap-8 {currentProject === projectId
 		? ''
-		: 'is-hidden'}"
+		: 'is-hidden'} cursor-pointer"
 	role="button"
 	tabindex="0"
 	onclick={handleActive}

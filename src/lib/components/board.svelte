@@ -15,9 +15,6 @@
 	let { cls, currentProject } = $props();
 	let showCreateNote = $state(false);
 
-	let BeakerWidth = $state(0);
-	let BeakerHeight = $state(0);
-
 	const flipDurationMs = 300;
 
 	function handleDnd(column: 'todo' | 'doing' | 'done', type: 'consider' | 'finalize', e: any) {
@@ -108,13 +105,9 @@
 			</span>
 		</div>
 
-		<div
-			class="relative aspect-777/1024 w-full"
-			bind:clientWidth={BeakerWidth}
-			bind:clientHeight={BeakerHeight}
-		>
+		<div class="relative aspect-777/1024 w-full">
 			<button class="size-full">
-				<BeakerPhysics items={itemsDone} width={BeakerWidth} height={BeakerHeight} />
+				<BeakerPhysics items={itemsDone} activeProject={currentProject.id} />
 
 				<img src={beaker} alt="beaker" class="pointer-events-none h-full w-full" />
 			</button>

@@ -71,7 +71,7 @@
 	let animationFrameId: number | null = null;
 
 	// Debug mode for visualizing walls
-	let showWalls = true; // Set to true to see wall boundaries
+	let showWalls = false; // Set to true to see wall boundaries
 
 	// ============================================================================
 	// PHYSICS INITIALIZATION

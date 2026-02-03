@@ -53,7 +53,7 @@
 	</span>
 
 	<!-- Project Menu -->
-	<div class="project-actions {currentProject === projectId ? '' : 'invisible'}">
+	<div class="is-pa-hidden">
 		<button
 			onclick={(e) => {
 				e.stopPropagation();
@@ -70,6 +70,10 @@
 	.is-hidden:not(:hover) {
 		border-image-source: none !important;
 		border-color: transparent !important;
+	}
+
+	.is-hidden:not(:hover) .is-pa-hidden {
+		visibility: hidden;
 	}
 
 	.is-hidden img.bg {

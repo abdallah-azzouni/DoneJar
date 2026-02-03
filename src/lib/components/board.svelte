@@ -1,7 +1,6 @@
 <script lang="ts">
 	// components
 	import StickyNote from '$lib/components/StickyNote.svelte';
-	import Crumple from '$lib/components/Crumple.svelte';
 	import BeakerPhysics from './BeakerPhysics.svelte';
 	// popups
 	import CreateNote from '$lib/popups/CreateNote.svelte';
@@ -50,10 +49,10 @@
 
 <CreateNote bind:isOpen={showCreateNote} bind:projectId={currentProject.id} />
 <div class={cls}>
-	<div class="relative m-2 flex w-5/9 flex-col items-center">
-		<span class="font-patrick-hand text-7xl font-bold">TODO</span>
+	<div class="relative m-2 flex max-h-full w-5/9 flex-col items-center">
+		<span class="mb-2 font-patrick-hand text-7xl font-bold">TODO</span>
 		<div
-			class="doodle-border relative h-full w-full"
+			class="doodle-border relative w-full flex-1 overflow-y-auto"
 			use:dndzone={{ items: itemsTodo, flipDurationMs: flipDurationMs }}
 			onconsider={(e) => handleDnd('todo', 'consider', e)}
 			onfinalize={(e) => handleDnd('todo', 'finalize', e)}
@@ -73,10 +72,10 @@
 			>
 		</button>
 	</div>
-	<div class="m-2 flex w-3/9 flex-col items-center">
-		<span class="font-patrick-hand text-7xl font-bold">DOING</span>
+	<div class="m-2 flex max-h-full w-3/9 flex-col items-center">
+		<span class="mb-2 font-patrick-hand text-7xl font-bold">DOING</span>
 		<div
-			class="doodle-border flex h-full w-full flex-col items-center"
+			class="doodle-border flex w-full flex-1 flex-col items-center overflow-y-auto"
 			use:dndzone={{ items: itemsDoing, flipDurationMs: flipDurationMs }}
 			onconsider={(e) => handleDnd('doing', 'consider', e)}
 			onfinalize={(e) => handleDnd('doing', 'finalize', e)}
@@ -109,7 +108,7 @@
 			<button class="size-full">
 				<BeakerPhysics items={itemsDone} activeProject={currentProject.id} />
 
-				<img src={beaker} alt="beaker" class="pointer-events-none h-full w-full" />
+				<img src={beaker} alt="" class="pointer-events-none h-full w-full" />
 			</button>
 		</div>
 	</div>

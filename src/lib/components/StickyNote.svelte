@@ -52,7 +52,7 @@
 		<foreignObject x="20" y="20" width="200" height="160">
 			<span
 				class="text-4xl font-bold"
-				style="color: {textColorFromHex(color)}; word-break: break-all;">{title}</span
+				style="color: {textColorFromHex(color)};overflow-wrap: break-word;">{title}</span
 			>
 		</foreignObject></svg
 	>

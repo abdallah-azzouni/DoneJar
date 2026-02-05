@@ -1,13 +1,12 @@
 <script lang="ts">
 	import kebabMenu from '$lib/assets/elements/kebabMenu.svg';
-	import { dataActions } from '$lib/Actions';
-	export let projectName: string;
-	export let projectColor: string;
-	export let projectId: string;
-	export let currentProject: string;
-
-	export let textColorFromHex: (hex: string) => string;
 	import grayBG from '$lib/assets/elements/grayBG.svg';
+
+	import DeleteConfermation from '$lib/popups/DeleteConfermation.svelte';
+	import { dataActions } from '$lib/Actions';
+	let { projectName, projectColor, projectId, currentProject, textColorFromHex } = $props();
+
+	let showDeleteProject = $state(false);
 
 	function handleActive(e: MouseEvent) {
 		// Don't activate if clicking on the delete button
@@ -24,6 +23,7 @@
 	}
 </script>
 
+<DeleteConfermation bind:isOpen={showDeleteProject} {projectName} {projectId} />
 <div
 	class="doodle-border relative flex items-center gap-8 {currentProject === projectId
 		? ''
@@ -55,9 +55,9 @@
 	<!-- Project Menu -->
 	<div class="is-pa-hidden">
 		<button
-			onclick={(e) => {
-				e.stopPropagation();
-				dataActions.deleteProject(projectId);
+			class="project-actions"
+			onclick={() => {
+				showDeleteProject = true;
 			}}
 			aria-label="Project Menu {projectName}"
 		>

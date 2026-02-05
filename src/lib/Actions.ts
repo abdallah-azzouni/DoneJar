@@ -3,6 +3,12 @@ import { get } from 'svelte/store';
 import { nanoid } from 'nanoid';
 
 export const dataActions = {
+	/*
+		Creates a new project in the user's notes
+		@param name: The name of the project
+		@param color: The color of the project
+		@returns void
+	*/
 	createProject: (name: string, color: string) => {
 		const newProject = {
 			id: nanoid(),
@@ -24,6 +30,11 @@ export const dataActions = {
 		}));
 	},
 
+	/*
+		Deletes a project from the user's notes
+		@param projectId: The id of the project to delete
+		@returns void
+	*/
 	deleteProject: (projectId: any) => {
 		userNotes.update((state) => {
 			const { projects, activeProjectId } = state;
@@ -54,6 +65,13 @@ export const dataActions = {
 		});
 	},
 
+	/*
+		Creates a new note in the user's notes
+		@param projectId: The id of the project to add the note to
+		@param title: The title of the note
+		@param color: The color of the note
+		@returns void
+	*/
 	createNote: (projectId: string, title: string, color: string) => {
 		const newNote = {
 			id: nanoid(),

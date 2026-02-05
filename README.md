@@ -24,7 +24,7 @@ The app features a charming hand-drawn aesthetic with doodle borders and playful
 **Key differentiators:**
 
 - Physics-based satisfaction jar using Matter.js
-- Fully client-side with no accounts or tracking
+- Fully client-side, with plans for optional cross-device syncing
 - Hand-drawn design system for a personal touch
 - Multi-project organization with color coding
 
@@ -46,6 +46,39 @@ The app features a charming hand-drawn aesthetic with doodle borders and playful
 - 📱 **Responsive Design** - Optimized for desktop and mobile devices
 - 🎨 **Hand-Drawn Aesthetic** - Doodle.css borders and Patrick Hand font
 - ⚡ **Instant Feedback** - Real-time updates with no loading states
+
+---
+
+## 🧭 Roadmap
+
+DoneJar is developed in clear, incremental phases. Phase One is complete and live.
+
+### ✅ Phase 1 — Core Experience (Completed)
+
+- Kanban workflow (TODO → DOING → DONE)
+- Multi-project support with colors
+- Physics-based satisfaction jar
+- Drag-and-drop task management
+- Responsive, hand-drawn UI
+- Deployed production website
+
+### 🚧 Phase 2 — Task & Project Management
+
+- Edit and delete tasks
+- Edit and delete projects (with confirmation)
+- Task descriptions
+- Task dates and optional time tracking
+- Improved menus for tasks and projects
+
+### 🔮 Phase 3 — Quality of Life & Expansion
+
+- Restore items from the jar
+- Export / import project data
+- Accessibility improvements
+- Keyboard shortcuts
+- Optional cross-device syncing
+
+This roadmap is flexible and evolves based on usage and feedback.
 
 ---
 

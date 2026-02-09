@@ -8,19 +8,18 @@
 	import CreateProject from '$lib/popups/CreateProject.svelte';
 	// stores
 	import { isLoaded } from '$lib/stores/userData';
-	import { userNotes } from '$lib/stores/userData';
+	import { userNotes, currentProject } from '$lib/stores/userData';
 	// helpers
 	import { textColorFromHex } from '$lib/UiHelper';
 	// external libraries
 	import 'doodle.css/doodle.css';
 	const notes = $derived($userNotes);
-	const currentProject = $derived(notes.projects.find((p) => p.id === notes.activeProjectId));
 	let showCreateProject = $state(false);
 </script>
 
 <svelte:head>
-	{#if currentProject}
-		<title>DoneJar - {currentProject.name}</title>
+	{#if $currentProject}
+		<title>DoneJar - {$currentProject.name}</title>
 	{:else}
 		<title>DoneJar - Track and organize your tasks</title>
 	{/if}
@@ -29,7 +28,7 @@
 <CreateProject bind:isOpen={showCreateProject} />
 {#if !$isLoaded}
 	<Loading />
-{:else if notes.projects.length === 0 || currentProject === undefined}
+{:else if notes.projects.length === 0 || $currentProject === undefined}
 	<div
 		class="flex h-screen flex-col items-center justify-center bg-gradient-to-b from-amber-50 to-white px-6"
 	>
@@ -54,9 +53,8 @@
 	<div class="flex h-screen flex-col overflow-hidden">
 		<AppHeader
 			onCreateProject={() => (showCreateProject = true)}
-			{textColorFromHex}
-			currentProjectName={currentProject.name}
-			currentProjectColor={currentProject.color}
+			currentProjectName={$currentProject.name}
+			currentProjectColor={$currentProject.color}
 		/>
 		<div class="flex flex-1 flex-row overflow-hidden">
 			<div class="hand-drawn-border doodle-border m-2 w-1/9 overflow-x-clip overflow-y-scroll">
@@ -65,14 +63,12 @@
 						<ProjectMenu
 							projectName={project.name}
 							projectColor={project.color}
-							{textColorFromHex}
 							projectId={project.id}
-							currentProject={currentProject.id}
 						/>
 					{/each}
 				</div>
 			</div>
-			<Board cls={'flex flex-row w-full h-full overflow-hidden'} {currentProject} />
+			<Board />
 		</div>
 	</div>
 {/if}

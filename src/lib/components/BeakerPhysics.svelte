@@ -2,12 +2,14 @@
 	import { onMount, onDestroy } from 'svelte';
 	import Matter from 'matter-js';
 	import paperTexture from '$lib/assets/elements/paper.png';
+	import { currentProject } from '$lib/stores/userData';
 
 	// ============================================================================
 	// PROPS & STATE
 	// ============================================================================
 
-	let { items = [], activeProject = '' } = $props();
+	let { items = [] } = $props();
+	let activeProject = $currentProject.id;
 
 	// Canvas dimensions
 	const width = 400;

@@ -1,9 +1,9 @@
 <script lang="ts">
 	import createButton from '$lib/assets/elements/create-button.svg';
 	import menu from '$lib/assets/icons/menu.svg';
+	import { textColorFromHex } from '$lib/UiHelper';
 
 	export let onCreateProject: () => void;
-	export let textColorFromHex: (hex: string) => string;
 
 	export let currentProjectName: string;
 	export let currentProjectColor: string;

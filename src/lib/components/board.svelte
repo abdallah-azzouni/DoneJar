@@ -3,18 +3,20 @@
 	import StickyNote from '$lib/components/StickyNote.svelte';
 	import BeakerPhysics from './BeakerPhysics.svelte';
 	// popups
-	import CreateNote from '$lib/popups/CreateNote.svelte';
+	import NoteMenu from '$lib/popups/NoteMenu.svelte';
 	// external libraries
 	import { dndzone } from 'svelte-dnd-action';
 	// assets
 	import beaker from '$lib/assets/elements/beaker.png';
 	// stores
-	import { userNotes } from '$lib/stores/userData';
+	import { userNotes, currentProject } from '$lib/stores/userData';
+	import type { Note } from '$lib/stores/userData';
 
-	let { cls, currentProject } = $props();
 	let showCreateNote = $state(false);
 
 	const flipDurationMs = 300;
+
+	let dragDisabled = $state(false);
 
 	function handleDnd(column: 'todo' | 'doing' | 'done', type: 'consider' | 'finalize', e: any) {
 		const items = e.detail.items;
@@ -27,7 +29,7 @@
 		// 2. Persist to store
 		if (type === 'finalize') {
 			userNotes.update((state) => {
-				const project = state.projects.find((p) => p.id === currentProject.id);
+				const project = state.projects.find((p) => p.id === $currentProject.id);
 				if (project) {
 					project.columns[column] = items;
 				}
@@ -36,29 +38,38 @@
 		}
 	}
 
-	let itemsTodo = $state(currentProject.columns.todo);
-	let itemsDoing = $state(currentProject.columns.doing);
-	let itemsDone = $state(currentProject.columns.done);
+	let itemsTodo = $state($currentProject.columns.todo);
+	let itemsDoing = $state($currentProject.columns.doing);
+	let itemsDone = $state($currentProject.columns.done);
 
 	$effect(() => {
-		itemsTodo = currentProject.columns.todo;
-		itemsDoing = currentProject.columns.doing;
-		itemsDone = currentProject.columns.done;
+		itemsTodo = $currentProject.columns.todo;
+		itemsDoing = $currentProject.columns.doing;
+		itemsDone = $currentProject.columns.done;
 	});
 </script>
 
-<CreateNote bind:isOpen={showCreateNote} bind:projectId={currentProject.id} />
-<div class={cls}>
+<NoteMenu
+	bind:isOpen={showCreateNote}
+	note={{
+		id: '',
+		title: '',
+		color: '',
+		description: '',
+		projectId: $currentProject.id
+	} satisfies Note}
+/>
+<div class={'flex h-full w-full flex-row overflow-hidden'}>
 	<div class="relative m-2 flex max-h-full w-5/9 flex-col items-center">
 		<span class="mb-2 font-patrick-hand text-7xl font-bold">TODO</span>
 		<div
 			class="doodle-border relative w-full flex-1 overflow-y-auto"
-			use:dndzone={{ items: itemsTodo, flipDurationMs: flipDurationMs }}
+			use:dndzone={{ items: itemsTodo, flipDurationMs: flipDurationMs, dragDisabled: dragDisabled }}
 			onconsider={(e) => handleDnd('todo', 'consider', e)}
 			onfinalize={(e) => handleDnd('todo', 'finalize', e)}
 		>
 			{#each itemsTodo as note (note.id)}
-				<StickyNote title={note.title} color={note.color} />
+				<StickyNote {note} bind:dragDisabled />
 			{/each}
 		</div>
 		<button
@@ -76,19 +87,23 @@
 		<span class="mb-2 font-patrick-hand text-7xl font-bold">DOING</span>
 		<div
 			class="doodle-border flex w-full flex-1 flex-col items-center overflow-y-auto"
-			use:dndzone={{ items: itemsDoing, flipDurationMs: flipDurationMs }}
+			use:dndzone={{
+				items: itemsDoing,
+				flipDurationMs: flipDurationMs,
+				dragDisabled: dragDisabled
+			}}
 			onconsider={(e) => handleDnd('doing', 'consider', e)}
 			onfinalize={(e) => handleDnd('doing', 'finalize', e)}
 		>
 			{#each itemsDoing as note (note.id)}
-				<StickyNote title={note.title} color={note.color} />
+				<StickyNote {note} bind:dragDisabled />
 			{/each}
 		</div>
 	</div>
 	<div class="relative m-2 aspect-777/1024 w-3/9 justify-end self-end">
 		<div
 			class="relative flex items-center justify-center border-2 border-dashed border-gray-400 p-16"
-			use:dndzone={{ items: itemsDone, flipDurationMs: flipDurationMs }}
+			use:dndzone={{ items: itemsDone, flipDurationMs: flipDurationMs, dragDisabled: dragDisabled }}
 			onconsider={(e) => handleDnd('done', 'consider', e)}
 			onfinalize={(e) => handleDnd('done', 'finalize', e)}
 		>
@@ -106,7 +121,7 @@
 
 		<div class="relative aspect-777/1024 w-full">
 			<button class="size-full">
-				<BeakerPhysics items={itemsDone} activeProject={currentProject.id} />
+				<BeakerPhysics items={itemsDone} />
 
 				<img src={beaker} alt="" class="pointer-events-none h-full w-full" />
 			</button>

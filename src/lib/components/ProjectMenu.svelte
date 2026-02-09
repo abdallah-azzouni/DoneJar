@@ -2,9 +2,11 @@
 	import kebabMenu from '$lib/assets/elements/kebabMenu.svg';
 	import grayBG from '$lib/assets/elements/grayBG.svg';
 
-	import DeleteConfermation from '$lib/popups/DeleteConfermation.svelte';
+	import DeleteConfermation from '$lib/popups/DeletePConfermation.svelte';
 	import { dataActions } from '$lib/Actions';
-	let { projectName, projectColor, projectId, currentProject, textColorFromHex } = $props();
+	import { textColorFromHex } from '$lib/UiHelper';
+	import { currentProject } from '$lib/stores/userData';
+	let { projectName, projectColor, projectId } = $props();
 
 	let showDeleteProject = $state(false);
 
@@ -25,7 +27,7 @@
 
 <DeleteConfermation bind:isOpen={showDeleteProject} {projectName} {projectId} />
 <div
-	class="doodle-border relative flex items-center gap-8 {currentProject === projectId
+	class="doodle-border relative flex items-center gap-8 {$currentProject.id === projectId
 		? ''
 		: 'is-hidden'} cursor-pointer"
 	role="button"

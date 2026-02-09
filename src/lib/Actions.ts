@@ -1,10 +1,9 @@
-import { userNotes } from '$lib/stores/userData';
-import { get } from 'svelte/store';
+import { userNotes, type Note } from '$lib/stores/userData';
 import { nanoid } from 'nanoid';
 
 export const dataActions = {
 	/*
-		Creates a new project in the user's notes
+		Creates a new project
 		@param name: The name of the project
 		@param color: The color of the project
 		@returns void
@@ -31,7 +30,7 @@ export const dataActions = {
 	},
 
 	/*
-		Deletes a project from the user's notes
+		Deletes a project
 		@param projectId: The id of the project to delete
 		@returns void
 	*/
@@ -66,31 +65,78 @@ export const dataActions = {
 	},
 
 	/*
-		Creates a new note in the user's notes
+		Creates a new note
 		@param projectId: The id of the project to add the note to
 		@param title: The title of the note
 		@param color: The color of the note
 		@returns void
 	*/
-	createNote: (projectId: string, title: string, color: string) => {
+	createNote: (note: Note) => {
 		const newNote = {
 			id: nanoid(),
-			title,
-			color,
-			projectId
+			title: note.title,
+			color: note.color,
+			projectId: note.projectId,
+			description: note.description
 		};
-		console.log(newNote);
 		userNotes.update((state) => ({
 			...state,
 			projects: state.projects.map((p) =>
-				p.id === projectId
+				p.id === note.projectId
 					? { ...p, columns: { ...p.columns, todo: [...p.columns.todo, newNote] } }
 					: p
 			)
 		}));
-	}
-};
+	},
 
-export const uiActions = {
-	createProject: () => {}
+	/*
+		Edit a note
+		@param note: The new note data
+		@returns void
+	*/
+	editNote: (note: Note) => {
+		userNotes.update((state) => ({
+			...state,
+			projects: state.projects.map((project) => {
+				if (project.id !== note.projectId) return project;
+
+				const updateColumn = (column: Note[]) => column.map((n) => (n.id === note.id ? note : n));
+
+				return {
+					...project,
+					columns: {
+						todo: updateColumn(project.columns.todo),
+						doing: updateColumn(project.columns.doing),
+						done: updateColumn(project.columns.done)
+					}
+				};
+			})
+		}));
+	},
+
+	/*
+		Deletes a note
+		@param noteId: The id of the note to delete
+		@param projectId: The id of the project the note belongs to
+		@returns void
+	*/
+	deleteNote: (noteId: string, projectId: string) => {
+		userNotes.update((state) => ({
+			...state,
+			projects: state.projects.map((project) => {
+				if (project.id !== projectId) return project;
+
+				const removeNote = (column: Note[]) => column.filter((n) => n.id !== noteId);
+
+				return {
+					...project,
+					columns: {
+						todo: removeNote(project.columns.todo),
+						doing: removeNote(project.columns.doing),
+						done: removeNote(project.columns.done)
+					}
+				};
+			})
+		}));
+	}
 };

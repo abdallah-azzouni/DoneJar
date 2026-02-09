@@ -30,6 +30,20 @@ export const dataActions = {
 	},
 
 	/*
+		Edits a project
+		@param project: The new project data
+		@returns void
+	*/
+	editProject: (projectInfo: { name: string; color: string; id: string }) => {
+		userNotes.update((state) => ({
+			...state,
+			projects: state.projects
+				.map((p) => (p.id === projectInfo.id ? { ...p, name: projectInfo.name } : p))
+				.map((p) => (p.id === projectInfo.id ? { ...p, color: projectInfo.color } : p))
+		}));
+	},
+
+	/*
 		Deletes a project
 		@param projectId: The id of the project to delete
 		@returns void

@@ -1,16 +1,14 @@
 <script lang="ts">
 	// components
-	import ProjectMenu from '$lib/components/ProjectMenu.svelte';
+	import ProjectItem from '$lib/components/ProjectItem.svelte';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import Board from '$lib/components/board.svelte';
 	// popups
-	import CreateProject from '$lib/popups/CreateProject.svelte';
+	import ProjectMenu from '$lib/popups/ProjectMenu.svelte';
 	// stores
 	import { isLoaded } from '$lib/stores/userData';
 	import { userNotes, currentProject } from '$lib/stores/userData';
-	// helpers
-	import { textColorFromHex } from '$lib/UiHelper';
 	// external libraries
 	import 'doodle.css/doodle.css';
 	const notes = $derived($userNotes);
@@ -25,7 +23,7 @@
 	{/if}
 </svelte:head>
 
-<CreateProject bind:isOpen={showCreateProject} />
+<ProjectMenu bind:isOpen={showCreateProject} projectInfo={{ name: '', color: '', id: '' }} />
 {#if !$isLoaded}
 	<Loading />
 {:else if notes.projects.length === 0 || $currentProject === undefined}
@@ -60,7 +58,7 @@
 			<div class="hand-drawn-border doodle-border m-2 w-1/9 overflow-x-clip overflow-y-scroll">
 				<div class="flex max-h-full flex-col items-center text-sm">
 					{#each notes.projects as project}
-						<ProjectMenu
+						<ProjectItem
 							projectName={project.name}
 							projectColor={project.color}
 							projectId={project.id}

@@ -11,13 +11,18 @@
 	let newNote: Note = $state(note);
 	let showDeleteNote = $state(false);
 
+	$effect(() => {
+		if (newNote.color === '') {
+			newNote.color = '#fab005';
+		}
+	});
+
 	const projects = $userNotes.projects;
 
 	function handleSubmit(e: Event) {
 		e.preventDefault();
 		if (newNote.id === '') {
 			newNote.id = nanoid();
-			newNote.color = '#fab005';
 			dataActions.createNote(newNote);
 		} else {
 			dataActions.editNote(newNote);
@@ -78,7 +83,9 @@
 				>Date
 			</span> -->
 			<button
-				class="size-fit rounded-2xl bg-red-700 px-10 py-4 font-bold text-white"
+				class="size-fit rounded-2xl bg-red-700 px-10 py-4 font-bold text-white {newNote.id === ''
+					? 'hidden'
+					: ''}"
 				onclick={() => {
 					isOpen = false;
 					showDeleteNote = true;

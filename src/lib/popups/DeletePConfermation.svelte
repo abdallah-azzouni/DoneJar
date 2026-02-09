@@ -39,7 +39,7 @@
 		>
 			Cancel
 		</button>
-		<button class="rounded-2xl bg-red-500 p-4 font-bold text-white" onclick={handleSubmit}>
+		<button class="rounded-2xl bg-red-700 p-4 font-bold text-white" onclick={handleSubmit}>
 			Delete
 		</button>
 	</div>

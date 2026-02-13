@@ -8,12 +8,15 @@
 
 	let { isOpen = $bindable(false), note }: { isOpen: boolean; note: Note } = $props();
 
-	let newNote: Note = $state(note);
+	let workingNote = $state<Note>({ ...note });
 	let showDeleteNote = $state(false);
 
 	$effect(() => {
-		if (newNote.color === '') {
-			newNote.color = '#fab005';
+		if (isOpen) {
+			workingNote = {
+				...note,
+				color: note.color || '#fab005'
+			};
 		}
 	});
 
@@ -21,17 +24,16 @@
 
 	function handleSubmit(e: Event) {
 		e.preventDefault();
-		if (newNote.id === '') {
-			newNote.id = nanoid();
+		if (workingNote.id === '') {
+			const newNote = { ...workingNote, id: nanoid() };
 			dataActions.createNote(newNote);
 		} else {
-			dataActions.editNote(newNote);
+			dataActions.editNote(workingNote);
 		}
 		isOpen = false;
 	}
 
 	function handleCancel() {
-		newNote = { ...note }; // Reset to original
 		isOpen = false;
 	}
 </script>
@@ -44,7 +46,7 @@
 				type="text"
 				class="doodle-border text-2xl font-bold"
 				placeholder="Note title..."
-				bind:value={newNote.title}
+				bind:value={workingNote.title}
 				required
 			/>
 			<hr class=" border border-gray-500" />
@@ -54,7 +56,7 @@
 				id=""
 				class="doodle-border w-full resize-none"
 				placeholder="Description..."
-				bind:value={newNote.description}
+				bind:value={workingNote.description}
 			></textarea>
 			<div class="flex justify-end gap-3">
 				<button
@@ -74,7 +76,7 @@
 			<span>Project</span>
 			<span class="doodle-border w-full">{$currentProject.name}</span>
 			<span class="doodle-border flex w-fit items-center gap-5 font-patrick-hand text-2xl"
-				>Color <input type="color" bind:value={newNote.color} /></span
+				>Color <input type="color" bind:value={workingNote.color} /></span
 			>
 			<!-- <span class="doodle-border flex w-fit items-center gap-5 font-patrick-hand text-2xl"
 				>Tags</span
@@ -83,9 +85,8 @@
 				>Date
 			</span> -->
 			<button
-				class="size-fit rounded-2xl bg-red-700 px-10 py-4 font-bold text-white {newNote.id === ''
-					? 'hidden'
-					: ''}"
+				class="size-fit rounded-2xl bg-red-700 px-10 py-4 font-bold text-white"
+				class:hidden={workingNote.id === ''}
 				onclick={() => {
 					isOpen = false;
 					showDeleteNote = true;

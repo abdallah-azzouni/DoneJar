@@ -12,8 +12,11 @@
 	let showDeleteProject = $state(false);
 
 	$effect(() => {
-		if (newProject.id === '') {
-			newProject.color = '#495057';
+		if (isOpen) {
+			newProject = {
+				...projectInfo,
+				color: projectInfo.color || '#495057'
+			};
 		}
 	});
 

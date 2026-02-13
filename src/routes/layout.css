@@ -18,3 +18,8 @@
 		@apply transition duration-150 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 active:scale-95;
 	}
 }
+
+body {
+	min-width: 1200px;
+	min-height: 500px;
+}

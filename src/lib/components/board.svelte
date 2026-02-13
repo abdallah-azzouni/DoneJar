@@ -100,7 +100,9 @@
 			{/each}
 		</div>
 	</div>
-	<div class="relative m-2 aspect-777/1024 w-3/9 justify-end self-end">
+	<div
+		class="relative m-2 flex aspect-777/1024 h-auto max-h-[75%] min-h-0 w-auto max-w-[33.333%] min-w-0 flex-col justify-end self-end"
+	>
 		<div
 			class="relative flex items-center justify-center border-2 border-dashed border-gray-400 p-16"
 			use:dndzone={{ items: itemsDone, flipDurationMs: flipDurationMs, dragDisabled: dragDisabled }}
@@ -123,7 +125,7 @@
 			<button class="size-full">
 				<BeakerPhysics items={itemsDone} />
 
-				<img src={beaker} alt="" class="pointer-events-none h-full w-full" />
+				<img src={beaker} alt="" class="pointer-events-none h-full w-full object-contain" />
 			</button>
 		</div>
 	</div>

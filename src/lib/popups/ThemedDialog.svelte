@@ -4,7 +4,11 @@
 	let dialog: HTMLDialogElement;
 
 	$effect(() => {
-		isOpen ? dialog.showModal() : dialog.close();
+		if (isOpen) {
+			dialog.showModal();
+		} else {
+			dialog.close();
+		}
 	});
 
 	function closeDialog() {

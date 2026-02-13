@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { dataActions } from '$lib/Actions';
 	import { nanoid } from 'nanoid';
-	import type { Note, Project } from '$lib/stores/userData';
+	import type { Note } from '$lib/stores/userData';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import DeleteNConfermation from './DeleteNConfermation.svelte';
-	import { userNotes, currentProject } from '$lib/stores/userData';
+	import { currentProject } from '$lib/stores/userData';
 
 	let { isOpen = $bindable(false), note }: { isOpen: boolean; note: Note } = $props();
 
@@ -19,8 +19,6 @@
 			};
 		}
 	});
-
-	const projects = $userNotes.projects;
 
 	function handleSubmit(e: Event) {
 		e.preventDefault();

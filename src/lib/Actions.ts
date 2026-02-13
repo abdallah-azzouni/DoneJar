@@ -48,7 +48,7 @@ export const dataActions = {
 		@param projectId: The id of the project to delete
 		@returns void
 	*/
-	deleteProject: (projectId: any) => {
+	deleteProject: (projectId: string) => {
 		userNotes.update((state) => {
 			const { projects, activeProjectId } = state;
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Note, Project } from '$lib/stores/userData';
+	import type { Note } from '$lib/stores/userData';
 	import { textColorFromHex } from '$lib/UiHelper';
 	import NoteMenu from '$lib/popups/NoteMenu.svelte';
 

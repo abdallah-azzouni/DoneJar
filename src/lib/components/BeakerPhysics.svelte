@@ -3,6 +3,7 @@
 	import Matter from 'matter-js';
 	import paperTexture from '$lib/assets/elements/paper.png';
 	import { currentProject } from '$lib/stores/userData';
+	import { SvelteMap } from 'svelte/reactivity';
 
 	// ============================================================================
 	// PROPS & STATE
@@ -64,7 +65,7 @@
 	let walls: Matter.Body[] = [];
 
 	// Store particle metadata (color, size) linked to Matter.js bodies
-	const particleData = new Map<Matter.Body, { color: string; size: number }>();
+	const particleData = new SvelteMap<Matter.Body, { color: string; size: number }>();
 
 	// Track project changes
 	let lastActiveProject = activeProject;
@@ -307,8 +308,10 @@
 	// ============================================================================
 
 	$effect(() => {
-		const project = activeProject;
-		const size = items.length;
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const _project = activeProject; // declared here to make the effect reactive
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const _size = items.length; // declared here to make the effect reactive
 
 		if (imgLoaded && world) {
 			syncParticles();

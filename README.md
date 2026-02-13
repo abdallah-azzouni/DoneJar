@@ -143,19 +143,19 @@ The app uses a simple, centralized store pattern:
 
 ```typescript
 interface Project {
-  id: string;
-  name: string;
-  color: string;
-  columns: {
-    todo: Task[];
-    doing: Task[];
-    done: Task[];
-  };
+	id: string;
+	name: string;
+	color: string;
+	columns: {
+		todo: Task[];
+		doing: Task[];
+		done: Task[];
+	};
 }
 
 interface AppState {
-  activeProjectId: string | null;
-  projects: Project[];
+	activeProjectId: string | null;
+	projects: Project[];
 }
 ```
 

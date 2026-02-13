@@ -57,7 +57,7 @@
 		<div class="flex flex-1 flex-row overflow-hidden">
 			<div class="hand-drawn-border doodle-border m-2 w-1/9 overflow-x-clip overflow-y-scroll">
 				<div class="flex max-h-full flex-col items-center text-sm">
-					{#each notes.projects as project}
+					{#each notes.projects as project (project.id)}
 						<ProjectItem
 							projectName={project.name}
 							projectColor={project.color}

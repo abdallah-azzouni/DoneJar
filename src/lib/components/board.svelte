@@ -18,7 +18,11 @@
 
 	let dragDisabled = $state(false);
 
-	function handleDnd(column: 'todo' | 'doing' | 'done', type: 'consider' | 'finalize', e: any) {
+	function handleDnd(
+		column: 'todo' | 'doing' | 'done',
+		type: 'consider' | 'finalize',
+		e: CustomEvent
+	) {
 		const items = e.detail.items;
 
 		// 1. Update the local reactive state immediately
@@ -59,7 +63,7 @@
 		projectId: $currentProject.id
 	} satisfies Note}
 />
-<div class={'flex h-full w-full flex-row overflow-hidden'}>
+<div class="flex h-full w-full flex-row overflow-hidden">
 	<div class="relative m-2 flex max-h-full w-5/9 flex-col items-center">
 		<span class="mb-2 font-patrick-hand text-7xl font-bold">TODO</span>
 		<div

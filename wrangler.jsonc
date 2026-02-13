@@ -1,7 +1,7 @@
 {
-  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
-  "name": "donejar",
-  "pages_build_output_dir": ".svelte-kit/cloudflare",
-  "compatibility_date": "2026-01-28",
-  "compatibility_flags": ["nodejs_compat"]
+	"$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+	"name": "donejar",
+	"pages_build_output_dir": ".svelte-kit/cloudflare",
+	"compatibility_date": "2026-01-28",
+	"compatibility_flags": ["nodejs_compat"]
 }

@@ -18,11 +18,17 @@
 		const { default: Quill } = await import('quill');
 		await import('quill/dist/quill.snow.css');
 
+		if (!editor) return; // Prevent invalid container
+
 		let quill = new Quill(editor, {
 			modules: { toolbar: toolbarOptions },
 			theme: 'snow',
 			placeholder: 'Write something...'
 		});
+
+		if (typeof description === 'string') {
+			description = quill.clipboard.convert(description);
+		}
 
 		quill.setContents(description);
 

@@ -23,6 +23,7 @@
 		"@tailwindcss/typography": "^0.5.19",
 		"@tailwindcss/vite": "^4.1.17",
 		"@types/lodash.throttle": "^4.1.9",
+		"@types/matter-js": "^0.20.2",
 		"@types/node": "^22",
 		"eslint": "^9.39.1",
 		"eslint-config-prettier": "^10.1.8",

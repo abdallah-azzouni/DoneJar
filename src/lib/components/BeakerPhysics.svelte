@@ -238,21 +238,23 @@
 	function render() {
 		if (!ctx || !canvas) return;
 
-		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		const context = ctx;
+
+		context.clearRect(0, 0, canvas.width, canvas.height);
 
 		// Debug: Visualize walls
 		if (showWalls) {
-			ctx.strokeStyle = 'red';
-			ctx.lineWidth = 2;
+			context.strokeStyle = 'red';
+			context.lineWidth = 2;
 			walls.forEach((wall) => {
 				const vertices = wall.vertices;
-				ctx.beginPath();
-				ctx.moveTo(vertices[0].x, vertices[0].y);
+				context.beginPath();
+				context.moveTo(vertices[0].x, vertices[0].y);
 				for (let i = 1; i < vertices.length; i++) {
-					ctx.lineTo(vertices[i].x, vertices[i].y);
+					context.lineTo(vertices[i].x, vertices[i].y);
 				}
-				ctx.closePath();
-				ctx.stroke();
+				context.closePath();
+				context.stroke();
 			});
 		}
 

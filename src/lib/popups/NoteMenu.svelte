@@ -5,6 +5,7 @@
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import DeleteNConfermation from './DeleteNConfermation.svelte';
 	import { currentProject } from '$lib/stores/userData';
+	import QEditor from '$lib/components/QEditor.svelte';
 
 	let { isOpen = $bindable(false), note }: { isOpen: boolean; note: Note } = $props();
 
@@ -20,8 +21,7 @@
 		}
 	});
 
-	function handleSubmit(e: Event) {
-		e.preventDefault();
+	function handleSubmit() {
 		if (workingNote.id === '') {
 			const newNote = { ...workingNote, id: nanoid() };
 			dataActions.createNote(newNote);
@@ -48,14 +48,9 @@
 				required
 			/>
 			<hr class=" border border-gray-500" />
-			<textarea
-				rows="8"
-				name=""
-				id=""
-				class="doodle-border w-full resize-none"
-				placeholder="Description..."
-				bind:value={workingNote.description}
-			></textarea>
+
+			<QEditor bind:description={workingNote.description} />
+
 			<div class="flex justify-end gap-3">
 				<button
 					class="rounded-2xl bg-gray-500 p-4 font-bold text-white"

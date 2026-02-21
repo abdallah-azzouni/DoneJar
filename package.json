@@ -22,6 +22,7 @@
 		"@sveltejs/vite-plugin-svelte": "^6.2.1",
 		"@tailwindcss/typography": "^0.5.19",
 		"@tailwindcss/vite": "^4.1.17",
+		"@types/lodash.throttle": "^4.1.9",
 		"@types/node": "^22",
 		"eslint": "^9.39.1",
 		"eslint-config-prettier": "^10.1.8",
@@ -30,6 +31,7 @@
 		"prettier": "^3.7.4",
 		"prettier-plugin-svelte": "^3.4.0",
 		"prettier-plugin-tailwindcss": "^0.7.2",
+		"sass-embedded": "^1.97.3",
 		"svelte": "^5.45.6",
 		"svelte-check": "^4.3.4",
 		"svelte-dnd-action": "^0.9.69",
@@ -39,9 +41,16 @@
 		"vite": "^7.2.6"
 	},
 	"dependencies": {
+		"@floating-ui/react": "^0.27.17",
+		"@radix-ui/react-dropdown-menu": "^2.1.16",
+		"@radix-ui/react-popover": "^1.1.15",
 		"doodle.css": "^0.0.2",
+		"lodash.throttle": "^4.1.1",
 		"matter-js": "^0.20.0",
 		"nanoid": "^5.1.6",
+		"quill": "^2.0.3",
+		"quill-delta": "^5.1.0",
+		"react-hotkeys-hook": "^5.2.4",
 		"svelte-persisted-store": "^0.12.0"
 	}
 }

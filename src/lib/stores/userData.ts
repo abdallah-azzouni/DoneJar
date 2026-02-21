@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { persisted } from 'svelte-persisted-store';
 import { derived } from 'svelte/store';
+import Delta from 'quill-delta';
 
 export const isLoaded = persisted('isLoaded', false);
 
@@ -16,7 +17,7 @@ export interface Note {
 	id: string;
 	title: string;
 	color: string;
-	description: string;
+	description: Delta;
 	projectId: string;
 }
 

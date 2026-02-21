@@ -10,7 +10,7 @@
 	import beaker from '$lib/assets/elements/beaker.png';
 	// stores
 	import { userNotes, currentProject } from '$lib/stores/userData';
-	import type { Note } from '$lib/stores/userData';
+	import { Note } from '$lib/stores/userData';
 	import Delta from 'quill-delta';
 
 	let showCreateNote = $state(false);
@@ -56,13 +56,7 @@
 
 <NoteMenu
 	bind:isOpen={showCreateNote}
-	note={{
-		id: '',
-		title: '',
-		color: '',
-		description: new Delta(),
-		projectId: $currentProject.id
-	} satisfies Note}
+	note={new Note('', '', '#fab005', new Delta(), $currentProject.id)}
 />
 <div class="flex h-full w-full flex-row overflow-hidden">
 	<div class="relative m-2 flex max-h-full w-5/9 flex-col items-center">

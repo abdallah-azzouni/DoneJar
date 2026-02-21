@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { dataActions } from '$lib/Actions';
-	import { nanoid } from 'nanoid';
 	import type { Note } from '$lib/stores/userData';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import DeleteNConfermation from './DeleteNConfermation.svelte';
@@ -9,25 +8,19 @@
 
 	let { isOpen = $bindable(false), note }: { isOpen: boolean; note: Note } = $props();
 
-	let workingNote = $state<Note>({ ...note });
+	// svelte-ignore state_referenced_locally // warning is ignored, we reset workingNote in effect.
+	let workingNote = $state({ ...note });
 	let showDeleteNote = $state(false);
 
 	$effect(() => {
 		if (isOpen) {
-			workingNote = {
-				...note,
-				color: note.color || '#fab005'
-			};
-			console.log(note.description);
-			console.log(typeof note.description);
-			console.log(note.description?.ops);
+			workingNote = { ...note };
 		}
 	});
 
 	function handleSubmit() {
 		if (workingNote.id === '') {
-			const newNote = { ...workingNote, id: nanoid() };
-			dataActions.createNote(newNote);
+			dataActions.createNote(workingNote);
 		} else {
 			dataActions.editNote(workingNote);
 		}

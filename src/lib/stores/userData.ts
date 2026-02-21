@@ -13,15 +13,36 @@ if (browser) {
 	}
 }
 
-export interface Note {
+export interface NoteInterface {
 	id: string;
 	title: string;
 	color: string;
 	description: Delta;
 	projectId: string;
+	createdAt: number;
+	updatedAt: number;
 }
 
-export interface Project {
+export class Note implements NoteInterface {
+	id: string;
+	title: string;
+	color: string;
+	description: Delta;
+	projectId: string;
+	createdAt: number;
+	updatedAt: number;
+	constructor(id = '', title = '', color = '', description = new Delta(), projectId = '') {
+		this.id = id;
+		this.title = title;
+		this.color = color;
+		this.description = description;
+		this.projectId = projectId;
+		this.createdAt = 0;
+		this.updatedAt = 0;
+	}
+}
+
+export interface ProjectInterface {
 	id: string;
 	name: string;
 	color: string;
@@ -34,7 +55,7 @@ export interface Project {
 
 export const userNotes = persisted('userNotes', {
 	activeProjectId: <string | null>'',
-	projects: <Project[]>[]
+	projects: <ProjectInterface[]>[]
 });
 
 export const currentProject = derived(

@@ -58,7 +58,6 @@
 				bind:value={newProject.name}
 				class="w-full rounded-md border border-gray-500 focus:outline-none"
 				required
-				maxlength="25"
 				placeholder="Project Name..."
 			/>
 		</div>

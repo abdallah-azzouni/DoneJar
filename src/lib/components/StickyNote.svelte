@@ -10,7 +10,7 @@
 		dragDisabled = showNoteMenu; // Disable dragging when menu is open
 	});
 
-	let size = 'size-40';
+	let size = 'size-[15vh]'; // Default size
 </script>
 
 <div data-id={note.id} class="inline-block">

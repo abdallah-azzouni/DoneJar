@@ -42,7 +42,7 @@
 		<form class="space-y-4" onsubmit={handleSubmit}>
 			<input
 				type="text"
-				class="doodle-border text-2xl font-bold"
+				class="doodle-border w-full text-2xl font-bold focus:outline-none"
 				placeholder="Note title..."
 				bind:value={workingNote.title}
 				required
@@ -64,11 +64,10 @@
 				</button>
 			</div>
 		</form>
-		<div class=" w-1 bg-gray-500"></div>
-		<div class="flex w-full flex-col gap-5">
-			<span>Project</span>
-			<span class="doodle-border w-full">{$currentProject.name}</span>
-			<span class="doodle-border flex w-fit items-center gap-5 font-patrick-hand text-2xl"
+		<div class=" w-0.5 bg-gray-500"></div>
+		<div class="flex w-fit flex-col gap-5 font-patrick-hand text-2xl">
+			<span class="doodle-border">Project: {$currentProject.name}</span>
+			<span class="doodle-border flex items-center gap-5"
 				>Color <input type="color" bind:value={workingNote.color} /></span
 			>
 			<!-- <span class="doodle-border flex w-fit items-center gap-5 font-patrick-hand text-2xl"
@@ -78,7 +77,7 @@
 				>Date
 			</span> -->
 			<button
-				class="size-fit rounded-2xl bg-red-700 px-10 py-4 font-bold text-white"
+				class="mt-auto size-fit rounded-2xl bg-red-700 px-10 py-4 font-bold text-white"
 				class:hidden={workingNote.id === ''}
 				onclick={() => {
 					isOpen = false;

@@ -11,10 +11,11 @@
 	// stores
 	import { userNotes, currentProject } from '$lib/stores/userData';
 	import type { Note } from '$lib/stores/userData';
+	import Delta from 'quill-delta';
 
 	let showCreateNote = $state(false);
 
-	const flipDurationMs = 300;
+	const flipDurationMs = 200;
 
 	let dragDisabled = $state(false);
 
@@ -59,7 +60,7 @@
 		id: '',
 		title: '',
 		color: '',
-		description: '',
+		description: new Delta(),
 		projectId: $currentProject.id
 	} satisfies Note}
 />

@@ -19,7 +19,7 @@
 <dialog
 	bind:this={dialog}
 	onclose={closeDialog}
-	class="mt-[10%] h-fit w-1/2 justify-self-center rounded-2xl bg-white p-6 shadow-lg"
+	class="mt-[5%] max-h-3/4 w-2/3 justify-self-center rounded-2xl bg-white p-6 shadow-lg"
 >
 	<div class="flex h-full flex-col">
 		{@render children?.()}

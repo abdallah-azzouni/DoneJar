@@ -20,7 +20,9 @@
 					>{currentProjectName[0].toUpperCase()}</span
 				>
 			</div>
-			<h1 class="text-3xl font-bold">{currentProjectName}</h1>
+			<h1 class="line-clamp-1 w-[100vh] text-3xl font-bold" style="overflow-wrap: break-word;">
+				{currentProjectName}
+			</h1>
 		</div>
 
 		<div class="flex items-center">

@@ -91,7 +91,9 @@ export const dataActions = {
 			title: note.title,
 			color: note.color,
 			projectId: note.projectId,
-			description: note.description
+			description: note.description,
+			createdAt: Date.now(),
+			updatedAt: Date.now()
 		};
 		userNotes.update((state) => ({
 			...state,
@@ -109,6 +111,10 @@ export const dataActions = {
 		@returns void
 	*/
 	editNote: (note: Note) => {
+		if (!note.createdAt) {
+			note.createdAt = Date.now();
+		}
+		note.updatedAt = Date.now();
 		userNotes.update((state) => ({
 			...state,
 			projects: state.projects.map((project) => {

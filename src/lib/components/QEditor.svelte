@@ -4,7 +4,7 @@
 
 	let editor: HTMLElement;
 
-	let { description = $bindable() }: { description: Delta } = $props();
+	let { description = $bindable() }: { description: Delta | string } = $props();
 
 	// add align text and video options to the toolbar
 	let toolbarOptions = [
@@ -26,11 +26,13 @@
 			placeholder: 'Write something...'
 		});
 
-		if (typeof description === 'string') {
-			description = quill.clipboard.convert(description);
+		// Support legacy plain text descriptions by converting string to Delta
+		if (typeof description === 'string' && description.length > 0) {
+			quill.setText(description);
+			description = quill.getContents();
+		} else if (description && typeof description === 'object') {
+			quill.setContents(description);
 		}
-
-		quill.setContents(description);
 
 		quill.on('text-change', () => {
 			description = quill.getContents();

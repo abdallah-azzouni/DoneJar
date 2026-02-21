@@ -18,6 +18,9 @@
 				...note,
 				color: note.color || '#fab005'
 			};
+			console.log(note.description);
+			console.log(typeof note.description);
+			console.log(note.description?.ops);
 		}
 	});
 

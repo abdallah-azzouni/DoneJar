@@ -45,7 +45,15 @@
 			/>
 			<hr class=" border border-gray-500" />
 
-			<QEditor bind:description={workingNote.description} />
+			<!-- 
+				{#key isOpen} forces QEditor to reinitialize when dialog opens/closes.
+				This clears old descriptions on new notes, but recreates the editor every time.
+				Performance impact is negligible now, but revisit if needed optimization.
+				Alternative: track a {unique key} that only changes on actual note switches.
+			-->
+			{#key isOpen}
+				<QEditor bind:description={workingNote.description} />
+			{/key}
 
 			<div class="flex justify-end gap-3">
 				<button

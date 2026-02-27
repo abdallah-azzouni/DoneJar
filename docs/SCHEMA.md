@@ -17,7 +17,7 @@ The application state is stored as a single JSON object. This structure supports
 						"title": "string",
 						"description": "Delta (Quill)",
 						"color": "string (hex)",
-						"dueDate": "number (timestamp) | null",
+						"dueDate": "{ timestamp: number; hasTime: boolean } | null",
 						"createdAt": "number (timestamp)",
 						"updatedAt": "number (timestamp)"
 					}

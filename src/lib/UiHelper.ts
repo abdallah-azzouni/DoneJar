@@ -22,7 +22,7 @@ export function textColorFromHex(hex: string) {
 /**
  * Formats a due date timestamp for display.
  * - Omits year if it's the current year.
- * - Omits time if stored at exactly midnight (date-only).
+ * - Omits time if hasTime is false or if the date is not in the current year.
  */
 export function formatDueDate({
 	timestamp,

@@ -15,14 +15,15 @@ The application state is stored as a single JSON object. This structure supports
 					{
 						"id": "uuid",
 						"title": "string",
-						"description": "string",
-						"color": "string (tailwind class)",
-						"createdAt": "Date",
-						"finishDate": "Date"
+						"description": "Delta (Quill)",
+						"color": "string (hex)",
+						"dueDate": "number (timestamp) | null",
+						"createdAt": "number (timestamp)",
+						"updatedAt": "number (timestamp)"
 					}
 				],
 				"doing": [{}],
-				"jar": [{}]
+				"done": [{}]
 			}
 		}
 	]

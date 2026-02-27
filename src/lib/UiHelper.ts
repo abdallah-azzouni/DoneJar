@@ -18,3 +18,50 @@ export function textColorFromHex(hex: string) {
 
 	return luminance > 0.5 ? 'black' : 'white';
 }
+
+/**
+ * Formats a due date timestamp for display.
+ * - Omits year if it's the current year.
+ * - Omits time if stored at exactly midnight (date-only).
+ */
+export function formatDueDate({
+	timestamp,
+	hasTime
+}: {
+	timestamp: number;
+	hasTime: boolean;
+}): string {
+	const d = new Date(timestamp);
+	const now = new Date();
+	const sameYear = d.getFullYear() === now.getFullYear();
+
+	const dateStr = d.toLocaleDateString(undefined, {
+		month: 'short',
+		day: 'numeric',
+		...(sameYear ? {} : { year: 'numeric' })
+	});
+
+	if (!hasTime || !sameYear) return dateStr;
+
+	const timeStr = d.toLocaleTimeString(undefined, {
+		hour: 'numeric',
+		minute: '2-digit'
+	});
+
+	return `${dateStr}, ${timeStr}`;
+}
+
+/**
+ * Checks whether a due date is in the past.
+ * For date-only entries, considers the due date passed only after the day ends.
+ */
+export function isDueDatePast(
+	dueDate: { timestamp: number; hasTime: boolean },
+	now: Date
+): boolean {
+	const due = new Date(dueDate.timestamp);
+	if (!dueDate.hasTime) {
+		due.setDate(due.getDate() + 1); // date-only: overdue after end of day
+	}
+	return due < now;
+}

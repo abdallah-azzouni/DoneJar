@@ -92,6 +92,7 @@ export const dataActions = {
 			color: note.color,
 			projectId: note.projectId,
 			description: note.description,
+			dueDate: note.dueDate,
 			createdAt: Date.now(),
 			updatedAt: Date.now()
 		};

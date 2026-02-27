@@ -19,6 +19,7 @@ export interface NoteInterface {
 	color: string;
 	description: Delta;
 	projectId: string;
+	dueDate: { timestamp: number; hasTime: boolean } | null;
 	createdAt: number;
 	updatedAt: number;
 }
@@ -29,6 +30,7 @@ export class Note implements NoteInterface {
 	color: string;
 	description: Delta;
 	projectId: string;
+	dueDate: { timestamp: number; hasTime: boolean } | null;
 	createdAt: number;
 	updatedAt: number;
 	constructor(id = '', title = '', color = '', description = new Delta(), projectId = '') {
@@ -37,6 +39,7 @@ export class Note implements NoteInterface {
 		this.color = color;
 		this.description = description;
 		this.projectId = projectId;
+		this.dueDate = null;
 		this.createdAt = 0;
 		this.updatedAt = 0;
 	}

@@ -1,16 +1,21 @@
 <script lang="ts">
 	import type { Note } from '$lib/stores/userData';
-	import { textColorFromHex } from '$lib/UiHelper';
-	import NoteMenu from '$lib/popups/NoteMenu.svelte';
+	import { textColorFromHex, formatDueDate, isDueDatePast } from '$lib/UiHelper';
+	import { now } from '$lib/stores/timer';
+	import NoteMenu from '$lib/popups/noteMenu/NoteMenu.svelte';
 
 	let { note, dragDisabled = $bindable(false) }: { note: Note; dragDisabled: boolean } = $props();
 	let showNoteMenu = $state(false);
+
+	let infoColor = $derived(
+		note.dueDate ? (isDueDatePast(note.dueDate, $now) ? '#8b0000' : '#006400') : '#FFFFFF'
+	); // Default white, Dark red for overdue, Dark green for upcoming
 
 	$effect(() => {
 		dragDisabled = showNoteMenu; // Disable dragging when menu is open
 	});
 
-	let size = 'size-[15vh]'; // Default size
+	let size = 'size-[19vh]'; // Default size
 </script>
 
 <div data-id={note.id} class="inline-block">
@@ -47,7 +52,7 @@
 						d="M0.39 -0.49 L-32.96 -5.9 L-36.48 32.88 L-0.06 0.65"
 						stroke="none"
 						stroke-width="0"
-						fill="white"
+						fill={infoColor}
 						fill-rule="evenodd"
 					></path><path
 						d="M0 0 C-8.74 -2.43, -19.81 -3.57, -33.89 -5 M0 0 C-9.28 -0.86, -19.12 -3.03, -33.89 -5 M-33.89 -5 C-33.6 3.3, -33.96 11.62, -36.11 33.33 M-33.89 -5 C-33.87 2.87, -34.56 10.52, -36.11 33.33 M-36.11 33.33 C-26.78 24.92, -17.35 17.11, 0 0 M-36.11 33.33 C-23.97 22.06, -10.59 10.2, 0 0 M0 0 C0 0, 0 0, 0 0 M0 0 C0 0, 0 0, 0 0"
@@ -59,11 +64,24 @@
 			>
 			<foreignObject x="20" y="20" width="200" height="160">
 				<span
+					xmlns="http://www.w3.org/1999/xhtml"
 					class="line-clamp-4 text-4xl font-bold"
 					style="color: {textColorFromHex(note.color)}; overflow-wrap: break-word;"
 					>{note.title}</span
 				>
-			</foreignObject></svg
+			</foreignObject>
+			{#if note.dueDate}
+				<foreignObject x="20" y="20" width="170" height="190">
+					<div class="flex h-full items-end justify-start" xmlns="http://www.w3.org/1999/xhtml">
+						<span
+							class="line-clamp-1 font-patrick-hand text-2xl"
+							style="color: {textColorFromHex(note.color)}"
+						>
+							{formatDueDate(note.dueDate)}
+						</span>
+					</div>
+				</foreignObject>
+			{/if}</svg
 		>
 	</button>
 </div>

@@ -3,7 +3,7 @@
 	import StickyNote from '$lib/components/StickyNote.svelte';
 	import BeakerPhysics from './BeakerPhysics.svelte';
 	// popups
-	import NoteMenu from '$lib/popups/NoteMenu.svelte';
+	import NoteMenu from '$lib/popups/noteMenu/NoteMenu.svelte';
 	// external libraries
 	import { dndzone } from 'svelte-dnd-action';
 	// assets

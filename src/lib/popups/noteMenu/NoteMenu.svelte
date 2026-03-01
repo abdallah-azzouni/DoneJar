@@ -2,7 +2,7 @@
 	import { dataActions } from '$lib/Actions';
 	import type { Note } from '$lib/stores/userData';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
-	import DeleteNConfermation from './DeleteNConfermation.svelte';
+	import DeleteNConfirmation from './DeleteNConfirmation.svelte';
 	import DatePicker from './DatePicker.svelte';
 	import { currentProject } from '$lib/stores/userData';
 	import QEditor from '$lib/components/QEditor.svelte';
@@ -36,7 +36,7 @@
 	}
 </script>
 
-<DeleteNConfermation bind:isOpen={showDeleteNote} {note} />
+<DeleteNConfirmation bind:isOpen={showDeleteNote} {note} />
 <DatePicker
 	bind:isOpen={showDatePicker}
 	initialDate={workingNote.dueDate}

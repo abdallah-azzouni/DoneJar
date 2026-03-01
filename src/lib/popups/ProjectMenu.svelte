@@ -2,7 +2,7 @@
 	import { dataActions } from '$lib/Actions';
 	import { type ProjectInterface, type Column } from '$lib/stores/userData';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
-	import DeletePConfermation from './DeletePConfermation.svelte';
+	import DeletePConfirmation from './DeletePConfirmation.svelte';
 
 	let {
 		isOpen = $bindable(false),
@@ -88,7 +88,7 @@
 	}
 </script>
 
-<DeletePConfermation
+<DeletePConfirmation
 	bind:isOpen={showDeleteProject}
 	projectName={newProject.name}
 	projectId={newProject.id}

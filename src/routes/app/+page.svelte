@@ -8,7 +8,7 @@
 	import ProjectMenu from '$lib/popups/ProjectMenu.svelte';
 	// stores
 	import { isLoaded } from '$lib/stores/userData';
-	import { userNotes, currentProject } from '$lib/stores/userData';
+	import { userNotes, currentProject, Project } from '$lib/stores/userData';
 	// external libraries
 	import 'doodle.css/doodle.css';
 	const notes = $derived($userNotes);
@@ -23,7 +23,10 @@
 	{/if}
 </svelte:head>
 
-<ProjectMenu bind:isOpen={showCreateProject} projectInfo={{ name: '', color: '', id: '' }} />
+<ProjectMenu
+	bind:isOpen={showCreateProject}
+	projectInfo={new Project('', '', 'default', '#495057')}
+/>
 {#if !$isLoaded}
 	<Loading />
 {:else if notes.projects.length === 0 || $currentProject === undefined}
@@ -58,11 +61,7 @@
 			<div class="hand-drawn-border doodle-border m-2 w-1/9 overflow-x-clip overflow-y-scroll">
 				<div class="flex max-h-full flex-col items-center text-sm">
 					{#each notes.projects as project (project.id)}
-						<ProjectItem
-							projectName={project.name}
-							projectColor={project.color}
-							projectId={project.id}
-						/>
+						<ProjectItem {project} />
 					{/each}
 				</div>
 			</div>

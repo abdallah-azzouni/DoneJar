@@ -1,4 +1,9 @@
-import { userNotes, type Note } from '$lib/stores/userData';
+import {
+	userNotes,
+	type NoteInterface,
+	type Column,
+	type ProjectInterface
+} from '$lib/stores/userData';
 import { nanoid } from 'nanoid';
 
 export const dataActions = {
@@ -8,12 +13,39 @@ export const dataActions = {
 		@param color: The color of the project
 		@returns void
 	*/
-	createProject: (name: string, color: string) => {
+	createProject: (
+		name: string,
+		type: 'default' | 'blank' | 'custom',
+		color: string,
+		customColumns?: Column[]
+	) => {
+		let newColumns: Column[];
+		if (type === 'default') {
+			newColumns = [
+				{ name: 'TODO', notes: [], specialType: 'inbox' },
+				{ name: 'DOING', notes: [] },
+				{ name: 'DONE', notes: [], specialType: 'jar' }
+			];
+		} else if (type === 'blank') {
+			newColumns = [{ name: '', notes: [], specialType: 'inbox' }];
+		} else if (type === 'custom') {
+			newColumns = customColumns || [];
+			if (newColumns.length === 0) {
+				alert('Error during project creation: Custom projects must have at least 1 column');
+				return;
+			}
+		} else {
+			alert('Error during project creation: Invalid project type');
+			return;
+		}
 		const newProject = {
 			id: nanoid(),
 			name,
+			type,
 			color,
-			columns: { todo: [], doing: [], done: [] }
+			columns: newColumns,
+			createdAt: Date.now(),
+			updatedAt: Date.now()
 		};
 		userNotes.update((state) => ({
 			...state,
@@ -37,9 +69,11 @@ export const dataActions = {
 	editProject: (projectInfo: { name: string; color: string; id: string }) => {
 		userNotes.update((state) => ({
 			...state,
-			projects: state.projects
-				.map((p) => (p.id === projectInfo.id ? { ...p, name: projectInfo.name } : p))
-				.map((p) => (p.id === projectInfo.id ? { ...p, color: projectInfo.color } : p))
+			projects: state.projects.map((p) =>
+				p.id === projectInfo.id
+					? { ...p, name: projectInfo.name, color: projectInfo.color, updatedAt: Date.now() }
+					: p
+			)
 		}));
 	},
 
@@ -85,7 +119,7 @@ export const dataActions = {
 		@param color: The color of the note
 		@returns void
 	*/
-	createNote: (note: Note) => {
+	createNote: (note: NoteInterface, columnIndex: number = 0) => {
 		const newNote = {
 			id: nanoid(),
 			title: note.title,
@@ -100,7 +134,13 @@ export const dataActions = {
 			...state,
 			projects: state.projects.map((p) =>
 				p.id === note.projectId
-					? { ...p, columns: { ...p.columns, todo: [...p.columns.todo, newNote] } }
+					? {
+							...p,
+							updatedAt: Date.now(),
+							columns: p.columns.map((col, i) =>
+								i === columnIndex ? { ...col, notes: [...col.notes, newNote] } : col
+							)
+						}
 					: p
 			)
 		}));
@@ -111,7 +151,7 @@ export const dataActions = {
 		@param note: The new note data
 		@returns void
 	*/
-	editNote: (note: Note) => {
+	editNote: (note: NoteInterface) => {
 		if (!note.createdAt) {
 			note.createdAt = Date.now();
 		}
@@ -121,15 +161,13 @@ export const dataActions = {
 			projects: state.projects.map((project) => {
 				if (project.id !== note.projectId) return project;
 
-				const updateColumn = (column: Note[]) => column.map((n) => (n.id === note.id ? note : n));
-
 				return {
 					...project,
-					columns: {
-						todo: updateColumn(project.columns.todo),
-						doing: updateColumn(project.columns.doing),
-						done: updateColumn(project.columns.done)
-					}
+					updatedAt: Date.now(),
+					columns: project.columns.map((col) => ({
+						...col,
+						notes: col.notes.map((n) => (n.id === note.id ? note : n))
+					}))
 				};
 			})
 		}));
@@ -147,15 +185,13 @@ export const dataActions = {
 			projects: state.projects.map((project) => {
 				if (project.id !== projectId) return project;
 
-				const removeNote = (column: Note[]) => column.filter((n) => n.id !== noteId);
-
 				return {
 					...project,
-					columns: {
-						todo: removeNote(project.columns.todo),
-						doing: removeNote(project.columns.doing),
-						done: removeNote(project.columns.done)
-					}
+					updatedAt: Date.now(),
+					columns: project.columns.map((col) => ({
+						...col,
+						notes: col.notes.filter((n) => n.id !== noteId)
+					}))
 				};
 			})
 		}));

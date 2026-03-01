@@ -36,7 +36,11 @@
 		}
 	}
 
-	let columnItems = $derived($currentProject.columns);
+	// eslint-disable-next-line svelte/prefer-writable-derived
+	let columnItems = $state($currentProject.columns); // ignored because it break dnd if we use $derived.
+	$effect(() => {
+		columnItems = $currentProject.columns;
+	});
 </script>
 
 <NoteMenu

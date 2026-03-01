@@ -36,11 +36,7 @@
 		}
 	}
 
-	let columnItems = $state($currentProject.columns);
-
-	$effect(() => {
-		columnItems = $currentProject.columns;
-	});
+	let columnItems = $derived($currentProject.columns);
 </script>
 
 <NoteMenu
@@ -50,7 +46,7 @@
 <!-- Force re-render when project changes to reset dndzone state -->
 {#key $currentProject.id}
 	<div class="flex h-full w-full flex-row overflow-hidden">
-		{#each columnItems as column, columnIdx}
+		{#each columnItems as column, columnIdx (column.name)}
 			{#if column.specialType === 'jar'}
 				<div
 					class="relative m-2 flex aspect-777/1024 h-auto max-h-[75%] min-h-0 w-auto max-w-[33.333%] min-w-[28%] flex-col justify-end self-end"

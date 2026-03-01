@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { dataActions } from '$lib/Actions';
-	import { type ProjectInterface, type Column, type ColumnSpecialType } from '$lib/stores/userData';
+	import { type ProjectInterface, type Column } from '$lib/stores/userData';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import DeletePConfermation from './DeletePConfermation.svelte';
 

@@ -1,9 +1,4 @@
-import {
-	userNotes,
-	type NoteInterface,
-	type Column,
-	type ProjectInterface
-} from '$lib/stores/userData';
+import { userNotes, type NoteInterface, type Column } from '$lib/stores/userData';
 import { nanoid } from 'nanoid';
 
 export const dataActions = {

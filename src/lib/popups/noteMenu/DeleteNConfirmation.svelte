@@ -2,6 +2,7 @@
 	import { dataActions } from '$lib/Actions';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import type { Note } from '$lib/stores/userData';
+	import { notify } from '$lib/stores/notificationStore';
 
 	let { isOpen = $bindable(false), note }: { isOpen: boolean; note: Note } = $props();
 
@@ -16,7 +17,9 @@
 
 	function handleSubmit(e: Event) {
 		e.preventDefault();
-		dataActions.deleteNote(userNote.id, userNote.projectId);
+		const result = dataActions.deleteNote(userNote.id, userNote.projectId);
+		if (!result.success) notify(result);
+		if (!result.success) return;
 		isOpen = false;
 	}
 </script>

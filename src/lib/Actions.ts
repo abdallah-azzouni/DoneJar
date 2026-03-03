@@ -1,6 +1,8 @@
 import { userNotes, type NoteInterface, type Column } from '$lib/stores/userData';
 import { nanoid } from 'nanoid';
 
+type ActionResult = { success: boolean; message: string; type: 'error' | 'success' };
+
 export const dataActions = {
 	/*
 		Creates a new project
@@ -13,7 +15,7 @@ export const dataActions = {
 		type: 'default' | 'blank' | 'custom',
 		color: string,
 		customColumns?: Column[]
-	) => {
+	): ActionResult => {
 		let newColumns: Column[];
 		if (type === 'default') {
 			newColumns = [
@@ -26,34 +28,52 @@ export const dataActions = {
 		} else if (type === 'custom') {
 			newColumns = customColumns || [];
 			if (newColumns.length === 0) {
-				alert('Error during project creation: Custom projects must have at least 1 column');
-				return;
+				return {
+					success: false,
+					message: 'Custom projects must have at least 1 column',
+					type: 'error'
+				};
 			}
 		} else {
-			alert('Error during project creation: Invalid project type');
-			return;
+			return {
+				success: false,
+				message: 'Invalid project type',
+				type: 'error'
+			};
 		}
-		const newProject = {
-			id: nanoid(),
-			name,
-			type,
-			color,
-			columns: newColumns,
-			createdAt: Date.now(),
-			updatedAt: Date.now()
-		};
-		userNotes.update((state) => ({
-			...state,
-			projects: [...state.projects, newProject],
-			activeProjectId: newProject.id
-		}));
+
+		try {
+			const newProject = {
+				id: nanoid(),
+				name,
+				type,
+				color,
+				columns: newColumns,
+				createdAt: Date.now(),
+				updatedAt: Date.now()
+			};
+			userNotes.update((state) => ({
+				...state,
+				projects: [...state.projects, newProject],
+				activeProjectId: newProject.id
+			}));
+		} catch (error) {
+			return { success: false, message: `Error during project creation: ${error}`, type: 'error' };
+		}
+
+		return { success: true, message: 'Project created successfully', type: 'success' };
 	},
 
-	setActiveProject: (projectId: string) => {
-		userNotes.update((state) => ({
-			...state,
-			activeProjectId: projectId
-		}));
+	setActiveProject: (projectId: string): ActionResult => {
+		try {
+			userNotes.update((state) => ({
+				...state,
+				activeProjectId: projectId
+			}));
+		} catch (error) {
+			return { success: false, message: `Error setting active project: ${error}`, type: 'error' };
+		}
+		return { success: true, message: 'Active project set successfully', type: 'success' };
 	},
 
 	/*
@@ -61,15 +81,20 @@ export const dataActions = {
 		@param project: The new project data
 		@returns void
 	*/
-	editProject: (projectInfo: { name: string; color: string; id: string }) => {
-		userNotes.update((state) => ({
-			...state,
-			projects: state.projects.map((p) =>
-				p.id === projectInfo.id
-					? { ...p, name: projectInfo.name, color: projectInfo.color, updatedAt: Date.now() }
-					: p
-			)
-		}));
+	editProject: (projectInfo: { name: string; color: string; id: string }): ActionResult => {
+		try {
+			userNotes.update((state) => ({
+				...state,
+				projects: state.projects.map((p) =>
+					p.id === projectInfo.id
+						? { ...p, name: projectInfo.name, color: projectInfo.color, updatedAt: Date.now() }
+						: p
+				)
+			}));
+		} catch (error) {
+			return { success: false, message: `Error editing project: ${error}`, type: 'error' };
+		}
+		return { success: true, message: 'Project edited successfully', type: 'success' };
 	},
 
 	/*
@@ -77,34 +102,39 @@ export const dataActions = {
 		@param projectId: The id of the project to delete
 		@returns void
 	*/
-	deleteProject: (projectId: string) => {
-		userNotes.update((state) => {
-			const { projects, activeProjectId } = state;
+	deleteProject: (projectId: string): ActionResult => {
+		try {
+			userNotes.update((state) => {
+				const { projects, activeProjectId } = state;
 
-			// State 1: Not deleting the active project
-			if (projectId !== activeProjectId) {
+				// State 1: Not deleting the active project
+				if (projectId !== activeProjectId) {
+					return {
+						...state,
+						projects: projects.filter((p) => p.id !== projectId)
+					};
+				}
+
+				// State 2: Deleting the active project
+				const deleteIndex = projects.findIndex((p) => p.id === projectId);
+				const updatedProjects = projects.filter((p) => p.id !== projectId);
+
+				let newActiveId = null;
+				if (updatedProjects.length > 0) {
+					const nextIndex = Math.min(deleteIndex, updatedProjects.length - 1); // Prevent going out of bounds
+					newActiveId = updatedProjects[nextIndex].id;
+				}
+
 				return {
 					...state,
-					projects: projects.filter((p) => p.id !== projectId)
+					projects: updatedProjects,
+					activeProjectId: newActiveId
 				};
-			}
-
-			// State 2: Deleting the active project
-			const deleteIndex = projects.findIndex((p) => p.id === projectId);
-			const updatedProjects = projects.filter((p) => p.id !== projectId);
-
-			let newActiveId = null;
-			if (updatedProjects.length > 0) {
-				const nextIndex = Math.min(deleteIndex, updatedProjects.length - 1); // Prevent going out of bounds
-				newActiveId = updatedProjects[nextIndex].id;
-			}
-
-			return {
-				...state,
-				projects: updatedProjects,
-				activeProjectId: newActiveId
-			};
-		});
+			});
+		} catch (error) {
+			return { success: false, message: `Error deleting project: ${error}`, type: 'error' };
+		}
+		return { success: true, message: 'Project deleted successfully', type: 'success' };
 	},
 
 	/*
@@ -114,31 +144,36 @@ export const dataActions = {
 		@param color: The color of the note
 		@returns void
 	*/
-	createNote: (note: NoteInterface, columnIndex: number = 0) => {
-		const newNote = {
-			id: nanoid(),
-			title: note.title,
-			color: note.color,
-			projectId: note.projectId,
-			description: note.description,
-			dueDate: note.dueDate,
-			createdAt: Date.now(),
-			updatedAt: Date.now()
-		};
-		userNotes.update((state) => ({
-			...state,
-			projects: state.projects.map((p) =>
-				p.id === note.projectId
-					? {
-							...p,
-							updatedAt: Date.now(),
-							columns: p.columns.map((col, i) =>
-								i === columnIndex ? { ...col, notes: [...col.notes, newNote] } : col
-							)
-						}
-					: p
-			)
-		}));
+	createNote: (note: NoteInterface, columnIndex: number = 0): ActionResult => {
+		try {
+			const newNote = {
+				id: nanoid(),
+				title: note.title,
+				color: note.color,
+				projectId: note.projectId,
+				description: note.description,
+				dueDate: note.dueDate,
+				createdAt: Date.now(),
+				updatedAt: Date.now()
+			};
+			userNotes.update((state) => ({
+				...state,
+				projects: state.projects.map((p) =>
+					p.id === note.projectId
+						? {
+								...p,
+								updatedAt: Date.now(),
+								columns: p.columns.map((col, i) =>
+									i === columnIndex ? { ...col, notes: [...col.notes, newNote] } : col
+								)
+							}
+						: p
+				)
+			}));
+		} catch (error) {
+			return { success: false, message: `Error creating note: ${error}`, type: 'error' };
+		}
+		return { success: true, message: 'Note created successfully', type: 'success' };
 	},
 
 	/*
@@ -146,26 +181,31 @@ export const dataActions = {
 		@param note: The new note data
 		@returns void
 	*/
-	editNote: (note: NoteInterface) => {
-		if (!note.createdAt) {
-			note.createdAt = Date.now();
-		}
-		note.updatedAt = Date.now();
-		userNotes.update((state) => ({
-			...state,
-			projects: state.projects.map((project) => {
-				if (project.id !== note.projectId) return project;
+	editNote: (note: NoteInterface): ActionResult => {
+		try {
+			if (!note.createdAt) {
+				note.createdAt = Date.now();
+			}
+			note.updatedAt = Date.now();
+			userNotes.update((state) => ({
+				...state,
+				projects: state.projects.map((project) => {
+					if (project.id !== note.projectId) return project;
 
-				return {
-					...project,
-					updatedAt: Date.now(),
-					columns: project.columns.map((col) => ({
-						...col,
-						notes: col.notes.map((n) => (n.id === note.id ? note : n))
-					}))
-				};
-			})
-		}));
+					return {
+						...project,
+						updatedAt: Date.now(),
+						columns: project.columns.map((col) => ({
+							...col,
+							notes: col.notes.map((n) => (n.id === note.id ? note : n))
+						}))
+					};
+				})
+			}));
+		} catch (error) {
+			return { success: false, message: `Error editing note: ${error}`, type: 'error' };
+		}
+		return { success: true, message: 'Note edited successfully', type: 'success' };
 	},
 
 	/*
@@ -174,21 +214,25 @@ export const dataActions = {
 		@param projectId: The id of the project the note belongs to
 		@returns void
 	*/
-	deleteNote: (noteId: string, projectId: string) => {
-		userNotes.update((state) => ({
-			...state,
-			projects: state.projects.map((project) => {
-				if (project.id !== projectId) return project;
-
-				return {
-					...project,
-					updatedAt: Date.now(),
-					columns: project.columns.map((col) => ({
-						...col,
-						notes: col.notes.filter((n) => n.id !== noteId)
-					}))
-				};
-			})
-		}));
+	deleteNote: (noteId: string, projectId: string): ActionResult => {
+		try {
+			userNotes.update((state) => ({
+				...state,
+				projects: state.projects.map((project) => {
+					if (project.id !== projectId) return project;
+					return {
+						...project,
+						updatedAt: Date.now(),
+						columns: project.columns.map((col) => ({
+							...col,
+							notes: col.notes.filter((n) => n.id !== noteId)
+						}))
+					};
+				})
+			}));
+		} catch (error) {
+			return { success: false, message: `Error deleting note: ${error}`, type: 'error' };
+		}
+		return { success: true, message: 'Note deleted successfully', type: 'success' };
 	}
 };

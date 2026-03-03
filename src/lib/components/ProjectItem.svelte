@@ -6,6 +6,7 @@
 	import { dataActions } from '$lib/Actions';
 	import { textColorFromHex } from '$lib/UiHelper';
 	import { currentProject, type ProjectInterface } from '$lib/stores/userData';
+	import { notify } from '$lib/stores/notificationStore';
 	let { project }: { project: ProjectInterface } = $props();
 
 	let showProjectMenu = $state(false);
@@ -13,14 +14,16 @@
 	function handleActive(e: MouseEvent) {
 		// Don't activate if clicking on the delete button
 		if (!(e.target as HTMLElement).closest('.project-actions')) {
-			dataActions.setActiveProject(project.id);
+			const result = dataActions.setActiveProject(project.id);
+			if (!result.success) notify(result);
 		}
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
-			dataActions.setActiveProject(project.id);
+			const result = dataActions.setActiveProject(project.id);
+			if (!result.success) notify(result);
 		}
 	}
 </script>

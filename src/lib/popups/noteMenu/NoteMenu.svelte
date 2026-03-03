@@ -7,6 +7,7 @@
 	import { currentProject } from '$lib/stores/userData';
 	import QEditor from '$lib/components/QEditor.svelte';
 	import { formatDueDate, isDueDatePast } from '$lib/UiHelper';
+	import { notify } from '$lib/stores/notificationStore';
 
 	let { isOpen = $bindable(false), note }: { isOpen: boolean; note: Note } = $props();
 
@@ -24,9 +25,13 @@
 
 	function handleSubmit() {
 		if (workingNote.id === '') {
-			dataActions.createNote(workingNote);
+			const result = dataActions.createNote(workingNote);
+			notify(result);
+			if (!result.success) return;
 		} else {
-			dataActions.editNote(workingNote);
+			const result = dataActions.editNote(workingNote);
+			notify(result);
+			if (!result.success) return;
 		}
 		isOpen = false;
 	}

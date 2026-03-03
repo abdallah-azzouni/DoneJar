@@ -3,13 +3,14 @@
 	import { type ProjectInterface, type Column } from '$lib/stores/userData';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import DeletePConfirmation from './DeletePConfirmation.svelte';
+	import { notify } from '$lib/stores/notificationStore';
 
 	let {
 		isOpen = $bindable(false),
 		projectInfo
 	}: { isOpen: boolean; projectInfo: ProjectInterface } = $props();
 
-	let newProject = $state(projectInfo);
+	let newProject = $state({ ...projectInfo });
 	let customColumns: Column[] = $state([]);
 	let showDeleteProject = $state(false);
 
@@ -37,28 +38,52 @@
 
 	function handleSubmit(e: Event) {
 		e.preventDefault();
+		let pass = true;
 
 		if (newProject.id === '') {
 			if (newProject.type === 'custom') {
-				if (customColumns.length === 0) {
-					alert('Custom projects must have at least 1 column.');
-					return;
-				}
 				const columns = buildColumnsWithSpecialTypes();
-				dataActions.createProject(newProject.name, newProject.type, newProject.color, columns);
+				const result = dataActions.createProject(
+					newProject.name,
+					newProject.type,
+					newProject.color,
+					columns
+				);
+				notify(result);
+				pass &&= result.success;
 			} else {
-				dataActions.createProject(newProject.name, newProject.type, newProject.color);
+				const result = dataActions.createProject(
+					newProject.name,
+					newProject.type,
+					newProject.color
+				);
+				notify(result);
+				pass &&= result.success;
 			}
 		} else {
-			dataActions.editProject(newProject);
+			const result = dataActions.editProject(newProject);
+			notify(result);
+			pass &&= result.success;
 		}
-		isOpen = false;
+
+		if (pass) isOpen = false;
 	}
 
 	function addColumn() {
 		const trimmed = newColumnName.trim();
-		if (!trimmed) return;
+		if (!trimmed) {
+			notify({ success: false, message: 'Column name cannot be empty', type: 'error' });
+			return;
+		}
+		if (customColumns.map((c) => c.name.toLowerCase()).includes(trimmed.toLowerCase())) {
+			notify({ success: false, message: 'Column name must be unique', type: 'error' });
+			return;
+		}
 
+		if (customColumns.length >= 5) {
+			notify({ success: false, message: 'Maximum of 5 columns allowed', type: 'error' });
+			return;
+		}
 		customColumns = [...customColumns, { name: trimmed, notes: [], specialType: null }];
 		newColumnName = '';
 	}
@@ -128,7 +153,7 @@
 				</select>
 			</div>
 		{/if}
-		{#if newProject.type === 'custom'}
+		{#if newProject.type === 'custom' && newProject.id === ''}
 			{#if customColumns.length > 0}
 				<div class="doodle-border overflow-hidden">
 					<table class="w-full">
@@ -205,6 +230,7 @@
 		<div class="mx-8 mt-auto mb-6 flex justify-end gap-3">
 			<div>
 				<button
+					type="button"
 					class="size-fit rounded-2xl bg-red-700 p-4 font-bold text-white {newProject.id === ''
 						? 'hidden'
 						: ''}"

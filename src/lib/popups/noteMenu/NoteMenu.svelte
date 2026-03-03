@@ -26,12 +26,10 @@
 	function handleSubmit() {
 		if (workingNote.id === '') {
 			const result = dataActions.createNote(workingNote);
-			notify(result);
-			if (!result.success) return;
+			if (!result.success) { notify(result); return; }
 		} else {
 			const result = dataActions.editNote(workingNote);
-			notify(result);
-			if (!result.success) return;
+			if (!result.success) { notify(result); return; }
 		}
 		isOpen = false;
 	}

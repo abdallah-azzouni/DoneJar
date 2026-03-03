@@ -2,6 +2,7 @@ import { browser } from '$app/environment';
 import { persisted } from 'svelte-persisted-store';
 import { derived } from 'svelte/store';
 import Delta from 'quill-delta';
+import { notify } from './notificationStore';
 
 export const isLoaded = persisted('isLoaded', false);
 export interface NoteInterface {
@@ -79,9 +80,45 @@ export class Project implements ProjectInterface {
 	}
 }
 
-export const userNotes = persisted('userNotes', {
+const defaultUserNotes = {
 	activeProjectId: <string | null>'',
 	projects: <ProjectInterface[]>[]
+};
+
+function isValidUserNotes(val: unknown): val is typeof defaultUserNotes {
+	if (typeof val !== 'object' || val === null) return false;
+	const obj = val as Record<string, unknown>;
+	if (!Array.isArray(obj.projects)) return false;
+	if (obj.activeProjectId !== null && typeof obj.activeProjectId !== 'string') return false;
+	return true;
+}
+
+export const userNotes = persisted('userNotes', defaultUserNotes, {
+	beforeRead: (val) => {
+		if (!isValidUserNotes(val)) {
+			notify({
+				success: false,
+				message: 'Saved data is corrupted. Data has been reset.',
+				type: 'error'
+			});
+			return defaultUserNotes;
+		}
+		return val;
+	},
+	onWriteError: () => {
+		notify({
+			success: false,
+			message: 'Failed to save data. Storage may be full or unavailable.',
+			type: 'error'
+		});
+	},
+	onParseError: () => {
+		notify({
+			success: false,
+			message: 'Saved data is corrupted. Data has been reset.',
+			type: 'error'
+		});
+	}
 });
 
 export const currentProject = derived(

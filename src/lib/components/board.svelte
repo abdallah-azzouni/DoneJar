@@ -11,6 +11,7 @@
 	// stores
 	import { userNotes, currentProject } from '$lib/stores/userData';
 	import { Note } from '$lib/stores/userData';
+	import { notify } from '$lib/stores/notificationStore';
 	import Delta from 'quill-delta';
 
 	let showCreateNote = $state(false);
@@ -26,13 +27,17 @@
 		columnItems[columnIdx].notes = items;
 		// 2. Persist to store
 		if (type === 'finalize') {
-			userNotes.update((state) => {
-				const project = state.projects.find((p) => p.id === $currentProject.id);
-				if (project) {
-					project.columns[columnIdx].notes = items;
-				}
-				return state;
-			});
+			try {
+				userNotes.update((state) => {
+					const project = state.projects.find((p) => p.id === $currentProject.id);
+					if (project) {
+						project.columns[columnIdx].notes = items;
+					}
+					return state;
+				});
+			} catch {
+				notify({ success: false, message: 'Failed to reorder notes', type: 'error' });
+			}
 		}
 	}
 

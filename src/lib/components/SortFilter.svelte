@@ -2,6 +2,7 @@
 	import type { Note } from '$lib/types';
 	import FunnelSimpleIcon from 'phosphor-svelte/lib/FunnelSimpleIcon';
 	import { untrack } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	interface SortOption {
 		key: string;
@@ -45,7 +46,7 @@
 	// ═══ State ═══
 
 	let isOpen = $state(false);
-	let colorFilters = $state(new Set<string>());
+	let colorFilters = new SvelteSet<string>();
 	let panelEl: HTMLDivElement | undefined = $state();
 
 	// Unique colors present in this column's notes
@@ -67,15 +68,13 @@
 	}
 
 	function toggleColor(color: string) {
-		const next = new Set(colorFilters);
-		if (next.has(color)) next.delete(color);
-		else next.add(color);
-		colorFilters = next;
+		if (colorFilters.has(color)) colorFilters.delete(color);
+		else colorFilters.add(color);
 	}
 
 	function clearAll() {
 		activeSortKey = null;
-		colorFilters = new Set();
+		colorFilters.clear();
 	}
 
 	function handleClickOutside(e: MouseEvent) {

@@ -8,7 +8,7 @@
 	let { isOpen = $bindable(false), projectInfo }: { isOpen: boolean; projectInfo: Project } =
 		$props();
 
-	let newProject = $state({ ...projectInfo });
+	let newProject = $state({} as Project);
 	let customColumns: Column[] = $state([]);
 	let showDeleteProject = $state(false);
 

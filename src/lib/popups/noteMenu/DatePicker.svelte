@@ -80,6 +80,7 @@
 	}
 
 	function toTimestamp(): number {
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local computation, not reactive state
 		const d = new Date(value.timestamp.year, value.timestamp.month - 1, value.timestamp.day);
 		if (value.hasTime) {
 			d.setHours(to24h(hours, period), minutes, 0, 0);

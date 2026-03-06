@@ -5,10 +5,9 @@
 
 	let { isOpen = $bindable(false), projectName, projectId } = $props();
 
-	let capturedProjectId = $state(projectId); // Make it reactive state
-	let capturedProjectName = $state(projectName);
+	let capturedProjectId = $state('');
+	let capturedProjectName = $state('');
 
-	// Update captured values only when dialog opens
 	$effect(() => {
 		if (isOpen) {
 			capturedProjectId = projectId;

@@ -10,7 +10,7 @@
 	// ============================================================================
 
 	let { items = [] } = $props();
-	let activeProject = $currentProject.id;
+	let activeProject = $currentProject?.id;
 
 	// Canvas dimensions
 	const width = 400;

@@ -52,7 +52,6 @@
 		}
 	}
 
-	// eslint-disable-next-line svelte/prefer-writable-derived
 	let columnItems = $state($currentProject?.columns ?? []); // ignored because it break dnd if we use $derived.
 
 	$effect(() => {
@@ -164,7 +163,7 @@
 							onfinalize={(e) => handleDnd(columnIdx, 'finalize', e)}
 						>
 							{#each columnItems[columnIdx].notes as note (note.id)}
-								<div class="inline-block" class:hidden={!notePassesFilter(columnIdx, note)}>
+								<div class={notePassesFilter(columnIdx, note) ? 'inline-block' : 'hidden'}>
 									<StickyNote {note} bind:dragDisabled />
 								</div>
 							{/each}

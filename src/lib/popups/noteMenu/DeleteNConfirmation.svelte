@@ -6,9 +6,8 @@
 
 	let { isOpen = $bindable(false), note }: { isOpen: boolean; note: Note } = $props();
 
-	let userNote = $state(note); // Make it reactive state
+	let userNote = $state({} as Note);
 
-	// Update captured values only when dialog opens
 	$effect(() => {
 		if (isOpen) {
 			userNote = note;

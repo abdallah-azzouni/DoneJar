@@ -164,7 +164,7 @@
 							onfinalize={(e) => handleDnd(columnIdx, 'finalize', e)}
 						>
 							{#each columnItems[columnIdx].notes as note (note.id)}
-								<div class:hidden={!notePassesFilter(columnIdx, note)}>
+								<div class="inline-block" class:hidden={!notePassesFilter(columnIdx, note)}>
 									<StickyNote {note} bind:dragDisabled />
 								</div>
 							{/each}

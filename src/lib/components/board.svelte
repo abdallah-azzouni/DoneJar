@@ -2,58 +2,107 @@
 	// components
 	import StickyNote from '$lib/components/StickyNote.svelte';
 	import BeakerPhysics from './BeakerPhysics.svelte';
+	import SortFilter from '$lib/components/SortFilter.svelte';
 	// popups
 	import NoteMenu from '$lib/popups/noteMenu/NoteMenu.svelte';
 	// external libraries
-	import { dndzone } from 'svelte-dnd-action';
+	import { dndzone, TRIGGERS } from 'svelte-dnd-action';
+	import { untrack } from 'svelte';
 	// assets
 	import beaker from '$lib/assets/elements/beaker.png';
 	// stores
-	import { userNotes, currentProject } from '$lib/stores/userData';
-	import { Note } from '$lib/stores/userData';
+	import { currentProject } from '$lib/stores/userData';
+	// actions
+	import { dataActions } from '$lib/Actions';
+	import { createEmptyNote, type Note } from '$lib/types';
 	import { notify } from '$lib/stores/notificationStore';
-	import Delta from 'quill-delta';
 
 	let showCreateNote = $state(false);
 
 	const flipDurationMs = 200;
 
 	let dragDisabled = $state(false);
+	// Tracks which column index a drag originated from
+	let dragSourceColIdx = $state<number | null>(null);
 
 	function handleDnd(columnIdx: number, type: 'consider' | 'finalize', e: CustomEvent) {
+		if (!$currentProject) return;
 		const items = e.detail.items;
+		const trigger = e.detail.info?.trigger;
 
-		// 1. Update the local reactive state immediately
+		// DRAG_STARTED fires only on the source zone's consider event
+		if (type === 'consider' && trigger === TRIGGERS.DRAG_STARTED) {
+			dragSourceColIdx = columnIdx;
+		}
+
 		columnItems[columnIdx].notes = items;
-		// 2. Persist to store
+
 		if (type === 'finalize') {
-			try {
-				userNotes.update((state) => {
-					const project = state.projects.find((p) => p.id === $currentProject.id);
-					if (project) {
-						project.columns[columnIdx].notes = items;
-					}
-					return state;
-				});
-			} catch {
-				notify({ success: false, message: 'Failed to reorder notes', type: 'error' });
+			// Intra-column reorder: drag started AND ended in the same column → clear sort
+			// Cross-column move: DROPPED_INTO_ANOTHER fires on source (items removed), keep sort
+			if (dragSourceColIdx === columnIdx && trigger === TRIGGERS.DROPPED_INTO_ZONE) {
+				activeSortComparators[columnIdx] = null;
+				activeSortKeys[columnIdx] = null;
+			}
+			dragSourceColIdx = null;
+			const result = dataActions.reorderColumnNotes($currentProject.id, columnIdx, items);
+			if (!result.success) {
+				notify(result);
 			}
 		}
 	}
 
 	// eslint-disable-next-line svelte/prefer-writable-derived
-	let columnItems = $state($currentProject.columns); // ignored because it break dnd if we use $derived.
+	let columnItems = $state($currentProject?.columns ?? []); // ignored because it break dnd if we use $derived.
+
 	$effect(() => {
-		columnItems = $currentProject.columns;
+		if (!$currentProject) return;
+		const cols = $currentProject.columns;
+		const cmps = untrack(() => activeSortComparators);
+		cols.forEach((col, idx) => {
+			const prev = untrack(() => columnItems[idx]);
+			const cmp = cmps[idx];
+			if (!cmp) {
+				if (prev !== col) columnItems[idx] = col;
+			} else if (prev?.notes !== col.notes || prev?.name !== col.name) {
+				columnItems[idx] = { ...col, notes: [...col.notes].sort(cmp) };
+			}
+		});
 	});
+
+	// ── Sort & Filter ──
+	let activeColorFilters: Set<string>[] = $state(
+		$currentProject?.columns.map(() => new Set<string>()) ?? []
+	);
+	let activeSortComparators: (((a: Note, b: Note) => number) | null)[] = $state(
+		$currentProject?.columns.map(() => null) ?? []
+	);
+	let activeSortKeys: (string | null)[] = $state($currentProject?.columns.map(() => null) ?? []);
+
+	function handleColumnSort(columnIdx: number, compareFn: (a: Note, b: Note) => number) {
+		if (!$currentProject) return;
+		activeSortComparators[columnIdx] = compareFn;
+		const sorted = [...columnItems[columnIdx].notes].sort(compareFn);
+		columnItems[columnIdx].notes = sorted;
+		const result = dataActions.reorderColumnNotes($currentProject.id, columnIdx, sorted);
+		if (!result.success) {
+			notify(result);
+		}
+	}
+
+	function notePassesFilter(columnIdx: number, note: Note): boolean {
+		const filters = activeColorFilters[columnIdx];
+		if (!filters || filters.size === 0) return true;
+		return filters.has(note.color);
+	}
 </script>
 
 <NoteMenu
 	bind:isOpen={showCreateNote}
-	note={new Note('', '', '#fab005', new Delta(), $currentProject.id)}
+	note={createEmptyNote({ color: '#fab005', projectId: $currentProject?.id || '' })}
 />
 <!-- Force re-render when project changes to reset dndzone state -->
-{#key $currentProject.id}
+{#key $currentProject?.id}
 	<div class="flex h-full w-full flex-row overflow-hidden">
 		{#each columnItems as column, columnIdx (column.name)}
 			{#if column.specialType === 'jar'}
@@ -64,8 +113,8 @@
 						class="relative flex items-center justify-center border-2 border-dashed border-gray-400 p-16"
 						use:dndzone={{
 							items: columnItems[columnIdx].notes,
-							flipDurationMs: flipDurationMs,
-							dragDisabled: dragDisabled
+							flipDurationMs,
+							dragDisabled
 						}}
 						onconsider={(e) => handleDnd(columnIdx, 'consider', e)}
 						onfinalize={(e) => handleDnd(columnIdx, 'finalize', e)}
@@ -93,32 +142,46 @@
 			{:else}
 				<div class="relative m-2 flex max-h-full w-full flex-col items-center">
 					<span class="mb-2 font-patrick-hand text-7xl font-bold">{column.name}</span>
-					<div
-						class="doodle-border relative w-full flex-1 overflow-y-auto"
-						use:dndzone={{
-							items: columnItems[columnIdx].notes,
-							flipDurationMs: flipDurationMs,
-							dragDisabled: dragDisabled
-						}}
-						onconsider={(e) => handleDnd(columnIdx, 'consider', e)}
-						onfinalize={(e) => handleDnd(columnIdx, 'finalize', e)}
-					>
-						{#each columnItems[columnIdx].notes as note (note.id)}
-							<StickyNote {note} bind:dragDisabled />
-						{/each}
-					</div>
-					{#if column.specialType === 'inbox'}
-						<button
-							class="absolute right-0 bottom-0 m-2 size-15 cursor-pointer rounded-full border border-black bg-transparent p-2"
-							onclick={() => (showCreateNote = true)}
+					<div class="doodle-border relative w-full flex-1 overflow-y-auto">
+						<div class="absolute top-2 right-2 z-10">
+							<SortFilter
+								notes={columnItems[columnIdx].notes}
+								onSort={(cmp) => handleColumnSort(columnIdx, cmp)}
+								onFilterChange={(colors) => {
+									activeColorFilters[columnIdx] = colors;
+								}}
+								bind:activeSortKey={activeSortKeys[columnIdx]}
+							/>
+						</div>
+						<div
+							class="min-h-full"
+							use:dndzone={{
+								items: columnItems[columnIdx].notes,
+								flipDurationMs,
+								dragDisabled
+							}}
+							onconsider={(e) => handleDnd(columnIdx, 'consider', e)}
+							onfinalize={(e) => handleDnd(columnIdx, 'finalize', e)}
 						>
-							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
-								><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path
-									d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z"
-								/></svg
+							{#each columnItems[columnIdx].notes as note (note.id)}
+								<div class:hidden={!notePassesFilter(columnIdx, note)}>
+									<StickyNote {note} bind:dragDisabled />
+								</div>
+							{/each}
+						</div>
+						{#if column.specialType === 'inbox'}
+							<button
+								class="absolute right-0 bottom-0 m-2 size-15 cursor-pointer rounded-full border border-black bg-transparent p-2"
+								onclick={() => (showCreateNote = true)}
 							>
-						</button>
-					{/if}
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
+									><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path
+										d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z"
+									/></svg
+								>
+							</button>
+						{/if}
+					</div>
 				</div>
 			{/if}
 		{/each}

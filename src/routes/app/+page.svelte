@@ -8,10 +8,10 @@
 	import ProjectMenu from '$lib/popups/ProjectMenu.svelte';
 	// stores
 	import { isLoaded } from '$lib/stores/userData';
-	import { userNotes, currentProject, Project } from '$lib/stores/userData';
+	import { projects, currentProject } from '$lib/stores/userData';
+	import { createEmptyProject } from '$lib/types';
 	// external libraries
 	import 'doodle.css/doodle.css';
-	const notes = $derived($userNotes);
 	let showCreateProject = $state(false);
 </script>
 
@@ -25,13 +25,14 @@
 
 <ProjectMenu
 	bind:isOpen={showCreateProject}
-	projectInfo={new Project('', '', 'default', '#495057')}
+	projectInfo={createEmptyProject({ color: '#495057' })}
 />
+
 {#if !$isLoaded}
 	<Loading />
-{:else if notes.projects.length === 0 || $currentProject === undefined}
+{:else if $projects.length === 0 || $currentProject === null}
 	<div
-		class="flex h-screen flex-col items-center justify-center bg-gradient-to-b from-amber-50 to-white px-6"
+		class="flex h-screen flex-col items-center justify-center bg-linear-to-b from-amber-50 to-white px-6"
 	>
 		<div class="doodle-border max-w-2xl bg-white p-12 text-center shadow-xl">
 			<h1 class="mb-4 font-patrick-hand text-6xl font-bold text-gray-900">Let's Get Started! 🎉</h1>
@@ -60,7 +61,7 @@
 		<div class="flex flex-1 flex-row overflow-hidden">
 			<div class="hand-drawn-border doodle-border m-2 w-1/9 overflow-x-clip overflow-y-scroll">
 				<div class="flex max-h-full flex-col items-center text-sm">
-					{#each notes.projects as project (project.id)}
+					{#each $projects as project (project.id)}
 						<ProjectItem {project} />
 					{/each}
 				</div>

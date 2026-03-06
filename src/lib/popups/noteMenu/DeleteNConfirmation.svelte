@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { dataActions } from '$lib/Actions';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
-	import type { Note } from '$lib/stores/userData';
 	import { notify } from '$lib/stores/notificationStore';
+	import type { Note } from '$lib/types';
 
 	let { isOpen = $bindable(false), note }: { isOpen: boolean; note: Note } = $props();
 

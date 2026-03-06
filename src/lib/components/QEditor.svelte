@@ -8,7 +8,7 @@
 
 	// add align text and video options to the toolbar
 	let toolbarOptions = [
-		[{ header: 1 }, { header: 2 }, { align: [] }, 'blockquote', 'code', 'link', 'video'],
+		[{ header: 1 }, { header: 2 }, { align: [] }, 'blockquote', 'code', 'link'],
 		['bold', 'italic', 'underline', 'strike'],
 		[{ list: 'ordered' }, { list: 'bullet' }, { list: 'check' }],
 		['clean']

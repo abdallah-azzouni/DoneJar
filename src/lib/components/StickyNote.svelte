@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { Note } from '$lib/stores/userData';
 	import { textColorFromHex, formatDueDate, isDueDatePast } from '$lib/UiHelper';
 	import { now } from '$lib/stores/timer';
 	import NoteMenu from '$lib/popups/noteMenu/NoteMenu.svelte';
+	import type { Note } from '$lib/types';
 
 	let { note, dragDisabled = $bindable(false) }: { note: Note; dragDisabled: boolean } = $props();
 	let showNoteMenu = $state(false);

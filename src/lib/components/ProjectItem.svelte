@@ -5,10 +5,11 @@
 	import ProjectMenu from '$lib/popups/ProjectMenu.svelte';
 	import { dataActions } from '$lib/Actions';
 	import { textColorFromHex } from '$lib/UiHelper';
-	import { currentProject, type ProjectInterface } from '$lib/stores/userData';
+	import { currentProject } from '$lib/stores/userData';
 	import { notify } from '$lib/stores/notificationStore';
-	let { project }: { project: ProjectInterface } = $props();
+	import type { Project } from '$lib/types';
 
+	let { project }: { project: Project } = $props();
 	let showProjectMenu = $state(false);
 
 	function handleActive(e: MouseEvent) {
@@ -30,7 +31,7 @@
 
 <ProjectMenu bind:isOpen={showProjectMenu} projectInfo={project} />
 <div
-	class="doodle-border relative flex items-center gap-8 {$currentProject.id === project.id
+	class="doodle-border relative flex items-center gap-8 {$currentProject?.id === project.id
 		? ''
 		: 'is-hidden'} cursor-pointer"
 	role="button"
@@ -54,7 +55,7 @@
 			color: {textColorFromHex(project.color)};
 		"
 	>
-		{project.name[0].toUpperCase()}
+		{(project.name?.[0] ?? '?').toUpperCase()}
 	</span>
 
 	<!-- Project Menu -->

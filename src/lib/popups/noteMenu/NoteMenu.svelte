@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { dataActions } from '$lib/Actions';
-	import type { Note } from '$lib/stores/userData';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import DeleteNConfirmation from './DeleteNConfirmation.svelte';
 	import DatePicker from './DatePicker.svelte';
@@ -8,6 +7,7 @@
 	import QEditor from '$lib/components/QEditor.svelte';
 	import { formatDueDate, isDueDatePast } from '$lib/UiHelper';
 	import { notify } from '$lib/stores/notificationStore';
+	import type { Note } from '$lib/types';
 
 	let { isOpen = $bindable(false), note }: { isOpen: boolean; note: Note } = $props();
 
@@ -26,10 +26,16 @@
 	function handleSubmit() {
 		if (workingNote.id === '') {
 			const result = dataActions.createNote(workingNote);
-			if (!result.success) { notify(result); return; }
+			if (!result.success) {
+				notify(result);
+				return;
+			}
 		} else {
 			const result = dataActions.editNote(workingNote);
-			if (!result.success) { notify(result); return; }
+			if (!result.success) {
+				notify(result);
+				return;
+			}
 		}
 		isOpen = false;
 	}
@@ -54,6 +60,7 @@
 				type="text"
 				class="doodle-border w-full text-2xl font-bold outline-none"
 				placeholder="Note title..."
+				maxlength="100"
 				bind:value={workingNote.title}
 				required
 			/>
@@ -84,7 +91,7 @@
 		</form>
 		<div class=" w-0.5 bg-gray-500"></div>
 		<div class="flex w-fit flex-col gap-5 font-patrick-hand text-2xl">
-			<span class="doodle-border">Project: {$currentProject.name}</span>
+			<span class="doodle-border">Project: {$currentProject?.name ?? 'Unknown Project'}</span>
 			<span class="doodle-border flex items-center gap-5"
 				>Color <input type="color" bind:value={workingNote.color} /></span
 			>

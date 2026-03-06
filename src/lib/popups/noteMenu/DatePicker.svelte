@@ -5,7 +5,6 @@
 	import CaretRightIcon from 'phosphor-svelte/lib/CaretRightIcon';
 	import { CalendarDate, getLocalTimeZone, today, type DateValue } from '@internationalized/date';
 	import { untrack } from 'svelte';
-	import { SvelteDate } from 'svelte/reactivity';
 	import './datePicker.css';
 
 	let {
@@ -48,7 +47,7 @@
 			untrack(() => {
 				baseDate = today(tz);
 				if (initialDate) {
-					const d = new SvelteDate(initialDate.timestamp);
+					const d = new Date(initialDate.timestamp);
 					value.timestamp = new CalendarDate(d.getFullYear(), d.getMonth() + 1, d.getDate());
 					value.hasTime = initialDate.hasTime;
 					// Check if time was stored
@@ -81,7 +80,7 @@
 	}
 
 	function toTimestamp(): number {
-		const d = new SvelteDate(value.timestamp.year, value.timestamp.month - 1, value.timestamp.day);
+		const d = new Date(value.timestamp.year, value.timestamp.month - 1, value.timestamp.day);
 		if (value.hasTime) {
 			d.setHours(to24h(hours, period), minutes, 0, 0);
 		}
@@ -220,8 +219,7 @@
 					max="12"
 					bind:value={hours}
 					oninput={() => {
-						if (hours > 12) hours = 12;
-						if (hours < 1) hours = 1;
+						hours = Math.max(1, Math.min(12, Math.floor(hours) || 1));
 					}}
 					class="bg-background-alt border-dark-10 text-foreground w-14 rounded-md border px-2 py-1.5 text-center text-sm"
 					placeholder="HH"
@@ -233,8 +231,7 @@
 					max="59"
 					bind:value={minutes}
 					oninput={() => {
-						if (minutes > 59) minutes = 59;
-						if (minutes < 0) minutes = 0;
+						minutes = Math.max(0, Math.min(59, Math.floor(minutes) || 0));
 					}}
 					class="bg-background-alt border-dark-10 text-foreground w-14 rounded-md border px-2 py-1.5 text-center text-sm"
 					placeholder="MM"

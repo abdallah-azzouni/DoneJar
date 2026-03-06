@@ -1,7 +1,8 @@
 <script>
 	import paper from '$lib/assets/elements/paper.png';
 
-	export let color = 'bg-black-300';
+	let { color = '#ffffff' } = $props();
+
 	let deg = Math.floor(Math.random() * 360);
 </script>
 
@@ -18,8 +19,8 @@
 		background-color: {color};
 		transform: rotate({deg}deg);
 
-      -webkit-mask-image: url(src/lib/assets/elements/paper.png);
-    mask-image: url(src/lib/assets/elements/paper.png);
+      -webkit-mask-image: url({paper});
+    mask-image: url({paper});
     mask-repeat: no-repeat; 
     mask-size: contain;
   "

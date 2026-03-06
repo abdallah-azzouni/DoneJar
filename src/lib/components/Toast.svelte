@@ -5,7 +5,7 @@
 {#if $notification}
 	<div class="toast {$notification.type}">
 		<span>{$notification.message}</span>
-		<button onclick={() => notification.set(null)}>✕</button>
+		<button onclick={() => notification.set(null)} aria-label="Dismiss">✕</button>
 	</div>
 {/if}
 

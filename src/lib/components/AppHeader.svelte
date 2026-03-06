@@ -3,10 +3,7 @@
 	import menu from '$lib/assets/icons/menu.svg';
 	import { textColorFromHex } from '$lib/UiHelper';
 
-	export let onCreateProject: () => void;
-
-	export let currentProjectName: string;
-	export let currentProjectColor: string;
+	let { onCreateProject, currentProjectName, currentProjectColor } = $props();
 </script>
 
 <header class="doodle-border m-2 px-4">
@@ -16,8 +13,9 @@
 				style="background-color: {currentProjectColor}"
 				class=" flex size-14 items-center justify-center rounded-full border border-black"
 			>
-				<span class="text-3xl font-bold" style="color: {textColorFromHex(currentProjectColor)};"
-					>{currentProjectName[0].toUpperCase()}</span
+				<span class="text-3xl font-bold" style="color: {textColorFromHex(currentProjectColor)};">
+					<!-- If currentProjectName is empty, show '?' -->
+					{(currentProjectName?.[0] ?? '?').toUpperCase()}</span
 				>
 			</div>
 			<h1 class="line-clamp-1 w-[100vh] text-3xl font-bold" style="overflow-wrap: break-word;">

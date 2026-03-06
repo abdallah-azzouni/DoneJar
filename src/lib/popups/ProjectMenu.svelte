@@ -1,14 +1,12 @@
 <script lang="ts">
 	import { dataActions } from '$lib/Actions';
-	import { type ProjectInterface, type Column } from '$lib/stores/userData';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import DeletePConfirmation from './DeletePConfirmation.svelte';
 	import { notify } from '$lib/stores/notificationStore';
+	import type { Column, Project } from '$lib/types';
 
-	let {
-		isOpen = $bindable(false),
-		projectInfo
-	}: { isOpen: boolean; projectInfo: ProjectInterface } = $props();
+	let { isOpen = $bindable(false), projectInfo }: { isOpen: boolean; projectInfo: Project } =
+		$props();
 
 	let newProject = $state({ ...projectInfo });
 	let customColumns: Column[] = $state([]);
@@ -134,6 +132,7 @@
 				class="w-full rounded-md border border-gray-500 p-1.5 focus:outline-none"
 				required
 				placeholder="Project Name..."
+				maxlength="100"
 			/>
 		</div>
 		<span><b>Color</b></span>

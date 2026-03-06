@@ -6,6 +6,7 @@
 	import Board from '$lib/components/board.svelte';
 	// popups
 	import ProjectMenu from '$lib/popups/ProjectMenu.svelte';
+	import CorruptDataDialog from '$lib/popups/CorruptDataDialog.svelte';
 	// stores
 	import { isLoaded } from '$lib/stores/userData';
 	import { projects, currentProject } from '$lib/stores/userData';
@@ -27,6 +28,8 @@
 	bind:isOpen={showCreateProject}
 	projectInfo={createEmptyProject({ color: '#495057' })}
 />
+
+<CorruptDataDialog />
 
 {#if !$isLoaded}
 	<Loading />

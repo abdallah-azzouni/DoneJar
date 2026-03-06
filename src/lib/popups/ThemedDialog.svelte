@@ -4,6 +4,7 @@
 		h = 'max-h-3/4',
 		mt = 'mt-[5%]',
 		isOpen = $bindable(false),
+		cancelable = true,
 		children
 	} = $props();
 
@@ -25,6 +26,7 @@
 <dialog
 	bind:this={dialog}
 	onclose={closeDialog}
+	oncancel={(e) => { if (!cancelable) e.preventDefault(); }}
 	class="{mt} {h} {w} justify-self-center rounded-2xl bg-white p-6 shadow-lg"
 >
 	<div class="flex h-full flex-col">

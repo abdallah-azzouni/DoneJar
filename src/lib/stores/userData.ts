@@ -9,6 +9,13 @@ export const isLoaded = writable(browser);
 const defaultProjects = <Project[]>[];
 const defaultActiveProjectId = '';
 
+/** Set when persisted project data fails validation or JSON parsing. */
+export const corruptDataState = writable<{
+	detected: boolean;
+	/** Raw JSON snapshot captured before the store resets, for user backup download. */
+	rawSnapshot: string | null;
+}>({ detected: false, rawSnapshot: null });
+
 //Validation function to check if data corrupted
 function isValidData(val: unknown): boolean {
 	try {
@@ -80,10 +87,9 @@ function isValidData(val: unknown): boolean {
 export const projects = persisted('projects', defaultProjects, {
 	beforeRead: (val) => {
 		if (!isValidData(val)) {
-			notify({
-				success: false,
-				message: 'Saved data is corrupted. Data has been reset.',
-				type: 'error'
+			corruptDataState.set({
+				detected: true,
+				rawSnapshot: JSON.stringify(val, null, 2)
 			});
 			return defaultProjects;
 		}
@@ -97,11 +103,13 @@ export const projects = persisted('projects', defaultProjects, {
 		});
 	},
 	onParseError: () => {
-		notify({
-			success: false,
-			message: 'Saved data is corrupted. Data has been reset.',
-			type: 'error'
-		});
+		if (browser) {
+			// Read from localStorage now — before the persisted store writes the default back.
+			corruptDataState.set({
+				detected: true,
+				rawSnapshot: localStorage.getItem('projects')
+			});
+		}
 	}
 });
 

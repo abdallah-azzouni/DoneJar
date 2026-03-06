@@ -1,107 +1,91 @@
 import { browser } from '$app/environment';
 import { persisted } from 'svelte-persisted-store';
-import { derived } from 'svelte/store';
-import Delta from 'quill-delta';
+import { derived, writable } from 'svelte/store';
 import { notify } from './notificationStore';
+import type { Project } from '$lib/types';
 
-export const isLoaded = persisted('isLoaded', false);
-export interface NoteInterface {
-	id: string;
-	title: string;
-	color: string;
-	description: Delta;
-	projectId: string;
-	dueDate: { timestamp: number; hasTime: boolean } | null;
-	createdAt: number;
-	updatedAt: number;
-}
+export const isLoaded = writable(browser);
 
-export class Note implements NoteInterface {
-	id: string;
-	title: string;
-	color: string;
-	description: Delta;
-	projectId: string;
-	dueDate: { timestamp: number; hasTime: boolean } | null;
-	createdAt: number;
-	updatedAt: number;
-	constructor(id = '', title = '', color = '', description = new Delta(), projectId = '') {
-		this.id = id;
-		this.title = title;
-		this.color = color;
-		this.description = description;
-		this.projectId = projectId;
-		this.dueDate = null;
-		this.createdAt = 0;
-		this.updatedAt = 0;
+const defaultProjects = <Project[]>[];
+const defaultActiveProjectId = '';
+
+//Validation function to check if data corrupted
+function isValidData(val: unknown): boolean {
+	try {
+		if (val === null || val === undefined) return false;
+		if (!Array.isArray(val)) return false;
+
+		for (const project of val) {
+			if (typeof project !== 'object' || project === null) return false;
+			if (typeof project.id !== 'string') return false;
+			if (typeof project.name !== 'string') return false;
+			if (!['default', 'blank', 'custom'].includes(project.type)) return false;
+			if (typeof project.color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(project.color))
+				return false;
+			if (typeof project.createdAt !== 'number') return false;
+			if (typeof project.updatedAt !== 'number') return false;
+			if (!Array.isArray(project.columns)) return false;
+
+			for (const column of project.columns) {
+				if (typeof column !== 'object' || column === null) return false;
+				if (typeof column.name !== 'string') return false;
+				if (!Array.isArray(column.notes)) return false;
+				if (
+					column.specialType !== undefined &&
+					column.specialType !== null &&
+					column.specialType !== 'jar' &&
+					column.specialType !== 'inbox'
+				)
+					return false;
+
+				for (const note of column.notes) {
+					if (typeof note !== 'object' || note === null) return false;
+					if (typeof note.id !== 'string') return false;
+					if (typeof note.title !== 'string') return false;
+					if (typeof note.color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(note.color)) return false;
+					if (typeof note.projectId !== 'string') return false;
+					if (typeof note.createdAt !== 'number') return false;
+					if (typeof note.updatedAt !== 'number') return false;
+
+					// Validate description is a Delta-like object with ops array
+					if (typeof note.description !== 'object' || note.description === null) return false;
+					if (!Array.isArray(note.description.ops)) return false;
+
+					for (const op of note.description.ops) {
+						if (typeof op !== 'object' || op === null) return false;
+						if (
+							op.insert !== undefined &&
+							typeof op.insert !== 'string' &&
+							typeof op.insert !== 'object'
+						)
+							return false;
+					}
+
+					// Validate dueDate
+					if (note.dueDate !== null) {
+						if (typeof note.dueDate !== 'object') return false;
+						if (typeof note.dueDate.timestamp !== 'number') return false;
+						if (typeof note.dueDate.hasTime !== 'boolean') return false;
+					}
+				}
+			}
+		}
+
+		return true;
+	} catch {
+		return false;
 	}
 }
 
-export type ColumnSpecialType = 'jar' | 'inbox' | null;
-
-export interface Column {
-	name: string;
-	notes: Note[];
-	specialType?: ColumnSpecialType;
-}
-
-export interface ProjectInterface {
-	id: string;
-	name: string;
-	type: 'default' | 'blank' | 'custom';
-	color: string;
-	columns: Column[];
-	createdAt: number;
-	updatedAt: number;
-}
-
-export class Project implements ProjectInterface {
-	id: string;
-	name: string;
-	type: 'default' | 'blank' | 'custom';
-	color: string;
-	columns: Column[];
-	createdAt: number;
-	updatedAt: number;
-	constructor(
-		id = '',
-		name = '',
-		type: 'default' | 'blank' | 'custom' = 'default',
-		color = '',
-		columns: Column[] = []
-	) {
-		this.id = id;
-		this.name = name;
-		this.type = type;
-		this.color = color;
-		this.columns = columns;
-		this.createdAt = 0;
-		this.updatedAt = 0;
-	}
-}
-
-const defaultUserNotes = {
-	activeProjectId: <string | null>'',
-	projects: <ProjectInterface[]>[]
-};
-
-function isValidUserNotes(val: unknown): val is typeof defaultUserNotes {
-	if (typeof val !== 'object' || val === null) return false;
-	const obj = val as Record<string, unknown>;
-	if (!Array.isArray(obj.projects)) return false;
-	if (obj.activeProjectId !== null && typeof obj.activeProjectId !== 'string') return false;
-	return true;
-}
-
-export const userNotes = persisted('userNotes', defaultUserNotes, {
+export const projects = persisted('projects', defaultProjects, {
 	beforeRead: (val) => {
-		if (!isValidUserNotes(val)) {
+		if (!isValidData(val)) {
 			notify({
 				success: false,
 				message: 'Saved data is corrupted. Data has been reset.',
 				type: 'error'
 			});
-			return defaultUserNotes;
+			return defaultProjects;
 		}
 		return val;
 	},
@@ -121,15 +105,9 @@ export const userNotes = persisted('userNotes', defaultUserNotes, {
 	}
 });
 
-export const currentProject = derived(
-	userNotes,
-	($un) => $un.projects.find((p) => p.id === $un.activeProjectId)!
-);
+export const activeProjectId = persisted('activeProjectId', defaultActiveProjectId);
 
-if (browser) {
-	if (document.readyState === 'complete') {
-		isLoaded.set(true);
-	} else {
-		window.addEventListener('load', () => isLoaded.set(true));
-	}
-}
+export const currentProject = derived(
+	[projects, activeProjectId],
+	([$projects, $activeProjectId]) => $projects.find((p) => p.id === $activeProjectId) || null
+);

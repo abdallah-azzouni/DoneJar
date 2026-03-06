@@ -1,7 +1,8 @@
-import { userNotes, type NoteInterface, type Column } from '$lib/stores/userData';
+import { projects, activeProjectId } from '$lib/stores/userData';
 import { nanoid } from 'nanoid';
-
-type ActionResult = { success: boolean; message: string; type: 'error' | 'success' };
+import { get } from 'svelte/store';
+import Delta from 'quill-delta';
+import type { ActionResult, Column, Note } from '$lib/types';
 
 export const dataActions = {
 	/*
@@ -16,6 +17,15 @@ export const dataActions = {
 		color: string,
 		customColumns?: Column[]
 	): ActionResult => {
+		if (name.length > 100)
+			return {
+				success: false,
+				message: 'Project name cannot be longer than 100 characters',
+				type: 'error'
+			};
+		if (name.trim().length === 0) {
+			return { success: false, message: 'Project name cannot be empty', type: 'error' };
+		}
 		let newColumns: Column[];
 		if (type === 'default') {
 			newColumns = [
@@ -52,11 +62,8 @@ export const dataActions = {
 				createdAt: Date.now(),
 				updatedAt: Date.now()
 			};
-			userNotes.update((state) => ({
-				...state,
-				projects: [...state.projects, newProject],
-				activeProjectId: newProject.id
-			}));
+			projects.update((state) => [...state, newProject]);
+			activeProjectId.set(newProject.id);
 		} catch (error) {
 			return { success: false, message: `Error during project creation: ${error}`, type: 'error' };
 		}
@@ -66,10 +73,7 @@ export const dataActions = {
 
 	setActiveProject: (projectId: string): ActionResult => {
 		try {
-			userNotes.update((state) => ({
-				...state,
-				activeProjectId: projectId
-			}));
+			activeProjectId.set(projectId);
 		} catch (error) {
 			return { success: false, message: `Error setting active project: ${error}`, type: 'error' };
 		}
@@ -82,15 +86,24 @@ export const dataActions = {
 		@returns void
 	*/
 	editProject: (projectInfo: { name: string; color: string; id: string }): ActionResult => {
+		if (projectInfo.name.length > 100)
+			return {
+				success: false,
+				message: 'Project name cannot be longer than 100 characters',
+				type: 'error'
+			};
+		if (projectInfo.name.trim().length === 0) {
+			return { success: false, message: 'Project name cannot be empty', type: 'error' };
+		}
+
 		try {
-			userNotes.update((state) => ({
-				...state,
-				projects: state.projects.map((p) =>
+			projects.update((state) =>
+				state.map((p) =>
 					p.id === projectInfo.id
 						? { ...p, name: projectInfo.name, color: projectInfo.color, updatedAt: Date.now() }
 						: p
 				)
-			}));
+			);
 		} catch (error) {
 			return { success: false, message: `Error editing project: ${error}`, type: 'error' };
 		}
@@ -104,33 +117,22 @@ export const dataActions = {
 	*/
 	deleteProject: (projectId: string): ActionResult => {
 		try {
-			userNotes.update((state) => {
-				const { projects, activeProjectId } = state;
+			const currentProjects = get(projects);
+			const currentActiveId = get(activeProjectId);
 
-				// State 1: Not deleting the active project
-				if (projectId !== activeProjectId) {
-					return {
-						...state,
-						projects: projects.filter((p) => p.id !== projectId)
-					};
-				}
+			const deleteIndex = currentProjects.findIndex((p) => p.id === projectId);
+			const updatedProjects = currentProjects.filter((p) => p.id !== projectId);
+			projects.set(updatedProjects);
 
-				// State 2: Deleting the active project
-				const deleteIndex = projects.findIndex((p) => p.id === projectId);
-				const updatedProjects = projects.filter((p) => p.id !== projectId);
-
-				let newActiveId = null;
+			// Update active project if we deleted the active one
+			if (projectId === currentActiveId) {
+				let newActiveId = '';
 				if (updatedProjects.length > 0) {
-					const nextIndex = Math.min(deleteIndex, updatedProjects.length - 1); // Prevent going out of bounds
+					const nextIndex = Math.min(deleteIndex, updatedProjects.length - 1);
 					newActiveId = updatedProjects[nextIndex].id;
 				}
-
-				return {
-					...state,
-					projects: updatedProjects,
-					activeProjectId: newActiveId
-				};
-			});
+				activeProjectId.set(newActiveId);
+			}
 		} catch (error) {
 			return { success: false, message: `Error deleting project: ${error}`, type: 'error' };
 		}
@@ -144,7 +146,16 @@ export const dataActions = {
 		@param color: The color of the note
 		@returns void
 	*/
-	createNote: (note: NoteInterface, columnIndex: number = 0): ActionResult => {
+	createNote: (note: Note, columnIndex: number = 0): ActionResult => {
+		if (note.title.length > 100)
+			return {
+				success: false,
+				message: 'Note title cannot be longer than 100 characters',
+				type: 'error'
+			};
+		if (note.title.trim().length === 0) {
+			return { success: false, message: 'Note title cannot be empty', type: 'error' };
+		}
 		try {
 			const newNote = {
 				id: nanoid(),
@@ -156,9 +167,8 @@ export const dataActions = {
 				createdAt: Date.now(),
 				updatedAt: Date.now()
 			};
-			userNotes.update((state) => ({
-				...state,
-				projects: state.projects.map((p) =>
+			projects.update((state) =>
+				state.map((p) =>
 					p.id === note.projectId
 						? {
 								...p,
@@ -169,7 +179,7 @@ export const dataActions = {
 							}
 						: p
 				)
-			}));
+			);
 		} catch (error) {
 			return { success: false, message: `Error creating note: ${error}`, type: 'error' };
 		}
@@ -181,27 +191,44 @@ export const dataActions = {
 		@param note: The new note data
 		@returns void
 	*/
-	editNote: (note: NoteInterface): ActionResult => {
+	editNote: (note: Note): ActionResult => {
+		// use updated to avoid mutation.
+		const updated = {
+			...note,
+			dueDate: note.dueDate ? { ...note.dueDate } : null,
+			description: new Delta(note.description.ops),
+			updatedAt: Date.now(),
+			createdAt: note.createdAt || Date.now()
+		};
+		if (updated.title.length > 100) {
+			return {
+				success: false,
+				message: 'Note title cannot be longer than 100 characters',
+				type: 'error'
+			};
+		}
+		if (note.title.trim().length === 0) {
+			return { success: false, message: 'Note title cannot be empty', type: 'error' };
+		}
 		try {
-			if (!note.createdAt) {
-				note.createdAt = Date.now();
+			if (!updated.createdAt) {
+				updated.createdAt = Date.now();
 			}
-			note.updatedAt = Date.now();
-			userNotes.update((state) => ({
-				...state,
-				projects: state.projects.map((project) => {
-					if (project.id !== note.projectId) return project;
+			updated.updatedAt = Date.now();
+			projects.update((state) =>
+				state.map((project) => {
+					if (project.id !== updated.projectId) return project;
 
 					return {
 						...project,
 						updatedAt: Date.now(),
 						columns: project.columns.map((col) => ({
 							...col,
-							notes: col.notes.map((n) => (n.id === note.id ? note : n))
+							notes: col.notes.map((n: Note) => (n.id === updated.id ? updated : n))
 						}))
 					};
 				})
-			}));
+			);
 		} catch (error) {
 			return { success: false, message: `Error editing note: ${error}`, type: 'error' };
 		}
@@ -216,23 +243,41 @@ export const dataActions = {
 	*/
 	deleteNote: (noteId: string, projectId: string): ActionResult => {
 		try {
-			userNotes.update((state) => ({
-				...state,
-				projects: state.projects.map((project) => {
+			projects.update((state) =>
+				state.map((project) => {
 					if (project.id !== projectId) return project;
 					return {
 						...project,
 						updatedAt: Date.now(),
 						columns: project.columns.map((col) => ({
 							...col,
-							notes: col.notes.filter((n) => n.id !== noteId)
+							notes: col.notes.filter((n: Note) => n.id !== noteId)
 						}))
 					};
 				})
-			}));
+			);
 		} catch (error) {
 			return { success: false, message: `Error deleting note: ${error}`, type: 'error' };
 		}
 		return { success: true, message: 'Note deleted successfully', type: 'success' };
+	},
+
+	reorderColumnNotes: (projectId: string, columnIndex: number, notes: Note[]): ActionResult => {
+		try {
+			projects.update((state) =>
+				state.map((p) =>
+					p.id === projectId
+						? {
+								...p,
+								updatedAt: Date.now(),
+								columns: p.columns.map((col, i) => (i === columnIndex ? { ...col, notes } : col))
+							}
+						: p
+				)
+			);
+		} catch (error) {
+			return { success: false, message: `Error reordering notes: ${error}`, type: 'error' };
+		}
+		return { success: true, message: 'Notes reordered successfully', type: 'success' };
 	}
 };

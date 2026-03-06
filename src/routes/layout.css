@@ -20,6 +20,26 @@
 }
 
 body {
-	min-width: 1200px;
 	min-height: 500px;
+}
+
+/* Mobile/small-screen message */
+.desktop-only-notice {
+	display: none;
+}
+
+@media (max-width: 1024px) {
+	.desktop-only-notice {
+		display: flex;
+		position: fixed;
+		inset: 0;
+		z-index: 99999;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 1rem;
+		background: linear-gradient(to bottom, #fffbeb, #ffffff);
+		text-align: center;
+		padding: 2rem;
+	}
 }

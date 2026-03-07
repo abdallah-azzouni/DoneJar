@@ -26,7 +26,9 @@
 <dialog
 	bind:this={dialog}
 	onclose={closeDialog}
-	oncancel={(e) => { if (!cancelable) e.preventDefault(); }}
+	oncancel={(e) => {
+		if (!cancelable) e.preventDefault();
+	}}
 	class="{mt} {h} {w} justify-self-center rounded-2xl bg-white p-6 shadow-lg"
 >
 	<div class="flex h-full flex-col">

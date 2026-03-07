@@ -2,14 +2,7 @@
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import { corruptDataState, projects, activeProjectId } from '$lib/stores/userData';
 
-	// Mirror the detected flag into local state so ThemedDialog can bind to it.
-	// cancelable=false on ThemedDialog prevents Escape-key dismissal the user
-	// must make an explicit choice before the app continues.
-	let isOpen = $state(false);
-
-	$effect(() => {
-		isOpen = $corruptDataState.detected;
-	});
+	let isOpen = $derived($corruptDataState.detected);
 
 	function downloadBackup() {
 		const snapshot = $corruptDataState.rawSnapshot;

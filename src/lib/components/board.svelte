@@ -52,7 +52,7 @@
 		}
 	}
 
-	let columnItems = $state($currentProject?.columns ?? []); // ignored because it break dnd if we use $derived.
+	let columnItems = $state($currentProject?.columns ?? []);
 
 	$effect(() => {
 		if (!$currentProject) return;
@@ -139,10 +139,15 @@
 					</div>
 				</div>
 			{:else}
-				<div class="relative m-2 flex max-h-full w-full flex-col items-center">
+				<div
+					class=" relative m-2 flex max-h-full flex-col items-center {$currentProject?.type ===
+						'default' && column.specialType === 'inbox'
+						? 'w-6/9'
+						: 'w-3/9'}"
+				>
 					<span class="mb-2 font-patrick-hand text-7xl font-bold">{column.name}</span>
-					<div class="doodle-border relative w-full flex-1 overflow-y-auto">
-						<div class="absolute top-2 right-2 z-10">
+					<div class="doodle-border w-full flex-1 overflow-y-auto">
+						<div class="absolute top-22 right-4 z-10">
 							<SortFilter
 								notes={columnItems[columnIdx].notes}
 								onSort={(cmp) => handleColumnSort(columnIdx, cmp)}
@@ -153,7 +158,7 @@
 							/>
 						</div>
 						<div
-							class="min-h-full"
+							class="min-h-full w-full p-4"
 							use:dndzone={{
 								items: columnItems[columnIdx].notes,
 								flipDurationMs,

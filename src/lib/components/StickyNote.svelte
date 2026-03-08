@@ -8,8 +8,14 @@
 	let showNoteMenu = $state(false);
 
 	let infoColor = $derived(
-		note.dueDate ? (isDueDatePast(note.dueDate, $now) ? '#8b0000' : '#006400') : '#FFFFFF'
-	); // Default white, Dark red for overdue, Dark green for upcoming
+		note.priority === 'high'
+			? '#dc2626'
+			: note.priority === 'medium'
+				? '#eab308'
+				: note.priority === 'low'
+					? '#3b82f6'
+					: '#ffffff'
+	); // Default white, red for high, yellow for medium, blue for low priority
 
 	$effect(() => {
 		dragDisabled = showNoteMenu; // Disable dragging when menu is open
@@ -74,8 +80,12 @@
 				<foreignObject x="20" y="20" width="170" height="190">
 					<div class="flex h-full items-end justify-start" xmlns="http://www.w3.org/1999/xhtml">
 						<span
-							class="line-clamp-1 font-patrick-hand text-2xl"
-							style="color: {textColorFromHex(note.color)}"
+							class="line-clamp-1 font-patrick-hand text-2xl decoration-2"
+							style="color: {textColorFromHex(
+								note.color
+							)}; line-height:1; text-decoration-line: {isDueDatePast(note.dueDate, $now)
+								? 'line-through'
+								: 'none'}; text-decoration-color: {textColorFromHex(note.color)};"
 						>
 							{formatDueDate(note.dueDate)}
 						</span>

@@ -164,6 +164,7 @@ export const dataActions = {
 				projectId: note.projectId,
 				description: note.description,
 				dueDate: note.dueDate,
+				priority: note.priority,
 				createdAt: Date.now(),
 				updatedAt: Date.now()
 			};

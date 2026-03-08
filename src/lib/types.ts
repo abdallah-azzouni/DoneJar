@@ -9,6 +9,7 @@ export type Note = {
 	description: Delta;
 	projectId: string;
 	dueDate: { timestamp: number; hasTime: boolean } | null;
+	priority: 'low' | 'medium' | 'high' | null;
 	createdAt: number;
 	updatedAt: number;
 };
@@ -21,6 +22,7 @@ export function createEmptyNote({ color = '', projectId = '' }): Note {
 		description: new Delta(),
 		projectId: projectId,
 		dueDate: null,
+		priority: null,
 		createdAt: 0,
 		updatedAt: 0
 	};

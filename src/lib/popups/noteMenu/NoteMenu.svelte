@@ -110,6 +110,26 @@
 					Date
 				{/if}
 			</button>
+			<div class="doodle-border flex w-fit items-center gap-5 font-patrick-hand text-2xl">
+				<select
+					name="Priority"
+					id=""
+					bind:value={workingNote.priority}
+					class="rounded-md border border-gray-300 bg-white px-2 py-1 {workingNote.priority ===
+					'low'
+						? 'text-blue-500'
+						: workingNote.priority === 'medium'
+							? 'text-yellow-500'
+							: workingNote.priority === 'high'
+								? 'text-red-500'
+								: ''}"
+				>
+					<option value={null}>No Priority</option>
+					<option value="low">Low Priority</option>
+					<option value="medium">Medium Priority</option>
+					<option value="high">High Priority</option>
+				</select>
+			</div>
 			<button
 				class="mt-auto size-fit rounded-2xl bg-red-700 px-10 py-4 font-bold text-white"
 				class:hidden={workingNote.id === ''}

@@ -138,7 +138,7 @@
 	];
 </script>
 
-<ThemedDialog bind:isOpen w="w-1/2">
+<ThemedDialog bind:isOpen w="">
 	<div
 		class="border-dark-10 bg-background-alt shadow-card rounded-15px mt-6 flex max-w-81 flex-col gap-4 border p-5.5"
 	>

@@ -70,8 +70,9 @@
 	});
 
 	// ── Sort & Filter ──
-	let activeColorFilters: Set<string>[] = $state(
-		$currentProject?.columns.map(() => new Set<string>()) ?? []
+	// per-column modular filters: record of filterKey -> Set<string>
+	let activeFilters: Record<string, Set<string>>[] = $state(
+		$currentProject?.columns.map(() => ({}) as Record<string, Set<string>>) ?? []
 	);
 	let activeSortComparators: (((a: Note, b: Note) => number) | null)[] = $state(
 		$currentProject?.columns.map(() => null) ?? []
@@ -90,9 +91,21 @@
 	}
 
 	function notePassesFilter(columnIdx: number, note: Note): boolean {
-		const filters = activeColorFilters[columnIdx];
-		if (!filters || filters.size === 0) return true;
-		return filters.has(note.color);
+		const filters = activeFilters[columnIdx] || {};
+		for (const [key, set] of Object.entries(filters)) {
+			if (!set || set.size === 0) continue;
+			if (key === 'color') {
+				if (!set.has(note.color)) return false;
+			} else if (key === 'priority') {
+				if (!set.has(note.priority || '')) return false;
+			} else {
+				const keyK = key as keyof Note;
+				const val = note[keyK];
+				if (val === undefined) continue;
+				if (!set.has(String(val))) return false;
+			}
+		}
+		return true;
 	}
 </script>
 
@@ -151,8 +164,8 @@
 							<SortFilter
 								notes={columnItems[columnIdx].notes}
 								onSort={(cmp) => handleColumnSort(columnIdx, cmp)}
-								onFilterChange={(colors) => {
-									activeColorFilters[columnIdx] = colors;
+								onFiltersChange={(filters) => {
+									activeFilters[columnIdx] = filters;
 								}}
 								bind:activeSortKey={activeSortKeys[columnIdx]}
 							/>

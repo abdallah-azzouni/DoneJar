@@ -25,6 +25,19 @@
 				return a.dueDate.timestamp - b.dueDate.timestamp;
 			}
 		},
+		{
+			key: 'priority',
+			label: 'Priority',
+			compare: (a, b) => {
+				const priorityValue = (note: Note) => {
+					if (note.priority === 'high') return 3;
+					if (note.priority === 'medium') return 2;
+					if (note.priority === 'low') return 1;
+					return 0; // No priority
+				};
+				return priorityValue(b) - priorityValue(a); // Higher priority first
+			}
+		},
 		{ key: 'title-az', label: 'Title A → Z', compare: (a, b) => a.title.localeCompare(b.title) },
 		{ key: 'title-za', label: 'Title Z → A', compare: (a, b) => b.title.localeCompare(a.title) }
 	];
@@ -34,12 +47,12 @@
 	let {
 		notes,
 		onSort,
-		onFilterChange,
+		onFiltersChange,
 		activeSortKey = $bindable<string | null>(null)
 	}: {
 		notes: Note[];
 		onSort: (compareFn: (a: Note, b: Note) => number) => void;
-		onFilterChange: (activeColors: Set<string>) => void;
+		onFiltersChange?: (filters: Record<string, Set<string>>) => void;
 		activeSortKey?: string | null;
 	} = $props();
 
@@ -47,17 +60,39 @@
 
 	let isOpen = $state(false);
 	let colorFilters = new SvelteSet<string>();
+	let priorityFilters = new SvelteSet<string>();
 	let panelEl: HTMLDivElement | undefined = $state();
 
-	// Unique colors present in this column's notes
-	let uniqueColors = $derived([...new Set(notes.map((n) => n.color))]);
+	// Filters collection (modular). Each filter exposes a getOptions(), set, and toggle handler.
+	const filters = [
+		{
+			key: 'color',
+			label: 'Filter by color',
+			type: 'swatch',
+			getOptions: () => [...new Set(notes.map((n) => n.color))].filter(Boolean),
+			set: colorFilters,
+			toggle: (c: string) => toggleColor(c)
+		},
+		{
+			key: 'priority',
+			label: 'Filter by priority',
+			type: 'list',
+			getOptions: () => ['low', 'medium', 'high'],
+			set: priorityFilters,
+			toggle: (p: string) => togglePriority(p)
+		}
+	];
 
 	// Whether any sort or filter is active
-	let hasActive = $derived(activeSortKey !== null || colorFilters.size > 0);
+	let hasActive = $derived(activeSortKey !== null || filters.some((f) => f.set.size > 0));
 
+	// Callbacks: call the modular `onFiltersChange` with the record of active filter sets.
 	$effect(() => {
-		const filters = colorFilters;
-		untrack(() => onFilterChange(filters));
+		const activeRecord: Record<string, Set<string>> = {};
+		for (const f of filters) activeRecord[f.key] = f.set;
+		untrack(() => {
+			if (typeof onFiltersChange === 'function') onFiltersChange(activeRecord);
+		});
 	});
 
 	// ═══ Handlers ═══
@@ -72,9 +107,14 @@
 		else colorFilters.add(color);
 	}
 
+	function togglePriority(priority: string) {
+		if (priorityFilters.has(priority)) priorityFilters.delete(priority);
+		else priorityFilters.add(priority);
+	}
+
 	function clearAll() {
 		activeSortKey = null;
-		colorFilters.clear();
+		for (const f of filters) f.set.clear();
 	}
 
 	function handleClickOutside(e: MouseEvent) {
@@ -126,24 +166,40 @@
 
 			<hr class="my-2 border-gray-300" />
 
-			<!-- ─── Filter by color ─── -->
-			<span class="text-xs font-bold tracking-widest text-gray-400 uppercase">Filter by color</span>
-			{#if uniqueColors.length > 0}
-				<div class="mt-1 flex flex-wrap gap-2">
-					{#each uniqueColors as color (color)}
-						<button
-							class="size-7 rounded-full border-2 transition-transform
-								{colorFilters.has(color) ? 'scale-110 border-black' : 'border-gray-300 hover:border-gray-400'}"
-							style="background-color: {color}"
-							onclick={() => toggleColor(color)}
-							title="Toggle {color}"
-						></button>
-					{/each}
-				</div>
-			{:else}
-				<p class="mt-1 text-sm text-gray-400">No notes yet</p>
-			{/if}
-
+			<!-- ─── Modular Filters ─── -->
+			{#each filters as filter (filter.key)}
+				<span class="text-xs font-bold tracking-widest text-gray-400 uppercase">{filter.label}</span
+				>
+				{#if filter.getOptions().length > 0}
+					<div class="mt-1 {filter.type === 'swatch' ? 'flex flex-wrap gap-2' : 'flex flex-col'}">
+						{#if filter.type === 'swatch'}
+							{#each filter.getOptions() as opt (opt)}
+								<button
+									class="size-7 rounded-full border-2 transition-transform
+										{filter.set.has(opt) ? 'scale-110 border-black' : 'border-gray-300 hover:border-gray-400'}"
+									style="background-color: {opt}"
+									onclick={() => filter.toggle(opt)}
+									title="Toggle {opt}"
+								></button>
+							{/each}
+						{:else}
+							{#each filter.getOptions() as opt (opt)}
+								<button
+									class="rounded px-2 py-1 text-left text-lg
+										{filter.set.has(opt) ? 'bg-gray-200 font-bold' : 'hover:bg-gray-100'}"
+									onclick={() => filter.toggle(opt)}
+									role="menuitem"
+								>
+									{opt.charAt(0).toUpperCase() + opt.slice(1)}
+								</button>
+							{/each}
+						{/if}
+					</div>
+				{:else}
+					<p class="mt-1 text-sm text-gray-400">No notes yet</p>
+				{/if}
+				<hr class="my-2 border-gray-300" />
+			{/each}
 			<!-- ─── Clear ─── -->
 			{#if hasActive}
 				<hr class="my-2 border-gray-300" />

@@ -10,13 +10,13 @@ const ERROR_DURATION = 5000; // 5 seconds
 
 export function notify(result: ActionResult) {
 	if (timer) clearTimeout(timer);
-	if (!result.success && result.type === 'error') {
+	if (result.type === 'error') {
 		notification.set({ message: result.message, type: 'error' });
 		timer = setTimeout(() => {
 			notification.set(null);
 			timer = null;
 		}, ERROR_DURATION);
-	} else if (result.success && result.type === 'success') {
+	} else if (result.type === 'success') {
 		notification.set({ message: result.message, type: 'success' });
 		timer = setTimeout(() => {
 			notification.set(null);

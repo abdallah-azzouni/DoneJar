@@ -22,7 +22,7 @@
 	function handleReset() {
 		projects.set([]);
 		activeProjectId.set('');
-		corruptDataState.set({ detected: false, rawSnapshot: null });
+		corruptDataState.set({ detected: false, errors: null, rawSnapshot: null });
 	}
 </script>
 
@@ -40,6 +40,12 @@
 			restored, it may help you recover information manually.
 		</p>
 	</div>
+	{#if $corruptDataState.errors}
+		<details class="m-4 text-sm text-gray-400">
+			<summary>Technical Details (for bug reports)</summary>
+			<pre class="mt-2 overflow-auto">{$corruptDataState.errors}</pre>
+		</details>
+	{/if}
 
 	<div class="mx-8 mt-auto mb-6 flex flex-col gap-3">
 		{#if $corruptDataState.rawSnapshot}

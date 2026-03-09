@@ -3,7 +3,7 @@
 	import grayBG from '$lib/assets/elements/grayBG.svg';
 
 	import ProjectMenu from '$lib/popups/ProjectMenu.svelte';
-	import { dataActions } from '$lib/Actions';
+	import { setActiveProject } from '$lib/actions';
 	import { textColorFromHex } from '$lib/UiHelper';
 	import { currentProject } from '$lib/stores/userData';
 	import { notify } from '$lib/stores/notificationStore';
@@ -15,16 +15,16 @@
 	function handleActive(e: MouseEvent) {
 		// Don't activate if clicking on the delete button
 		if (!(e.target as HTMLElement).closest('.project-actions')) {
-			const result = dataActions.setActiveProject(project.id);
-			if (!result.success) notify(result);
+			const result = setActiveProject(project.id);
+			if (result.type === 'error') notify(result);
 		}
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
-			const result = dataActions.setActiveProject(project.id);
-			if (!result.success) notify(result);
+			const result = setActiveProject(project.id);
+			if (result.type === 'error') notify(result);
 		}
 	}
 </script>

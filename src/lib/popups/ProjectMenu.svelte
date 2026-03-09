@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { dataActions } from '$lib/Actions';
+	import { createProject, editProject } from '$lib/actions';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import DeletePConfirmation from './DeletePConfirmation.svelte';
 	import { notify } from '$lib/stores/notificationStore';
-	import type { Column, Project } from '$lib/types';
+	import { type Column, type Project, failure } from '$lib/types';
+	import { MAX_PROJECT_NAME_LENGTH } from '$lib/constants';
 
 	let { isOpen = $bindable(false), projectInfo }: { isOpen: boolean; projectInfo: Project } =
 		$props();
@@ -41,27 +42,18 @@
 		if (newProject.id === '') {
 			if (newProject.type === 'custom') {
 				const columns = buildColumnsWithSpecialTypes();
-				const result = dataActions.createProject(
-					newProject.name,
-					newProject.type,
-					newProject.color,
-					columns
-				);
+				const result = createProject(newProject.name, newProject.type, newProject.color, columns);
 				notify(result);
-				pass &&= result.success;
+				pass &&= result.type === 'success';
 			} else {
-				const result = dataActions.createProject(
-					newProject.name,
-					newProject.type,
-					newProject.color
-				);
+				const result = createProject(newProject.name, newProject.type, newProject.color);
 				notify(result);
-				pass &&= result.success;
+				pass &&= result.type === 'success';
 			}
 		} else {
-			const result = dataActions.editProject(newProject);
+			const result = editProject(newProject);
 			notify(result);
-			pass &&= result.success;
+			pass &&= result.type === 'success';
 		}
 
 		if (pass) isOpen = false;
@@ -70,16 +62,16 @@
 	function addColumn() {
 		const trimmed = newColumnName.trim();
 		if (!trimmed) {
-			notify({ success: false, message: 'Column name cannot be empty', type: 'error' });
+			notify(failure('Column name cannot be empty'));
 			return;
 		}
 		if (customColumns.map((c) => c.name.toLowerCase()).includes(trimmed.toLowerCase())) {
-			notify({ success: false, message: 'Column name must be unique', type: 'error' });
+			notify(failure('Column name must be unique'));
 			return;
 		}
 
 		if (customColumns.length >= 5) {
-			notify({ success: false, message: 'Maximum of 5 columns allowed', type: 'error' });
+			notify(failure('Maximum of 5 columns allowed'));
 			return;
 		}
 		customColumns = [...customColumns, { name: trimmed, notes: [], specialType: null }];
@@ -132,7 +124,7 @@
 				class="w-full rounded-md border border-gray-500 p-1.5 focus:outline-none"
 				required
 				placeholder="Project Name..."
-				maxlength="100"
+				maxlength={MAX_PROJECT_NAME_LENGTH}
 			/>
 		</div>
 		<span><b>Color</b></span>

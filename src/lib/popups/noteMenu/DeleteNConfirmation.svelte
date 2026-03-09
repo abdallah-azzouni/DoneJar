@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { dataActions } from '$lib/Actions';
+	import { deleteNote } from '$lib/actions';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import { notify } from '$lib/stores/notificationStore';
 	import type { Note } from '$lib/types';
@@ -16,9 +16,9 @@
 
 	function handleSubmit(e: Event) {
 		e.preventDefault();
-		const result = dataActions.deleteNote(userNote.id, userNote.projectId);
-		if (!result.success) notify(result);
-		if (!result.success) return;
+		const result = deleteNote(userNote.id, userNote.projectId);
+		if (result.type === 'error') notify(result);
+		if (result.type === 'error') return;
 		isOpen = false;
 	}
 </script>

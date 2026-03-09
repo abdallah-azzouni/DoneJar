@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { dataActions } from '$lib/Actions';
+	import { deleteProject } from '$lib/actions';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import { notify } from '$lib/stores/notificationStore';
 
@@ -17,9 +17,12 @@
 
 	function handleSubmit(e: Event) {
 		e.preventDefault();
-		const result = dataActions.deleteProject(capturedProjectId);
-		if (!result.success) notify(result);
-		if (result.success) isOpen = false;
+		const result = deleteProject(capturedProjectId);
+		if (result.type === 'error') {
+			notify(result);
+		} else {
+			isOpen = false;
+		}
 	}
 </script>
 

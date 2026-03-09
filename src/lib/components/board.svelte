@@ -13,7 +13,7 @@
 	// stores
 	import { currentProject } from '$lib/stores/userData';
 	// actions
-	import { dataActions } from '$lib/Actions';
+	import { reorderColumnNotes } from '$lib/actions';
 	import { createEmptyNote, type Note } from '$lib/types';
 	import { notify } from '$lib/stores/notificationStore';
 
@@ -45,8 +45,8 @@
 				activeSortKeys[columnIdx] = null;
 			}
 			dragSourceColIdx = null;
-			const result = dataActions.reorderColumnNotes($currentProject.id, columnIdx, items);
-			if (!result.success) {
+			const result = reorderColumnNotes($currentProject.id, columnIdx, items);
+			if (result.type === 'error') {
 				notify(result);
 			}
 		}
@@ -84,8 +84,8 @@
 		activeSortComparators[columnIdx] = compareFn;
 		const sorted = [...columnItems[columnIdx].notes].sort(compareFn);
 		columnItems[columnIdx].notes = sorted;
-		const result = dataActions.reorderColumnNotes($currentProject.id, columnIdx, sorted);
-		if (!result.success) {
+		const result = reorderColumnNotes($currentProject.id, columnIdx, sorted);
+		if (result.type === 'error') {
 			notify(result);
 		}
 	}

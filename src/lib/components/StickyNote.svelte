@@ -17,6 +17,8 @@
 					: '#ffffff'
 	); // Default white, red for high, yellow for medium, blue for low priority
 
+	let isPast = $derived(note.dueDate ? isDueDatePast(note.dueDate, $now) : false); // to avoid rerendering note when $now changes
+
 	$effect(() => {
 		dragDisabled = showNoteMenu; // Disable dragging when menu is open
 	});
@@ -83,7 +85,7 @@
 							class="line-clamp-1 font-patrick-hand text-2xl decoration-2"
 							style="color: {textColorFromHex(
 								note.color
-							)}; line-height:1; text-decoration-line: {isDueDatePast(note.dueDate, $now)
+							)}; line-height:1; text-decoration-line: {isPast
 								? 'line-through'
 								: 'none'}; text-decoration-color: {textColorFromHex(note.color)};"
 						>

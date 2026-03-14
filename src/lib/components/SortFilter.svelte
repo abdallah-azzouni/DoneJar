@@ -48,12 +48,14 @@
 		notes,
 		onSort,
 		onFiltersChange,
-		activeSortKey = $bindable<string | null>(null)
+		activeSortKey = null,
+		onActiveSortKeyChange
 	}: {
 		notes: Note[];
 		onSort: (compareFn: (a: Note, b: Note) => number) => void;
 		onFiltersChange?: (filters: Record<string, Set<string>>) => void;
 		activeSortKey?: string | null;
+		onActiveSortKeyChange?: (key: string | null) => void;
 	} = $props();
 
 	// ═══ State ═══
@@ -98,7 +100,7 @@
 	// ═══ Handlers ═══
 
 	function applySort(option: SortOption) {
-		activeSortKey = option.key;
+		onActiveSortKeyChange?.(option.key);
 		onSort(option.compare);
 	}
 
@@ -113,7 +115,7 @@
 	}
 
 	function clearAll() {
-		activeSortKey = null;
+		onActiveSortKeyChange?.(null);
 		for (const f of filters) f.set.clear();
 	}
 

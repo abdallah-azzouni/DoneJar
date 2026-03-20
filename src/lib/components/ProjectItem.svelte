@@ -2,43 +2,23 @@
 	import kebabMenu from '$lib/assets/elements/kebabMenu.svg';
 	import grayBG from '$lib/assets/elements/grayBG.svg';
 
-	import ProjectMenu from '$lib/popups/ProjectMenu.svelte';
-	import { setActiveProject } from '$lib/actions';
+	import { openProjectMenu } from '$lib/stores/projectMenuStore';
 	import { textColorFromHex } from '$lib/UiHelper';
-	import { currentProject } from '$lib/stores/userData';
-	import { notify } from '$lib/stores/notificationStore';
 	import type { Project } from '$lib/types';
+	import { currentProject } from '$lib/stores/currentProject';
+	import { resolve } from '$app/paths';
+	import { ROUTES } from '$lib/constants';
 
 	let { project }: { project: Project } = $props();
-	let showProjectMenu = $state(false);
-
-	function handleActive(e: MouseEvent) {
-		// Don't activate if clicking on the delete button
-		if (!(e.target as HTMLElement).closest('.project-actions')) {
-			const result = setActiveProject(project.id);
-			if (result.type === 'error') notify(result);
-		}
-	}
-
-	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter' || e.key === ' ') {
-			e.preventDefault();
-			const result = setActiveProject(project.id);
-			if (result.type === 'error') notify(result);
-		}
-	}
 </script>
 
-<ProjectMenu bind:isOpen={showProjectMenu} projectInfo={project} />
-<div
+<a
 	class="doodle-border relative flex items-center gap-8 {$currentProject?.id === project.id
 		? ''
 		: 'is-hidden'} cursor-pointer"
-	role="button"
+	href={resolve(ROUTES.PROJECT(project.id))}
 	tabindex="0"
-	onclick={handleActive}
-	onkeydown={handleKeydown}
-	aria-label="Select project {project.name}"
+	aria-label={`Select project ${project.name}`}
 >
 	<img
 		src={grayBG}
@@ -63,14 +43,14 @@
 		<button
 			class="project-actions"
 			onclick={() => {
-				showProjectMenu = true;
+				openProjectMenu(project);
 			}}
-			aria-label="Project Menu {project.name}"
+			aria-label={`Project Menu ${project.name}`}
 		>
 			<img src={kebabMenu} alt="Menu" class="pointer-events-none select-none" />
 		</button>
 	</div>
-</div>
+</a>
 
 <style>
 	.is-hidden:not(:hover) {

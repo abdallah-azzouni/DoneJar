@@ -1,11 +1,22 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
+
 	let {
 		w = 'w-2/3',
 		h = 'max-h-3/4',
 		mt = 'mt-[5%]',
 		isOpen = $bindable(false),
 		cancelable = true,
+		onClose,
 		children
+	}: {
+		w?: string;
+		h?: string;
+		mt?: string;
+		isOpen?: boolean;
+		cancelable?: boolean;
+		onClose?: () => void;
+		children?: Snippet;
 	} = $props();
 
 	let dialog: HTMLDialogElement;
@@ -20,6 +31,7 @@
 
 	function closeDialog() {
 		isOpen = false;
+		onClose?.();
 	}
 </script>
 

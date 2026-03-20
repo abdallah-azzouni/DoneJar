@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
-	import { corruptDataState, projects, activeProjectId } from '$lib/stores/userData';
+	import { corruptDataState, projects } from '$lib/stores/userData';
+	import { currentProjectId } from '$lib/stores/currentProject';
 
 	let isOpen = $derived($corruptDataState.detected);
 
@@ -21,7 +22,7 @@
 
 	function handleReset() {
 		projects.set([]);
-		activeProjectId.set('');
+		currentProjectId.set(null);
 		corruptDataState.set({ detected: false, errors: null, rawSnapshot: null });
 	}
 </script>

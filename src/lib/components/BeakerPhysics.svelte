@@ -2,8 +2,8 @@
 	import { onMount, onDestroy } from 'svelte';
 	import Matter from 'matter-js';
 	import paperTexture from '$lib/assets/elements/paper.png';
-	import { currentProject } from '$lib/stores/userData';
 	import { SvelteMap } from 'svelte/reactivity';
+	import { currentProject } from '$lib/stores/currentProject';
 
 	// ============================================================================
 	// PROPS & STATE

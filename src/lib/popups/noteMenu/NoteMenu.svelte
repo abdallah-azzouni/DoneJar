@@ -1,21 +1,20 @@
 <script lang="ts">
 	import { createNote, editNote } from '$lib/actions';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
-	import DeleteNConfirmation from './DeleteNConfirmation.svelte';
 	import DatePicker from './DatePicker.svelte';
-	import { currentProject } from '$lib/stores/userData';
 	import QEditor from '$lib/components/QEditor.svelte';
 	import { formatDueDate, isDueDatePast } from '$lib/UiHelper';
 	import { notify } from '$lib/stores/notificationStore';
 	import type { Note } from '$lib/types';
 	import { MAX_NOTE_TITLE_LENGTH } from '$lib/constants';
+	import { currentProject } from '$lib/stores/currentProject';
+	import { confirmDelete } from '$lib/stores/deleteConfirmStore';
 
 	let { isOpen = $bindable(false), note }: { isOpen: boolean; note: Note } = $props();
 
 	// warning is ignored, we reset workingNote in effect.
 	// svelte-ignore state_referenced_locally
 	let workingNote = $state({ ...note });
-	let showDeleteNote = $state(false);
 	let showDatePicker = $state(false);
 
 	$effect(() => {
@@ -26,7 +25,7 @@
 
 	function handleSubmit() {
 		if (workingNote.id === '') {
-			const result = createNote(workingNote);
+			const result = createNote(workingNote, { type: 'specialType', value: 'inbox' });
 			if (result.type === 'error') {
 				notify(result);
 				return;
@@ -46,7 +45,6 @@
 	}
 </script>
 
-<DeleteNConfirmation bind:isOpen={showDeleteNote} {note} />
 <DatePicker
 	bind:isOpen={showDatePicker}
 	initialDate={workingNote.dueDate}
@@ -138,7 +136,12 @@
 				class:hidden={workingNote.id === ''}
 				onclick={() => {
 					isOpen = false;
-					showDeleteNote = true;
+					confirmDelete({
+						type: 'note',
+						id: workingNote.id,
+						projectId: workingNote.projectId,
+						name: workingNote.title
+					});
 				}}>Delete</button
 			>
 		</div>

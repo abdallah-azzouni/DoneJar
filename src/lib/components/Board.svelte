@@ -7,11 +7,11 @@
 	import NoteMenu from '$lib/popups/noteMenu/NoteMenu.svelte';
 	// external libraries
 	import { dndzone, TRIGGERS } from 'svelte-dnd-action';
-	import { untrack } from 'svelte';
 	// assets
 	import beaker from '$lib/assets/elements/beaker.png';
 	// stores
-	import { currentProject } from '$lib/stores/userData';
+	import { currentProject } from '$lib/stores/currentProject';
+
 	// actions
 	import { reorderColumnNotes } from '$lib/actions';
 	import { createEmptyNote, type Note } from '$lib/types';
@@ -27,69 +27,34 @@
 
 	function handleDnd(columnIdx: number, type: 'consider' | 'finalize', e: CustomEvent) {
 		if (!$currentProject) return;
-		const items = e.detail.items;
-		const trigger = e.detail.info?.trigger;
+		const { items, info } = e.detail;
 
-		// DRAG_STARTED fires only on the source zone's consider event
-		if (type === 'consider' && trigger === TRIGGERS.DRAG_STARTED) {
-			dragSourceColIdx = columnIdx;
+		if (type === 'consider') {
+			if (info?.trigger === TRIGGERS.DRAG_STARTED) dragSourceColIdx = columnIdx;
+			columnItems[columnIdx].notes = items;
+			return;
 		}
 
+		// finalize
 		columnItems[columnIdx].notes = items;
-
-		if (type === 'finalize') {
-			// Intra-column reorder: drag started AND ended in the same column → clear sort
-			// Cross-column move: DROPPED_INTO_ANOTHER fires on source (items removed), keep sort
-			if (dragSourceColIdx === columnIdx && trigger === TRIGGERS.DROPPED_INTO_ZONE) {
-				activeSortComparators[columnIdx] = null;
-				activeSortKeys[columnIdx] = null;
-			}
-			dragSourceColIdx = null;
-			const result = reorderColumnNotes($currentProject.id, columnIdx, items);
-			if (result.type === 'error') {
-				notify(result);
-			}
+		if (dragSourceColIdx === columnIdx && info?.trigger === TRIGGERS.DROPPED_INTO_ZONE) {
+			activeSortComparators[columnIdx] = null;
+			activeSortKeys[columnIdx] = null;
 		}
+		dragSourceColIdx = null;
+		const result = reorderColumnNotes($currentProject.id, columnIdx, items);
+		if (result.type === 'error') notify(result);
 	}
 
-	let columnItems = $state($currentProject?.columns ?? []);
-
-	let prevProjectId = $state<string | null>(null);
+	let columnItems = $state(
+		$currentProject?.columns.map((col) => ({ ...col, notes: [...col.notes] })) ?? []
+	);
 
 	$effect(() => {
 		const project = $currentProject;
 		if (!project) return;
-
-		// Full reset when project changes
-		if (project.id !== untrack(() => prevProjectId)) {
-			prevProjectId = project.id;
-			untrack(() => {
-				columnItems = project.columns.map((col) => ({ ...col, notes: [...col.notes] }));
-				activeSortKeys = project.columns.map(() => null);
-				activeSortComparators = project.columns.map(() => null);
-				activeFilters = project.columns.map(() => ({}) as Record<string, Set<string>>);
-			});
-		}
-	});
-
-	$effect(() => {
-		if (!$currentProject) return;
-		const cols = $currentProject.columns;
-		const cmps = untrack(() => activeSortComparators);
-		cols.forEach((col, idx) => {
-			const prev = untrack(() => columnItems[idx]);
-			const cmp = cmps[idx];
-
-			const noteIdsChanged =
-				col.notes.map((n) => n.id).join() !== prev?.notes.map((n: Note) => n.id).join();
-			const nameChanged = prev?.name !== col.name;
-
-			if (!cmp) {
-				if (noteIdsChanged || nameChanged) columnItems[idx] = col;
-			} else if (noteIdsChanged || nameChanged) {
-				columnItems[idx] = { ...col, notes: [...col.notes].sort(cmp) };
-			}
-		});
+		if (dragSourceColIdx !== null) return;
+		columnItems = project.columns.map((col) => ({ ...col, notes: [...col.notes] }));
 	});
 
 	// ── Sort & Filter ──
@@ -131,7 +96,10 @@
 		return true;
 	}
 
-	function getColumnClass(projectType: string | undefined, specialType: string | undefined) {
+	function getColumnClass(
+		projectType: string | undefined,
+		specialType: 'jar' | 'inbox' | null | undefined
+	): string {
 		if (projectType === 'default' && specialType === 'inbox') {
 			return 'w-6/9';
 		} else if (projectType !== 'default') {
@@ -156,7 +124,7 @@
 				<div
 					class="relative flex items-center justify-center border-2 border-dashed border-gray-400 p-16"
 					use:dndzone={{
-						items: columnItems[columnIdx].notes,
+						items: columnItems[columnIdx]?.notes ?? [],
 						flipDurationMs,
 						dragDisabled
 					}}
@@ -177,7 +145,7 @@
 
 				<div class="relative aspect-777/1024 w-full">
 					<button class="size-full">
-						<BeakerPhysics items={columnItems[columnIdx].notes} />
+						<BeakerPhysics items={columnItems[columnIdx]?.notes ?? []} />
 
 						<img src={beaker} alt="" class="pointer-events-none h-full w-full object-contain" />
 					</button>

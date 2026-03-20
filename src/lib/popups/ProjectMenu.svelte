@@ -1,17 +1,17 @@
 <script lang="ts">
 	import { createProject, editProject } from '$lib/actions';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
-	import DeletePConfirmation from './DeletePConfirmation.svelte';
 	import { notify } from '$lib/stores/notificationStore';
 	import { type Column, type Project, failure } from '$lib/types';
 	import { MAX_PROJECT_NAME_LENGTH } from '$lib/constants';
+	import { confirmDelete } from '$lib/stores/deleteConfirmStore';
+	import { projectMenuStore, closeProjectMenu } from '$lib/stores/projectMenuStore';
 
-	let { isOpen = $bindable(false), projectInfo }: { isOpen: boolean; projectInfo: Project } =
-		$props();
+	let projectInfo = $derived($projectMenuStore.projectInfo);
+	let isOpen = $derived($projectMenuStore.isOpen);
 
 	let newProject = $state({} as Project);
 	let customColumns: Column[] = $state([]);
-	let showDeleteProject = $state(false);
 
 	let newColumnName = $state('');
 
@@ -56,7 +56,7 @@
 			pass &&= result.type === 'success';
 		}
 
-		if (pass) isOpen = false;
+		if (pass) closeProjectMenu();
 	}
 
 	function addColumn() {
@@ -103,12 +103,7 @@
 	}
 </script>
 
-<DeletePConfirmation
-	bind:isOpen={showDeleteProject}
-	projectName={newProject.name}
-	projectId={newProject.id}
-/>
-<ThemedDialog bind:isOpen>
+<ThemedDialog {isOpen} onClose={closeProjectMenu}>
 	<h1 class="m-4 text-2xl font-bold">
 		{#if newProject.id === ''}Create a new{:else}Edit
 		{/if} project
@@ -183,7 +178,7 @@
 											type="button"
 											onclick={() => removeColumn(i)}
 											class="cursor-pointer text-lg text-red-400 transition-colors hover:text-red-600"
-											aria-label="Remove column {row.name}"
+											aria-label={`Remove column ${row.name}`}
 										>
 											✕
 										</button>
@@ -226,8 +221,8 @@
 						? 'hidden'
 						: ''}"
 					onclick={() => {
-						isOpen = false;
-						showDeleteProject = true;
+						closeProjectMenu();
+						confirmDelete({ type: 'project', id: newProject.id, name: newProject.name });
 					}}>Delete</button
 				>
 			</div>
@@ -235,7 +230,7 @@
 				<button
 					class="rounded-2xl bg-gray-500 p-4 font-bold text-white"
 					type="button"
-					onclick={() => (isOpen = false)}
+					onclick={() => closeProjectMenu()}
 				>
 					Cancel
 				</button>

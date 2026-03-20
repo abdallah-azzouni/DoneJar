@@ -1,15 +1,29 @@
 import { projects } from '$lib/stores/userData';
 import { nanoid } from 'nanoid';
 import Delta from 'quill-delta';
-import { failure, success, type ActionResult, type Note } from '$lib/types';
+import {
+	failure,
+	success,
+	type ActionResult,
+	type Column,
+	type Note,
+	type NoteInsertTarget
+} from '$lib/types';
 import { validateNoteCreation, validateNoteEdit } from '$lib/validators/noteValidators';
+
+// helper to resolve the target column index based on the provided NoteInsertTarget
+function resolveInsertIndex(columns: Column[], target: NoteInsertTarget): number {
+	if (target.type === 'index') return target.value;
+	const idx = columns.findIndex((c) => c.specialType === target.value);
+	return idx !== -1 ? idx : 0; // fallback to 0 if specialType not found
+}
 
 /**
  * Creates a new note in the specified column of a project.
  * @param note the note payload (title, color, projectId, etc.)
- * @param columnIndex index of the column to add the note to (defaults to 0)
+ * @param target column to insert the note into — either a direct index or a specialType lookup
  */
-export function createNote(note: Note, columnIndex: number = 0): ActionResult {
+export function createNote(note: Note, target: NoteInsertTarget): ActionResult {
 	const validationResult = validateNoteCreation(note);
 	if (validationResult.type === 'error') return validationResult;
 
@@ -19,7 +33,7 @@ export function createNote(note: Note, columnIndex: number = 0): ActionResult {
 			title: note.title,
 			color: note.color,
 			projectId: note.projectId,
-			description: note.description,
+			description: new Delta(note.description),
 			dueDate: note.dueDate,
 			priority: note.priority,
 			createdAt: Date.now(),
@@ -31,9 +45,12 @@ export function createNote(note: Note, columnIndex: number = 0): ActionResult {
 					? {
 							...p,
 							updatedAt: Date.now(),
-							columns: p.columns.map((col, i) =>
-								i === columnIndex ? { ...col, notes: [...col.notes, newNote] } : col
-							)
+							columns: (() => {
+								const targetIndex = resolveInsertIndex(p.columns, target);
+								return p.columns.map((col, i) =>
+									i === targetIndex ? { ...col, notes: [...col.notes, newNote] } : col
+								);
+							})()
 						}
 					: p
 			)
@@ -56,16 +73,12 @@ export function editNote(note: Note): ActionResult {
 	const updated = {
 		...note,
 		dueDate: note.dueDate ? { ...note.dueDate } : null,
-		description: new Delta(note.description.ops),
-		updatedAt: Date.now(),
-		createdAt: note.createdAt || Date.now()
+		description: new Delta(note.description),
+		createdAt: note.createdAt || Date.now(),
+		updatedAt: Date.now()
 	};
 
 	try {
-		if (!updated.createdAt) {
-			updated.createdAt = Date.now();
-		}
-		updated.updatedAt = Date.now();
 		projects.update((state) =>
 			state.map((project) => {
 				if (project.id !== updated.projectId) return project;

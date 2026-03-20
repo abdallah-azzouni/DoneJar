@@ -2,8 +2,12 @@ import { nanoid } from 'nanoid';
 import type { ActionResult, Column } from '$lib/types';
 import { failure, success } from '$lib/types';
 import { validateProjectCreation, validateProjectEdit } from '$lib/validators/projectValidators';
-import { projects, activeProjectId } from '$lib/stores/userData';
+import { projects } from '$lib/stores/userData';
 import { get } from 'svelte/store';
+import { goto } from '$app/navigation';
+import { currentProjectId } from '$lib/stores/currentProject';
+import { ROUTES } from '$lib/constants';
+import { resolve } from '$app/paths';
 
 /**
  * Creates a new project and adds it to the projects store.
@@ -46,7 +50,7 @@ export function createProject(
 			updatedAt: Date.now()
 		};
 		projects.update((state) => [...state, newProject]);
-		activeProjectId.set(newProject.id);
+		setActiveProject(newProject.id);
 	} catch (error) {
 		return failure(`Error during project creation: ${error}`);
 	}
@@ -61,11 +65,11 @@ export function createProject(
  */
 export function setActiveProject(projectId: string): ActionResult {
 	try {
-		activeProjectId.set(projectId);
+		goto(resolve(ROUTES.PROJECT(projectId)));
+		return success('Active project set successfully');
 	} catch (error) {
 		return failure(`Error setting active project: ${error}`);
 	}
-	return success('Active project set successfully');
 }
 
 /**
@@ -103,7 +107,7 @@ export function editProject(projectInfo: {
 export function deleteProject(projectId: string): ActionResult {
 	try {
 		const currentProjects = get(projects);
-		const currentActiveId = get(activeProjectId);
+		const currentActiveId = get(currentProjectId);
 
 		const deleteIndex = currentProjects.findIndex((p) => p.id === projectId);
 		const updatedProjects = currentProjects.filter((p) => p.id !== projectId);
@@ -111,12 +115,14 @@ export function deleteProject(projectId: string): ActionResult {
 
 		// Update active project if we deleted the active one
 		if (projectId === currentActiveId) {
-			let newActiveId = '';
-			if (updatedProjects.length > 0) {
+			if (updatedProjects.length === 0) {
+				goto(resolve(ROUTES.APP));
+			} else {
+				let newActiveId = '';
 				const nextIndex = Math.min(deleteIndex, updatedProjects.length - 1);
 				newActiveId = updatedProjects[nextIndex].id;
+				setActiveProject(newActiveId);
 			}
-			activeProjectId.set(newActiveId);
 		}
 	} catch (error) {
 		return failure(`Error deleting project: ${error}`);

@@ -90,3 +90,12 @@ export function createEmptyProject({
 		updatedAt: 0
 	};
 }
+
+export type NoteInsertTarget =
+	| { type: 'index'; value: number }
+	| { type: 'specialType'; value: 'inbox' | 'jar' };
+
+export type DeleteTarget =
+	| { type: 'project'; id: string; name: string }
+	| { type: 'note'; id: string; projectId: string; name: string }
+	| null;

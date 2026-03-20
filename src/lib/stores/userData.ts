@@ -1,14 +1,13 @@
 import { browser } from '$app/environment';
 import { persisted } from 'svelte-persisted-store';
-import { derived, writable } from 'svelte/store';
+import { writable } from 'svelte/store';
 import { notify } from './notificationStore';
 import { failure, type Project } from '$lib/types';
 import { isValidData } from '$lib/validators/dataValidators';
 
-export const isLoaded = writable(browser);
+export const isLoaded = writable(false);
 
 const defaultProjects = <Project[]>[];
-const defaultActiveProjectId = '';
 
 /** Set when persisted project data fails validation or JSON parsing. */
 export const corruptDataState = writable<{
@@ -46,9 +45,6 @@ export const projects = persisted('projects', defaultProjects, {
 	}
 });
 
-export const activeProjectId = persisted('activeProjectId', defaultActiveProjectId);
-
-export const currentProject = derived(
-	[projects, activeProjectId],
-	([$projects, $activeProjectId]) => $projects.find((p) => p.id === $activeProjectId) || null
-);
+if (browser) {
+	isLoaded.set(true);
+}

@@ -3,7 +3,7 @@ import { HEX_COLOR_REGEX, MAX_NOTE_TITLE_LENGTH } from '$lib/constants';
 
 export function validateNoteTitle(title: string): ActionResult {
 	if (title.length > MAX_NOTE_TITLE_LENGTH)
-		return failure('Note title cannot be longer than 100 characters');
+		return failure(`Note title cannot be longer than ${MAX_NOTE_TITLE_LENGTH} characters`);
 	if (title.trim().length === 0) return failure('Note title cannot be empty');
 	return success(''); // empty because the caller doesn't need a specific success message
 }

@@ -2,9 +2,9 @@ import { type ActionResult, type Column, failure, success } from '$lib/types';
 import { HEX_COLOR_REGEX, MAX_PROJECT_NAME_LENGTH } from '$lib/constants';
 
 export function validateProjectName(name: string): ActionResult {
-	if (name.length > MAX_PROJECT_NAME_LENGTH)
-		return failure('Project name cannot be longer than 100 characters');
 	if (name.trim().length === 0) return failure('Project name cannot be empty');
+	if (name.length > MAX_PROJECT_NAME_LENGTH)
+		return failure(`Project name cannot be longer than ${MAX_PROJECT_NAME_LENGTH} characters`);
 	return success('');
 }
 

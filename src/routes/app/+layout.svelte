@@ -1,19 +1,34 @@
-<script>
+<script lang="ts">
 	import ProjectMenu from '$lib/popups/ProjectMenu.svelte';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import ProjectItem from '$lib/components/ProjectItem.svelte';
-	import { projects, isLoaded } from '$lib/stores/userData';
+	import { isLoaded } from '$lib/stores/appState';
 	import Loading from '$lib/components/Loading.svelte';
-	import CorruptDataDialog from '$lib/popups/CorruptDataDialog.svelte';
 	import { page } from '$app/state';
-	import { currentProjectId, currentProject } from '$lib/stores/currentProject';
+	import { currentProject } from '$lib/stores/currentProject';
 	import { openProjectMenu } from '$lib/stores/projectMenuStore';
 	import DeleteConfirmation from '$lib/popups/DeleteConfirmation.svelte';
+	import { projectRepository } from '$lib/db/dal';
+	import { notify } from '$lib/stores/notificationStore';
+	import { projects } from '$lib/stores/projects';
 
 	let { children } = $props();
+	let currentProjectId: string | null = null;
+	let hasElements = $derived($projects.length > 0);
 
 	$effect(() => {
-		currentProjectId.set(page.params.id ?? null);
+		currentProjectId = page.params.id ?? null;
+
+		if (currentProjectId)
+			projectRepository.get(currentProjectId).then((proj) => {
+				if (proj) {
+					currentProject.set(proj);
+				} else {
+					// If we have an ID in the URL but can't find the project, it means the data is corrupted or missing. Alert the user.
+					currentProjectId = null;
+					notify({ type: 'error', message: 'The project data seems to be corrupted or missing.' });
+				}
+			});
 	});
 </script>
 
@@ -30,7 +45,7 @@
 
 {#if !$isLoaded}
 	<Loading />
-{:else if $projects.length === 0}
+{:else if !hasElements}
 	<div
 		class="flex h-screen flex-col items-center justify-center bg-linear-to-b from-amber-50 to-white px-6"
 	>
@@ -52,8 +67,6 @@
 		</div>
 	</div>
 {:else}
-	<CorruptDataDialog />
-
 	<div class="flex h-screen flex-col overflow-hidden">
 		<AppHeader />
 		<div class="flex flex-1 flex-row overflow-hidden">
@@ -65,7 +78,6 @@
 					{/each}
 				</div>
 			</div>
-
 			{@render children()}
 		</div>
 	</div>

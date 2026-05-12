@@ -3,24 +3,37 @@
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import { notify } from '$lib/stores/notificationStore';
 	import { deleteConfirmStore, closeDelete } from '$lib/stores/deleteConfirmStore';
+	import { refreshProjects } from '$lib/stores/projects';
+	import { projects } from '$lib/stores/projects';
+	import { setActiveProject } from '$lib/actions';
 
 	let target = $derived($deleteConfirmStore);
 	let isOpen = $derived(target !== null);
 
-	function handleDelete(e: Event) {
+	async function handleDelete(e: Event) {
 		e.preventDefault();
 		if (!target) return;
 
 		const result =
-			target.type === 'project'
-				? deleteProject(target.id)
-				: deleteNote(target.id, target.projectId);
+			target.type === 'project' ? await deleteProject(target.id) : await deleteNote(target.id);
 
 		if (result.type === 'error') {
 			notify(result);
 			return;
 		}
 
+		if (target.type === 'project') {
+			const all = $projects;
+			const deletedIndex = all.findIndex((p) => p.id === target.id); // save deleted index before deletion
+
+			await refreshProjects(); // refresh project list to reflect deletion
+
+			// navigate smartly after deletion.
+			const remaining = $projects;
+			const nextIndex = Math.min(deletedIndex, remaining.length - 1);
+			if (nextIndex >= 0) setActiveProject(remaining[nextIndex].id);
+			else setActiveProject('');
+		}
 		closeDelete();
 	}
 </script>

@@ -4,9 +4,10 @@
 	import { goto } from '$app/navigation';
 	import { ROUTES } from '$lib/constants';
 	import { resolve } from '$app/paths';
+	console.log($currentProject?.id);
 </script>
 
-{#if $currentProject}
+{#if $currentProject?.id}
 	<Board />
 {:else}
 	<div class="flex h-full w-full flex-1 flex-col items-center justify-center gap-6">

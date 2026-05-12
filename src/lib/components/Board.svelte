@@ -11,11 +11,16 @@
 	import beaker from '$lib/assets/elements/beaker.png';
 	// stores
 	import { currentProject } from '$lib/stores/currentProject';
+	import { columnRepository } from '$lib/db/dal';
+	import { projects } from '$lib/stores/projects';
 
 	// actions
-	import { reorderColumnNotes } from '$lib/actions';
-	import { createEmptyNote, type Note } from '$lib/types';
+	import { reorderNotes, moveNote } from '$lib/actions';
+	import { type Note, type ColumnWithNotes } from '$lib/types';
 	import { notify } from '$lib/stores/notificationStore';
+	import { createColumnNotesStore } from '$lib/stores/columnNotesStore';
+
+	import { getSortComparator } from '$lib/sort';
 
 	let showCreateNote = $state(false);
 
@@ -25,7 +30,7 @@
 	// Tracks which column index a drag originated from
 	let dragSourceColIdx = $state<number | null>(null);
 
-	function handleDnd(columnIdx: number, type: 'consider' | 'finalize', e: CustomEvent) {
+	async function handleDnd(columnIdx: number, type: 'consider' | 'finalize', e: CustomEvent) {
 		if (!$currentProject) return;
 		const { items, info } = e.detail;
 
@@ -37,65 +42,78 @@
 
 		// finalize
 		columnItems[columnIdx].notes = items;
+		// If the drag started in this column and ended in the same column, clear any active sorts since the order has been manually changed.
 		if (dragSourceColIdx === columnIdx && info?.trigger === TRIGGERS.DROPPED_INTO_ZONE) {
 			activeSortComparators[columnIdx] = null;
 			activeSortKeys[columnIdx] = null;
 		}
+		if (dragSourceColIdx !== null && dragSourceColIdx !== columnIdx) {
+			const result = await moveNote(info.id, columnItems[columnIdx].id);
+			if (result.type === 'error') {
+				notify(result);
+				return;
+			}
+		}
+
 		dragSourceColIdx = null;
-		const result = reorderColumnNotes($currentProject.id, columnIdx, items);
+		const result = await reorderNotes(items.map((n: Note) => n.id));
 		if (result.type === 'error') notify(result);
 	}
 
-	let columnItems = $state(
-		$currentProject?.columns.map((col) => ({ ...col, notes: [...col.notes] })) ?? []
-	);
+	let columnItems = $state<ColumnWithNotes[]>([]);
 
+	// Load columns whenever current project changes.
 	$effect(() => {
-		const project = $currentProject;
+		const project = $currentProject; // capture dependency synchronously
+		void $projects; // capture projects store to update board.
+
 		if (!project) return;
-		if (dragSourceColIdx !== null) return;
-		columnItems = project.columns.map((col) => ({ ...col, notes: [...col.notes] }));
+		if (dragSourceColIdx !== null) return; // don't reload columns in the middle of a drag, as it causes weird flickering issues
+
+		const store = createColumnNotesStore(project.id); // trigger effect when notes change.
+		const unsub = store.subscribe((cols) => {
+			columnItems = cols;
+			activeFilters = cols.map((col) => col.filters);
+			activeSortComparators = cols.map((col) =>
+				col.sortKey ? getSortComparator(col.sortKey) : null
+			);
+		});
+		return () => unsub();
 	});
 
 	// ── Sort & Filter ──
 	// per-column modular filters: record of filterKey -> Set<string>
-	let activeFilters: Record<string, Set<string>>[] = $state(
-		$currentProject?.columns.map(() => ({}) as Record<string, Set<string>>) ?? []
-	);
-	let activeSortComparators: (((a: Note, b: Note) => number) | null)[] = $state(
-		$currentProject?.columns.map(() => null) ?? []
-	);
-	let activeSortKeys: (string | null)[] = $state($currentProject?.columns.map(() => null) ?? []);
+	let activeFilters: Record<string, string[]>[] = $state([]);
 
-	function handleColumnSort(columnIdx: number, compareFn: (a: Note, b: Note) => number) {
+	let activeSortComparators: (((a: Note, b: Note) => number) | null)[] = $state([]);
+	let activeSortKeys: (string | null)[] = $state([]);
+
+	async function handleColumnSort(columnIdx: number, compareFn: (a: Note, b: Note) => number) {
 		if (!$currentProject) return;
 		activeSortComparators[columnIdx] = compareFn;
 		const sorted = [...columnItems[columnIdx].notes].sort(compareFn);
 		columnItems[columnIdx].notes = sorted;
-		const result = reorderColumnNotes($currentProject.id, columnIdx, sorted);
-		if (result.type === 'error') {
-			notify(result);
-		}
+		const result = await reorderNotes(sorted.map((n: Note) => n.id));
+		if (result.type === 'error') notify(result);
 	}
 
 	function notePassesFilter(columnIdx: number, note: Note): boolean {
 		const filters = activeFilters[columnIdx] || {};
-		for (const [key, set] of Object.entries(filters)) {
-			if (!set || set.size === 0) continue;
+		for (const [key, arr] of Object.entries(filters)) {
+			if (!arr || arr.length === 0) continue;
 			if (key === 'color') {
-				if (!set.has(note.color)) return false;
+				if (!arr.includes(note.color)) return false;
 			} else if (key === 'priority') {
-				if (!set.has(note.priority || '')) return false;
-			} else {
-				const keyK = key as keyof Note;
-				const val = note[keyK];
-				if (val === undefined) continue;
-				if (!set.has(String(val))) return false;
+				if (!arr.includes(note.priority || '')) return false;
+			} else if (key === 'tag') {
+				const noteTags = note.tags || [];
+				if (!arr.some((t) => noteTags.includes(t))) return false;
 			}
 		}
 		return true;
 	}
 
+	// Utility to determine column width classes based on project and column types
 	function getColumnClass(
 		projectType: string | undefined,
 		specialType: 'jar' | 'inbox' | null | undefined
@@ -110,13 +128,12 @@
 	}
 </script>
 
-<NoteMenu
-	bind:isOpen={showCreateNote}
-	note={createEmptyNote({ color: '#fab005', projectId: $currentProject?.id || '' })}
-/>
+{#key showCreateNote}
+	<NoteMenu bind:isOpen={showCreateNote} note={null} />
+{/key}
 
 <div class="flex h-full w-full flex-row overflow-hidden">
-	{#each columnItems as column, columnIdx (column.name)}
+	{#each columnItems as column, columnIdx (column.id)}
 		{#if column.specialType === 'jar'}
 			<div
 				class="relative m-2 flex aspect-777/1024 h-auto max-h-[75%] min-h-0 w-auto max-w-[33.333%] min-w-[28%] flex-col justify-end self-end"
@@ -164,12 +181,15 @@
 						<SortFilter
 							notes={columnItems[columnIdx].notes}
 							onSort={(cmp) => handleColumnSort(columnIdx, cmp)}
-							onFiltersChange={(filters) => {
+							onFiltersChange={async (filters) => {
 								activeFilters[columnIdx] = filters;
+								const plain = $state.snapshot(columnItems[columnIdx]);
+								await columnRepository.update({ ...plain, filters });
 							}}
 							activeSortKey={activeSortKeys[columnIdx]}
-							onActiveSortKeyChange={(key) => {
+							onActiveSortKeyChange={async (key) => {
 								activeSortKeys[columnIdx] = key;
+								await columnRepository.update({ ...columnItems[columnIdx], sortKey: key });
 							}}
 						/>
 					</div>

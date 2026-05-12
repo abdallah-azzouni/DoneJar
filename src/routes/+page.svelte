@@ -1,6 +1,6 @@
 <script lang="ts">
 	import 'doodle.css/doodle.css';
-	import { isLoaded } from '$lib/stores/userData';
+	import { isLoaded } from '$lib/stores/appState';
 	import Loading from '$lib/components/Loading.svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -17,7 +17,7 @@
 {#if !$isLoaded}
 	<Loading />
 {:else}
-	<div class="min-h-screen bg-gradient-to-b from-amber-50 to-white">
+	<div class="min-h-screen bg-linear-to-b from-amber-50 to-white">
 		<!-- Hero Section -->
 		<section class="container mx-auto px-6 py-20 md:py-32">
 			<div class="flex flex-col items-center text-center">

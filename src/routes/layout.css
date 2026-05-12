@@ -15,7 +15,7 @@
 		scrollbar-width: none;
 	}
 	button {
-		@apply transition duration-150 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 active:scale-95;
+		@apply cursor-pointer transition duration-150 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 active:scale-95;
 	}
 }
 
@@ -42,4 +42,8 @@ body {
 		text-align: center;
 		padding: 2rem;
 	}
+}
+
+select option {
+	font-size: var(--text-xl);
 }

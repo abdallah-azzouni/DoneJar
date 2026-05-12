@@ -2,12 +2,13 @@
 	import { createProject, editProject } from '$lib/actions';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import { notify } from '$lib/stores/notificationStore';
-	import { type Column, type Project, failure } from '$lib/types';
-	import { MAX_PROJECT_NAME_LENGTH } from '$lib/constants';
+	import { type Column, type Project, failure, createColumn } from '$lib/types';
+	import { MAX_PROJECT_NAME_LENGTH, DEFAULT_PROJECT_COLOR } from '$lib/constants';
 	import { confirmDelete } from '$lib/stores/deleteConfirmStore';
 	import { projectMenuStore, closeProjectMenu } from '$lib/stores/projectMenuStore';
+	import { refreshProjects } from '$lib/stores/projects';
 
-	let projectInfo = $derived($projectMenuStore.projectInfo);
+	let project = $derived($projectMenuStore.project);
 	let isOpen = $derived($projectMenuStore.isOpen);
 
 	let newProject = $state({} as Project);
@@ -20,7 +21,18 @@
 
 	$effect(() => {
 		if (isOpen) {
-			newProject = { ...projectInfo };
+			newProject = project
+				? { ...project }
+				: {
+						id: '',
+						name: '',
+						type: 'default',
+						color: DEFAULT_PROJECT_COLOR,
+						createdAt: 0,
+						updatedAt: 0,
+						synced: false,
+						serverVersion: null
+					};
 			customColumns = [];
 			inboxIndex = null;
 			jarIndex = null;
@@ -35,28 +47,36 @@
 		}));
 	}
 
-	function handleSubmit(e: Event) {
+	async function handleSubmit(e: Event) {
 		e.preventDefault();
 		let pass = true;
 
 		if (newProject.id === '') {
 			if (newProject.type === 'custom') {
 				const columns = buildColumnsWithSpecialTypes();
-				const result = createProject(newProject.name, newProject.type, newProject.color, columns);
+				const result = await createProject(
+					newProject.name,
+					newProject.type,
+					newProject.color,
+					columns
+				);
 				notify(result);
 				pass &&= result.type === 'success';
 			} else {
-				const result = createProject(newProject.name, newProject.type, newProject.color);
+				const result = await createProject(newProject.name, newProject.type, newProject.color);
 				notify(result);
 				pass &&= result.type === 'success';
 			}
 		} else {
-			const result = editProject(newProject);
+			const result = await editProject(newProject);
 			notify(result);
 			pass &&= result.type === 'success';
 		}
 
-		if (pass) closeProjectMenu();
+		if (pass) {
+			await refreshProjects(); // refresh project list to reflect new/edited project
+			closeProjectMenu();
+		}
 	}
 
 	function addColumn() {
@@ -74,7 +94,15 @@
 			notify(failure('Maximum of 5 columns allowed'));
 			return;
 		}
-		customColumns = [...customColumns, { name: trimmed, notes: [], specialType: null }];
+		customColumns = [
+			...customColumns,
+			createColumn({
+				id: '',
+				projectId: '',
+				name: trimmed,
+				position: 0
+			})
+		];
 		newColumnName = '';
 	}
 
@@ -222,6 +250,7 @@
 						: ''}"
 					onclick={() => {
 						closeProjectMenu();
+
 						confirmDelete({ type: 'project', id: newProject.id, name: newProject.name });
 					}}>Delete</button
 				>

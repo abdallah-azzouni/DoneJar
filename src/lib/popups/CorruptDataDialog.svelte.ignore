@@ -1,7 +1,6 @@
 <script lang="ts">
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
-	import { corruptDataState, projects } from '$lib/stores/userData';
-	import { currentProjectId } from '$lib/stores/currentProject';
+	import { currentProject } from '$lib/stores/currentProject';
 
 	let isOpen = $derived($corruptDataState.detected);
 

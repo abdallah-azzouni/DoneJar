@@ -17,7 +17,7 @@ export const corruptDataState = writable<{
 	rawSnapshot: string | null;
 }>({ detected: false, errors: null, rawSnapshot: null });
 
-export const projects = persisted('projects', defaultProjects, {
+export const projects = persisted<Project[]>('projects', defaultProjects, {
 	beforeRead: (val) => {
 		const result = isValidData(val);
 		if (!result.valid) {

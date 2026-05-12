@@ -1,24 +1,18 @@
 import { writable } from 'svelte/store';
-import { createEmptyProject, type Project } from '$lib/types';
+import { type Project } from '$lib/types';
 
 export const projectMenuStore = writable<{
 	isOpen: boolean;
-	projectInfo: ReturnType<typeof createEmptyProject>;
+	project: Project | null;
 }>({
 	isOpen: false,
-	projectInfo: createEmptyProject({ color: '#495057' })
+	project: null
 });
 
 export function openProjectMenu(project: Project | null = null) {
-	projectMenuStore.set({
-		isOpen: true,
-		projectInfo: project ?? createEmptyProject({ color: '#495057' })
-	});
+	projectMenuStore.set({ isOpen: true, project });
 }
 
 export function closeProjectMenu() {
-	projectMenuStore.set({
-		isOpen: false,
-		projectInfo: createEmptyProject({ color: '#495057' })
-	});
+	projectMenuStore.update((s) => ({ ...s, isOpen: false }));
 }

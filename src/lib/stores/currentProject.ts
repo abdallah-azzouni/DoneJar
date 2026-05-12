@@ -1,9 +1,4 @@
-import { writable, derived } from 'svelte/store';
-import { projects } from './userData';
+import { writable } from 'svelte/store';
+import type { Project } from '$lib/types';
 
-export const currentProjectId = writable<string | null>(null);
-
-export const currentProject = derived(
-	[projects, currentProjectId],
-	([$projects, $id]) => $projects.find((p) => p.id === $id) ?? null
-);
+export const currentProject = writable<Project | null>(null);

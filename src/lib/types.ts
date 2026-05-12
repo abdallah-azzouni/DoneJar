@@ -1,5 +1,5 @@
-import Delta from 'quill-delta';
 import { z } from 'zod';
+import Delta from 'quill-delta';
 
 export type ActionResult = { type: 'error' | 'success'; message: string };
 export const failure = (message: string): ActionResult => ({ type: 'error', message });
@@ -22,20 +22,31 @@ const DeltaSchema = z.object({
 
 export const NoteSchema = z.object({
 	id: z.string(),
-	title: z.string(),
-	color: z.string().regex(colorRegex),
-	description: DeltaSchema.transform((d) => d as unknown as Delta),
+	columnId: z.string(),
 	projectId: z.string(),
+	title: z.string(),
+	tags: z.array(z.string()).default([]),
+	description: DeltaSchema.transform((d) => d as unknown as Delta),
+	color: z.string().regex(colorRegex),
 	dueDate: z.object({ timestamp: z.number(), hasTime: z.boolean() }).nullable(),
 	priority: z.enum(['low', 'medium', 'high']).nullable().catch(null),
+	position: z.number(),
 	createdAt: z.number(),
-	updatedAt: z.number()
+	updatedAt: z.number(),
+	synced: z.boolean().default(false),
+	serverVersion: z.number().nullable().default(null)
 });
 
 export const ColumnSchema = z.object({
-	name: z.string(),
-	notes: z.array(NoteSchema),
-	specialType: z.enum(['jar', 'inbox']).nullable().optional()
+	id: z.string(),
+	projectId: z.string(),
+	name: z.string().default('New Column'),
+	sortKey: z.string().nullable().default(null),
+	filters: z.record(z.string(), z.array(z.string())).default({}),
+	position: z.number(),
+	specialType: z.enum(['jar', 'inbox']).nullable().optional().default(null),
+	synced: z.boolean().default(false),
+	serverVersion: z.number().nullable().default(null)
 });
 
 export const ProjectSchema = z.object({
@@ -43,53 +54,76 @@ export const ProjectSchema = z.object({
 	name: z.string(),
 	type: z.enum(['default', 'blank', 'custom']),
 	color: z.string().regex(colorRegex),
-	columns: z.array(ColumnSchema),
+	createdAt: z.number(),
+	updatedAt: z.number(),
+	synced: z.boolean().default(false),
+	serverVersion: z.number().nullable().default(null)
+});
+
+export const attachmentSchema = z.object({
+	id: z.string(),
+	noteId: z.string(),
+	filename: z.string(),
+	mimeType: z.string(),
+	size: z.number(),
+	url: z.string().nullable().default(null),
+	localBlob: z.instanceof(Blob).nullable().default(null),
+	synced: z.boolean().default(false),
+	serverVersion: z.number().nullable().default(null),
 	createdAt: z.number(),
 	updatedAt: z.number()
 });
 
-export const DataSchema = z.array(ProjectSchema);
+export const BackupSchema = z.object({
+	projects: z.array(ProjectSchema),
+	columns: z.array(ColumnSchema),
+	notes: z.array(NoteSchema),
+	attachments: z.array(attachmentSchema)
+});
+
+export function createColumn(
+	partial: Omit<
+		Column,
+		'sortKey' | 'filters' | 'specialType' | 'name' | 'version' | 'synced' | 'serverVersion'
+	> &
+		Partial<
+			Pick<Column, 'sortKey' | 'filters' | 'specialType' | 'name' | 'synced' | 'serverVersion'>
+		>
+): Column {
+	return {
+		sortKey: null,
+		filters: {},
+		specialType: null,
+		name: 'New Column',
+		synced: false,
+		serverVersion: null,
+		...partial
+	};
+}
+export const emptyNote: Note = {
+	id: '',
+	columnId: '',
+	projectId: '',
+	title: '',
+	tags: [],
+	description: new Delta(),
+	color: '',
+	dueDate: null,
+	priority: null,
+	position: 0,
+	createdAt: 0,
+	updatedAt: 0,
+	synced: false,
+	serverVersion: null
+};
 
 // derive TS types from schemas for consumption elsewhere
 export type Note = z.infer<typeof NoteSchema>;
 export type Column = z.infer<typeof ColumnSchema>;
 export type Project = z.infer<typeof ProjectSchema>;
-
-// helpers that construct empty objects
-
-export function createEmptyNote({ color = '', projectId = '' }): Note {
-	return {
-		id: '',
-		title: '',
-		color: color,
-		description: new Delta(),
-		projectId: projectId,
-		dueDate: null,
-		priority: null,
-		createdAt: 0,
-		updatedAt: 0
-	};
-}
-
-export function createEmptyProject({
-	type = 'default',
-	color = '',
-	columns = []
-}: {
-	type?: 'default' | 'blank' | 'custom';
-	color?: string;
-	columns?: Column[];
-} = {}): Project {
-	return {
-		id: '',
-		name: '',
-		type,
-		color,
-		columns,
-		createdAt: 0,
-		updatedAt: 0
-	};
-}
+export type Attachment = z.infer<typeof attachmentSchema>;
+export type ColumnWithNotes = Column & { notes: Note[] };
+export type Backup = z.infer<typeof BackupSchema>;
 
 export type NoteInsertTarget =
 	| { type: 'index'; value: number }
@@ -99,3 +133,10 @@ export type DeleteTarget =
 	| { type: 'project'; id: string; name: string }
 	| { type: 'note'; id: string; projectId: string; name: string }
 	| null;
+
+// sort options
+export interface SortOption {
+	key: string;
+	label: string;
+	compare: (a: Note, b: Note) => number;
+}

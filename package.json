@@ -25,6 +25,7 @@
 		"@types/lodash.throttle": "^4.1.9",
 		"@types/matter-js": "^0.20.2",
 		"@types/node": "^22",
+		"@types/quill": "^2.0.14",
 		"eslint": "^9.39.3",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.13.1",
@@ -44,6 +45,7 @@
 	"dependencies": {
 		"@internationalized/date": "^3.11.0",
 		"bits-ui": "^2.16.2",
+		"dexie": "^4.4.2",
 		"doodle.css": "^0.0.2",
 		"lodash.throttle": "^4.1.1",
 		"matter-js": "^0.20.0",

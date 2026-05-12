@@ -1,47 +1,136 @@
 <script lang="ts">
-	import { createNote, editNote } from '$lib/actions';
+	import { createNote, editNote, saveNoteAttachments } from '$lib/actions';
+	import { attachmentRepository } from '$lib/db/dal';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import DatePicker from './DatePicker.svelte';
 	import QEditor from '$lib/components/QEditor.svelte';
 	import { formatDueDate, isDueDatePast } from '$lib/UiHelper';
 	import { notify } from '$lib/stores/notificationStore';
-	import type { Note } from '$lib/types';
-	import { MAX_NOTE_TITLE_LENGTH } from '$lib/constants';
-	import { currentProject } from '$lib/stores/currentProject';
+	import { emptyNote, type Note, type Attachment } from '$lib/types';
+	import { MAX_NOTE_TITLE_LENGTH, DEFAULT_NOTE_COLOR, DEFAULT_MENU_COLORS } from '$lib/constants';
 	import { confirmDelete } from '$lib/stores/deleteConfirmStore';
+	import { currentProject } from '$lib/stores/currentProject';
+	import { untrack } from 'svelte';
+	import { nanoid } from 'nanoid';
+	import { projects } from '$lib/stores/projects';
+	import { onMount } from 'svelte';
 
-	let { isOpen = $bindable(false), note }: { isOpen: boolean; note: Note } = $props();
+	// ─── Props ───────────────────────────────────────
+	let { isOpen = $bindable(false), note }: { isOpen: boolean; note: Note | null } = $props();
 
-	// warning is ignored, we reset workingNote in effect.
-	// svelte-ignore state_referenced_locally
-	let workingNote = $state({ ...note });
+	// ─── Working Note State ───────────────────────────
+	let workingNote = $state(
+		untrack(() => {
+			if (note) return { ...note };
+			let newNote: Note = emptyNote;
+			newNote.projectId = $currentProject?.id || '';
+			newNote.color = DEFAULT_NOTE_COLOR;
+
+			return newNote;
+		})
+	);
+
+	// noteId is stable per dialog open because parent uses {#key} to remount this component
+	const noteId = workingNote.id || nanoid();
+
 	let showDatePicker = $state(false);
 
-	$effect(() => {
-		if (isOpen) {
-			workingNote = { ...note };
-		}
-	});
+	// ─── Handlers ────────────────────────────────────
+	async function handleSubmit() {
+		const action = workingNote.id === '' ? createNote : editNote;
+		workingNote.id = noteId;
+		const plain = $state.snapshot(workingNote) as unknown as Note; // snapshot to unwarp any proxies made by $state
+		const result = await action(plain);
 
-	function handleSubmit() {
-		if (workingNote.id === '') {
-			const result = createNote(workingNote, { type: 'specialType', value: 'inbox' });
-			if (result.type === 'error') {
-				notify(result);
-				return;
-			}
-		} else {
-			const result = editNote(workingNote);
-			if (result.type === 'error') {
-				notify(result);
-				return;
-			}
+		if (result.type === 'error') {
+			notify(result);
+			return;
 		}
+
+		const plainAttachments = $state.snapshot(attachments) as unknown as Attachment[]; // snapshot to unwarp any proxies made by $state
+		const attachmentResults = await saveNoteAttachments(
+			noteId,
+			plainAttachments,
+			deletedAttachmentIds
+		); // create after note has been created.
+
+		if (attachmentResults.type === 'error') {
+			notify(attachmentResults);
+			return;
+		}
+
 		isOpen = false;
 	}
 
 	function handleCancel() {
 		isOpen = false;
+	}
+
+	// ─── Tags ────────────────────────────────────────
+	let showTags = $state(false);
+	let tagInputText = $state(''); // Track the input value
+
+	function addTag() {
+		const val = tagInputText.trim().toLowerCase();
+		if (val && !workingNote.tags?.includes(val)) {
+			workingNote.tags = [...(workingNote.tags || []), val];
+			tagInputText = ''; // Clear input
+			showTags = true; // Ensure menu is open to show the new tag
+		}
+	}
+
+	let attachments = $state([] as Attachment[]);
+	const deletedAttachmentIds = [] as string[];
+
+	onMount(async () => {
+		attachments = await attachmentRepository.getManyByNoteId(workingNote.id);
+	});
+
+	let fileInput: HTMLInputElement;
+
+	// ─── Attachments ─────────────────────────────────
+	function handleAddAttachment() {
+		fileInput.click();
+	}
+
+	function handleFileSelected(event: Event) {
+		const file = (event.target as HTMLInputElement).files?.[0];
+		if (!file) return;
+
+		const newAttachment: Attachment = {
+			id: nanoid(),
+			noteId,
+			filename: file.name,
+			mimeType: file.type,
+			size: file.size,
+			url: null,
+			localBlob: file,
+			synced: false,
+			serverVersion: null,
+			createdAt: 0,
+			updatedAt: 0
+		};
+
+		attachments = [...attachments, newAttachment]; // Update local state to show the new attachment
+	}
+
+	function getPreviewUrl(attachment: Attachment): string | null {
+		if (attachment.localBlob) {
+			return URL.createObjectURL(attachment.localBlob);
+		}
+		return attachment.url; // fallback to server url if no local blob
+	}
+
+	function handleDeleteAttachment(attachmentId: string) {
+		deletedAttachmentIds.push(attachmentId); // track attachments to delete
+		attachments = attachments.filter((a) => a.id !== attachmentId); // Update local state to remove the attachment
+	}
+
+	function formatSize(bytes: number): string {
+		if (bytes === 0) return '0 MB';
+		const mb = bytes / (1024 * 1024);
+		// Use .toFixed(1) for "1.5 MB" or .toFixed(2) for "1.45 MB"
+		return mb < 0.1 ? '< 0.1 MB' : `${mb.toFixed(1)} MB`;
 	}
 </script>
 
@@ -52,9 +141,9 @@
 		workingNote.dueDate = date;
 	}}
 />
-<ThemedDialog bind:isOpen>
-	<div class="flex flex-row gap-4">
-		<form class="space-y-4" onsubmit={handleSubmit}>
+<ThemedDialog bind:isOpen w="w-5/6" h="h-5/6">
+	<div class="flex h-full flex-row">
+		<form class="flex min-h-0 flex-1 flex-col space-y-2 pr-2" onsubmit={handleSubmit}>
 			<input
 				type="text"
 				class="doodle-border w-full text-2xl font-bold outline-none"
@@ -65,74 +154,302 @@
 			/>
 			<hr class=" border border-gray-500" />
 
-			<!-- 
-				{#key isOpen} forces QEditor to reinitialize when dialog opens/closes.
-				This clears old descriptions on new notes, but recreates the editor every time.
-				Performance impact is negligible now, but revisit if needed optimization.
-				Alternative: track a {unique key} that only changes on actual note switches.
-			-->
-			{#key isOpen}
+			<div class="overflow-y-auto">
 				<QEditor bind:description={workingNote.description} />
-			{/key}
+				<div class="mt-4 flex min-h-0 flex-1 flex-col">
+					<!-- Header Divider -->
+					<div class="flex w-full items-center gap-3 opacity-60">
+						<div class="flex-1 border-t-2 border-dashed border-gray-400"></div>
+						<span class="text-xs font-bold tracking-widest text-gray-500 uppercase"
+							>Attachments</span
+						>
+						<!-- The "Add" Action -->
+						<input bind:this={fileInput} type="file" class="hidden" onchange={handleFileSelected} />
+						<button
+							type="button"
+							title="Add file or image"
+							class="flex size-7 items-center justify-center rounded-full border-2 border-black bg-amber-400 text-xl font-bold shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all hover:bg-amber-300 active:translate-y-px active:shadow-none"
+							onclick={handleAddAttachment}
+						>
+							+
+						</button>
+						<div class="flex-1 border-t-2 border-dashed border-gray-400"></div>
+					</div>
 
-			<div class="flex justify-end gap-3">
+					<div class="flex flex-col gap-3 py-4 pr-2">
+						{#each attachments as attachment (attachment.id)}
+							<!-- BIG PREVIEW: Image/Screenshot -->
+							{#if attachment.mimeType.startsWith('image/')}
+								<div class="group relative mt-2 self-start">
+									<!-- Washi Tape Effect -->
+									<div
+										class="absolute -top-3 left-1/2 z-10 h-6 w-16 -translate-x-1/2 rotate-2 border border-blue-300 bg-blue-200/50 opacity-80 shadow-sm"
+									></div>
+
+									<div
+										class="doodle-border flex w-64 flex-col overflow-hidden bg-white p-2 shadow-[6px_6px_0px_rgba(0,0,0,1)] transition-transform hover:rotate-1"
+									>
+										<div
+											class="aspect-video w-full overflow-hidden border border-gray-200 bg-gray-100"
+										>
+											<img
+												src={getPreviewUrl(attachment)}
+												alt="Preview"
+												class="h-full w-full object-contain"
+											/>
+											<!-- File Size Badge -->
+											<span
+												class="text-xxs absolute top-1 right-1 rounded bg-black/70 px-1 py-0.5 font-bold text-white"
+											>
+												{formatSize(attachment.size)}
+											</span>
+										</div>
+										<div class="mt-2 flex items-center justify-between">
+											<span class="truncate text-xs font-bold italic">{attachment.filename}</span>
+											<div class="flex gap-1">
+												<button
+													class="size-6 rounded border border-black bg-white text-xs hover:bg-amber-200"
+													>📌</button
+												>
+												<button
+													class="size-6 rounded border border-black bg-white text-xs hover:bg-red-200"
+													onclick={(e) => {
+														e.stopPropagation();
+														handleDeleteAttachment(attachment.id);
+													}}>x</button
+												>
+											</div>
+										</div>
+									</div>
+								</div>
+							{:else}<!-- LIST ROW: Standard File -->
+								<div class="doodle-border flex items-center gap-3 bg-white p-2 hover:bg-gray-50">
+									<span class="text-2xl">📄</span>
+									<div class="flex flex-1 flex-col">
+										<span class="text-sm leading-tight font-bold">{attachment.filename}</span>
+										<span class="text-xxs font-black text-gray-500 uppercase"
+											>{formatSize(attachment.size)}</span
+										>
+									</div>
+									<button
+										class="size-8 rounded-full border border-black hover:bg-amber-200"
+										title="Pin attachment">📌</button
+									>
+									<button
+										class="size-8 rounded-full border border-black hover:bg-red-200"
+										onclick={(e) => {
+											e.stopPropagation(); // Prevent triggering parent click events
+											handleDeleteAttachment(attachment.id);
+										}}
+										title="Delete">x</button
+									>
+								</div>
+							{/if}
+						{/each}
+					</div>
+				</div>
+			</div>
+
+			<div class="mx-2 mt-auto flex justify-end gap-3 border-t-2 border-gray-100 pt-4">
 				<button
-					class="rounded-2xl bg-gray-500 p-4 font-bold text-white"
+					class="rounded-2xl border-2 border-black px-6 py-2 font-bold transition-transform active:translate-y-1"
 					type="button"
 					onclick={handleCancel}
 				>
 					Cancel
 				</button>
-				<button class="rounded-2xl bg-green-500 p-4 font-bold text-white" type="submit">
-					Save
+				<button
+					class="rounded-2xl border-2 border-black bg-green-400 px-8 py-2 font-bold shadow-[4px_4px_0px_rgba(0,0,0,1)] transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+					type="submit"
+				>
+					Save Note
 				</button>
 			</div>
 		</form>
-		<div class=" w-0.5 bg-gray-500"></div>
-		<div class="flex w-fit flex-col gap-5 font-patrick-hand text-2xl">
-			<span class="doodle-border line-clamp-2 w-[19vh]" style="overflow-wrap: break-word;"
-				>Project: {$currentProject?.name ?? 'Unknown Project'}</span
-			>
-			<span class="doodle-border flex items-center gap-5"
-				>Color <input type="color" bind:value={workingNote.color} /></span
-			>
-			<!-- <span class="doodle-border flex w-fit items-center gap-5 font-patrick-hand text-2xl"
-				>Tags</span
-		> -->
-			<button
-				class="doodle-border flex w-full justify-center"
-				onclick={() => (showDatePicker = true)}
-			>
-				{#if workingNote.dueDate}
-					<span class={isDueDatePast(workingNote.dueDate, new Date()) ? 'text-red-500' : ''}>
-						{formatDueDate(workingNote.dueDate)}
-					</span>
-				{:else}
-					Date
-				{/if}
-			</button>
-			<div class="doodle-border flex w-fit items-center gap-5 font-patrick-hand text-2xl">
-				<select
-					name="Priority"
-					id=""
-					bind:value={workingNote.priority}
-					class="rounded-md border border-gray-300 bg-white px-2 py-1 {workingNote.priority ===
-					'low'
-						? 'text-blue-500'
-						: workingNote.priority === 'medium'
-							? 'text-yellow-500'
-							: workingNote.priority === 'high'
-								? 'text-red-500'
-								: ''}"
-				>
-					<option value={null}>No Priority</option>
-					<option value="low">Low Priority</option>
-					<option value="medium">Medium Priority</option>
-					<option value="high">High Priority</option>
-				</select>
+		<div class="flex w-60 flex-col gap-6 border-l-2 border-gray-500 pl-4 font-patrick-hand text-xl">
+			<div>
+				<span class="mb-1 block">Project</span>
+				<div class="relative">
+					<span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2">📁</span>
+					<select
+						bind:value={workingNote.projectId}
+						class="doodle-border w-full cursor-pointer bg-transparent py-2 pr-4 pl-10"
+					>
+						{#each $projects as project (project.id)}
+							<option value={project.id}>{project.name}</option>
+						{/each}
+					</select>
+				</div>
 			</div>
+			<div>
+				<span class="mb-1 block">Color</span>
+				<div class="flex flex-wrap gap-3">
+					{#each DEFAULT_MENU_COLORS as paletteColor (paletteColor)}
+						<button
+							type="button"
+							class="size-8 rounded-xl border-2 border-black transition-all"
+							style:background-color={paletteColor}
+							class:border-4={workingNote.color === paletteColor}
+							onclick={() => (workingNote.color = paletteColor)}
+							title="Select color {paletteColor}"
+						>
+						</button>
+					{/each}
+
+					<label
+						class="relative flex size-8 cursor-pointer items-center justify-center rounded-full border-2 border-black transition-all"
+						style:background-color={workingNote.color}
+						class:border-4={!DEFAULT_MENU_COLORS.includes(workingNote.color)}
+					>
+						<span class="text-xs font-bold text-white mix-blend-difference">+</span>
+						<input
+							type="color"
+							bind:value={workingNote.color}
+							class="absolute inset-0 cursor-pointer opacity-0"
+						/>
+					</label>
+				</div>
+			</div>
+
+			<div>
+				<span class="mb-1 block">Due Date</span>
+				<button
+					class="doodle-border flex w-full items-center justify-center gap-2 py-2"
+					onclick={() => (showDatePicker = true)}
+				>
+					{#if workingNote.dueDate}
+						<span class={isDueDatePast(workingNote.dueDate, new Date()) ? 'text-red-500' : ''}>
+							{formatDueDate(workingNote.dueDate)}
+						</span>
+					{:else}
+						<span class="text-gray-400">Set Date...</span>
+					{/if}
+				</button>
+			</div>
+			<div>
+				<span class="mb-1 block">Priority</span>
+				<div class="flex w-full items-center gap-2 font-patrick-hand text-2xl">
+					<button
+						class="doodle-border flex-1 {workingNote.priority === 'low'
+							? 'bg-blue-100 text-blue-800'
+							: ''}"
+						onclick={() => {
+							workingNote.priority = workingNote.priority === 'low' ? null : 'low';
+						}}>Low</button
+					>
+					<button
+						class=" doodle-border flex-1 {workingNote.priority === 'medium'
+							? 'bg-amber-100 text-amber-800'
+							: ''}"
+						onclick={() => {
+							workingNote.priority = workingNote.priority === 'medium' ? null : 'medium';
+						}}>Medium</button
+					>
+					<button
+						class=" doodle-border flex-1 {workingNote.priority === 'high'
+							? 'bg-red-100 text-red-800'
+							: ''}"
+						onclick={() => {
+							workingNote.priority = workingNote.priority === 'high' ? null : 'high';
+						}}>High</button
+					>
+				</div>
+			</div>
+			<div class="relative">
+				<span class="mb-1 flex items-center gap-2">
+					Tags
+					{#if workingNote.tags?.length > 0}
+						<span
+							class="rounded-full bg-black px-1.5 py-1 text-xs leading-none font-bold text-white"
+						>
+							{workingNote.tags.length}
+						</span>
+					{/if}
+					<button
+						type="button"
+						class="ml-auto text-sm opacity-50 transition-transform hover:opacity-100"
+						class:rotate-180={showTags}
+						onclick={() => (showTags = !showTags)}
+					>
+						▼
+					</button>
+				</span>
+
+				<!-- Input Area -->
+				<div
+					class="doodle-border flex items-center bg-white/50 p-1 pl-2 transition-colors focus-within:bg-white"
+				>
+					<input
+						type="text"
+						placeholder="Add tag..."
+						class="w-full bg-transparent font-patrick-hand text-lg outline-none"
+						bind:value={tagInputText}
+						onfocus={() => (showTags = true)}
+						onkeydown={(e) => {
+							if (e.key === 'Enter') {
+								e.preventDefault();
+								addTag();
+							}
+							if (e.key === 'Escape') showTags = false;
+						}}
+					/>
+					<!-- The Plus Button -->
+					<button
+						type="button"
+						title="Add file or image"
+						class="flex size-7 items-center justify-center rounded-full border-2 border-black bg-amber-400 text-xl font-bold opacity-75 shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all hover:bg-amber-300 active:translate-y-px active:shadow-none"
+						onclick={addTag}
+					>
+						+
+					</button>
+				</div>
+
+				<!-- Dropdown Menu -->
+				{#if showTags}
+					<button
+						type="button"
+						aria-label="Close tags dropdown"
+						class="fixed inset-0 z-10 cursor-default"
+						onclick={() => (showTags = false)}
+					>
+					</button>
+
+					<div
+						class="doodle-border absolute right-0 bottom-[calc(100%+6px)] left-0 z-20 flex max-h-48 flex-col gap-2 overflow-y-auto bg-white p-3"
+					>
+						{#if (workingNote.tags || []).length === 0}
+							<span class="text-center text-sm text-gray-400 italic">No tags yet...</span>
+						{:else}
+							<div class="flex flex-wrap gap-2">
+								{#each workingNote.tags as tag (tag)}
+									<span
+										class="flex items-center gap-1 rounded border border-black bg-gray-50 px-2 py-0.5 text-sm shadow-[1px_1px_0px_rgba(0,0,0,1)]"
+									>
+										#{tag}
+										<button
+											type="button"
+											class="font-bold hover:text-red-500"
+											onclick={() => (workingNote.tags = workingNote.tags.filter((t) => t !== tag))}
+										>
+											×
+										</button>
+									</span>
+								{/each}
+							</div>
+						{/if}
+						<button
+							type="button"
+							class="mt-1 w-full border-t border-dashed border-gray-300 pt-2 text-center text-xs font-bold tracking-widest text-gray-500 uppercase hover:text-black"
+							onclick={() => (showTags = false)}
+						>
+							Close Menu
+						</button>
+					</div>
+				{/if}
+			</div>
+
 			<button
-				class="mt-auto size-fit rounded-2xl bg-red-700 px-10 py-4 font-bold text-white"
+				class="mt-auto ml-auto size-fit rounded-2xl bg-red-700 px-5 py-3 font-bold text-white"
 				class:hidden={workingNote.id === ''}
 				onclick={() => {
 					isOpen = false;

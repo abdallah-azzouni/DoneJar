@@ -27,7 +27,9 @@
 </script>
 
 <div data-id={note.id} class="inline-block">
-	<NoteMenu bind:isOpen={showNoteMenu} {note} />
+	{#key showNoteMenu}
+		<NoteMenu bind:isOpen={showNoteMenu} {note} />
+	{/key}
 	<button onclick={() => (showNoteMenu = true)}>
 		<svg
 			version="1.1"

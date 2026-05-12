@@ -3,44 +3,8 @@
 	import FunnelSimpleIcon from 'phosphor-svelte/lib/FunnelSimpleIcon';
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
-
-	interface SortOption {
-		key: string;
-		label: string;
-		compare: (a: Note, b: Note) => number;
-	}
-
-	// ═══ Sort options ═══
-
-	const sortOptions: SortOption[] = [
-		{ key: 'newest', label: 'Newest first', compare: (a, b) => b.createdAt - a.createdAt },
-		{ key: 'oldest', label: 'Oldest first', compare: (a, b) => a.createdAt - b.createdAt },
-		{
-			key: 'due-date',
-			label: 'Due date',
-			compare: (a, b) => {
-				if (!a.dueDate && !b.dueDate) return 0;
-				if (!a.dueDate) return 1;
-				if (!b.dueDate) return -1;
-				return a.dueDate.timestamp - b.dueDate.timestamp;
-			}
-		},
-		{
-			key: 'priority',
-			label: 'Priority',
-			compare: (a, b) => {
-				const priorityValue = (note: Note) => {
-					if (note.priority === 'high') return 3;
-					if (note.priority === 'medium') return 2;
-					if (note.priority === 'low') return 1;
-					return 0; // No priority
-				};
-				return priorityValue(b) - priorityValue(a); // Higher priority first
-			}
-		},
-		{ key: 'title-az', label: 'Title A → Z', compare: (a, b) => a.title.localeCompare(b.title) },
-		{ key: 'title-za', label: 'Title Z → A', compare: (a, b) => b.title.localeCompare(a.title) }
-	];
+	import { sortOptions } from '$lib/sort';
+	import { type SortOption } from '$lib/types';
 
 	// ═══ Props ═══
 
@@ -53,7 +17,7 @@
 	}: {
 		notes: Note[];
 		onSort: (compareFn: (a: Note, b: Note) => number) => void;
-		onFiltersChange?: (filters: Record<string, Set<string>>) => void;
+		onFiltersChange?: (filters: Record<string, string[]>) => void;
 		activeSortKey?: string | null;
 		onActiveSortKeyChange?: (key: string | null) => void;
 	} = $props();
@@ -63,6 +27,7 @@
 	let isOpen = $state(false);
 	let colorFilters = new SvelteSet<string>();
 	let priorityFilters = new SvelteSet<string>();
+	let tagFilters = new SvelteSet<string>();
 	let panelEl: HTMLDivElement | undefined = $state();
 
 	// Filters collection (modular). Each filter exposes a getOptions(), set, and toggle handler.
@@ -82,6 +47,18 @@
 			getOptions: () => ['low', 'medium', 'high'],
 			set: priorityFilters,
 			toggle: (p: string) => togglePriority(p)
+		},
+		{
+			key: 'tag',
+			label: 'Filter by tag',
+			type: 'list',
+			getOptions: () => {
+				const tags = new SvelteSet<string>();
+				notes.forEach((n) => n.tags?.forEach((t) => tags.add(t)));
+				return [...tags];
+			},
+			set: tagFilters,
+			toggle: (t: string) => toggleTag(t)
 		}
 	];
 
@@ -90,8 +67,8 @@
 
 	// Callbacks: call the modular `onFiltersChange` with the record of active filter sets.
 	$effect(() => {
-		const activeRecord: Record<string, Set<string>> = {};
-		for (const f of filters) activeRecord[f.key] = f.set;
+		const activeRecord: Record<string, string[]> = {};
+		for (const f of filters) activeRecord[f.key] = [...f.set];
 		untrack(() => {
 			if (typeof onFiltersChange === 'function') onFiltersChange(activeRecord);
 		});
@@ -112,6 +89,11 @@
 	function togglePriority(priority: string) {
 		if (priorityFilters.has(priority)) priorityFilters.delete(priority);
 		else priorityFilters.add(priority);
+	}
+
+	function toggleTag(tag: string) {
+		if (tagFilters.has(tag)) tagFilters.delete(tag);
+		else tagFilters.add(tag);
 	}
 
 	function clearAll() {
@@ -143,7 +125,7 @@
 
 	{#if isOpen}
 		<div
-			class="doodle-border absolute right-0 z-50 mt-1 w-52 bg-white p-3 font-patrick-hand shadow-lg"
+			class="doodle-border absolute right-0 z-50 mt-1 max-h-80 w-52 overflow-y-auto bg-white p-3 font-patrick-hand shadow-lg"
 			onclick={(e) => e.stopPropagation()}
 			onkeydown={(e) => {
 				if (e.key === 'Escape') isOpen = false;
@@ -192,13 +174,13 @@
 									onclick={() => filter.toggle(opt)}
 									role="menuitem"
 								>
-									{opt.charAt(0).toUpperCase() + opt.slice(1)}
+									{opt}
 								</button>
 							{/each}
 						{/if}
 					</div>
 				{:else}
-					<p class="mt-1 text-sm text-gray-400">No notes yet</p>
+					<p class="mt-1 text-sm text-gray-400">No {filter.label.toLowerCase()} yet</p>
 				{/if}
 				<hr class="my-2 border-gray-300" />
 			{/each}

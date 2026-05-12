@@ -1,60 +1,43 @@
-import { projects } from '$lib/stores/userData';
 import { nanoid } from 'nanoid';
 import Delta from 'quill-delta';
-import {
-	failure,
-	success,
-	type ActionResult,
-	type Column,
-	type Note,
-	type NoteInsertTarget
-} from '$lib/types';
+import { noteRepository, columnRepository } from '$lib/db/dal';
+
+import { failure, success, type ActionResult, type Note } from '$lib/types';
 import { validateNoteCreation, validateNoteEdit } from '$lib/validators/noteValidators';
 
-// helper to resolve the target column index based on the provided NoteInsertTarget
-function resolveInsertIndex(columns: Column[], target: NoteInsertTarget): number {
-	if (target.type === 'index') return target.value;
-	const idx = columns.findIndex((c) => c.specialType === target.value);
-	return idx !== -1 ? idx : 0; // fallback to 0 if specialType not found
-}
-
 /**
- * Creates a new note in the specified column of a project.
+ * Creates a new note in the inbox column of a project.
  * @param note the note payload (title, color, projectId, etc.)
- * @param target column to insert the note into — either a direct index or a specialType lookup
  */
-export function createNote(note: Note, target: NoteInsertTarget): ActionResult {
+export async function createNote(note: Note): Promise<ActionResult> {
 	const validationResult = validateNoteCreation(note);
 	if (validationResult.type === 'error') return validationResult;
 
 	try {
-		const newNote = {
-			id: nanoid(),
-			title: note.title,
-			color: note.color,
+		const col = await columnRepository.findInboxColumn(note.projectId);
+
+		if (!col) {
+			return failure('Inbox column not found for the specified project');
+		}
+
+		const newNote: Note = {
+			id: note.id || nanoid(),
+			columnId: col?.id || '',
 			projectId: note.projectId,
+			title: note.title,
+			tags: note.tags,
 			description: new Delta(note.description),
+			color: note.color,
 			dueDate: note.dueDate,
 			priority: note.priority,
+			position: note.position,
 			createdAt: Date.now(),
-			updatedAt: Date.now()
+			updatedAt: Date.now(),
+			synced: false,
+			serverVersion: null
 		};
-		projects.update((state) =>
-			state.map((p) =>
-				p.id === note.projectId
-					? {
-							...p,
-							updatedAt: Date.now(),
-							columns: (() => {
-								const targetIndex = resolveInsertIndex(p.columns, target);
-								return p.columns.map((col, i) =>
-									i === targetIndex ? { ...col, notes: [...col.notes, newNote] } : col
-								);
-							})()
-						}
-					: p
-			)
-		);
+
+		await noteRepository.add(newNote);
 	} catch (error) {
 		return failure(`Error creating note: ${error}`);
 	}
@@ -66,33 +49,41 @@ export function createNote(note: Note, target: NoteInsertTarget): ActionResult {
  * @param note the full note object with updated fields; must include id and projectId
  * @returns ActionResult indicating success or failure of the operation
  */
-export function editNote(note: Note): ActionResult {
+export async function editNote(note: Note): Promise<ActionResult> {
 	const validationResult = validateNoteEdit(note);
 	if (validationResult.type === 'error') return validationResult;
 
-	const updated = {
-		...note,
-		dueDate: note.dueDate ? { ...note.dueDate } : null,
-		description: new Delta(note.description),
-		createdAt: note.createdAt || Date.now(),
-		updatedAt: Date.now()
-	};
+	let col = await columnRepository.get(note.columnId);
+	if (!col) {
+		return failure('Inbox column not found for the specified project');
+	}
 
 	try {
-		projects.update((state) =>
-			state.map((project) => {
-				if (project.id !== updated.projectId) return project;
+		// Change columnId to inbox if note is moved to new project.
+		if (col?.projectId != note.projectId) {
+			col = await columnRepository.findInboxColumn(note.projectId);
+			if (!col) {
+				return failure('System error: Target project is missing an Inbox');
+			}
+		}
 
-				return {
-					...project,
-					updatedAt: Date.now(),
-					columns: project.columns.map((col) => ({
-						...col,
-						notes: col.notes.map((n: Note) => (n.id === updated.id ? updated : n))
-					}))
-				};
-			})
-		);
+		const updateResult = await noteRepository.update({
+			id: note.id,
+			columnId: col?.id || '',
+			projectId: note.projectId,
+			title: note.title,
+			tags: note.tags,
+			description: new Delta(note.description),
+			color: note.color,
+			dueDate: note.dueDate,
+			priority: note.priority,
+			position: note.position,
+			createdAt: note.createdAt || Date.now(),
+			updatedAt: Date.now()
+		} as Note);
+		if (updateResult === 0) {
+			return failure('Note not found or no changes made');
+		}
 	} catch (error) {
 		return failure(`Error editing note: ${error}`);
 	}
@@ -105,21 +96,9 @@ export function editNote(note: Note): ActionResult {
  * @param projectId the ID of the project containing the note
  * @returns ActionResult indicating success or failure of the operation
  */
-export function deleteNote(noteId: string, projectId: string): ActionResult {
+export async function deleteNote(noteId: string): Promise<ActionResult> {
 	try {
-		projects.update((state) =>
-			state.map((project) => {
-				if (project.id !== projectId) return project;
-				return {
-					...project,
-					updatedAt: Date.now(),
-					columns: project.columns.map((col) => ({
-						...col,
-						notes: col.notes.filter((n: Note) => n.id !== noteId)
-					}))
-				};
-			})
-		);
+		await noteRepository.delete(noteId);
 	} catch (error) {
 		return failure(`Error deleting note: ${error}`);
 	}
@@ -127,29 +106,36 @@ export function deleteNote(noteId: string, projectId: string): ActionResult {
 }
 
 /**
- * Replaces the notes array for a single column.
- * @param projectId the ID of the project containing the column
- * @param columnIndex the index of the column to update
- * @param notes the new array of notes for the column
+ * Moves a note to a different column (used for drag-and-drop).
+ * @param noteId the ID of the note to move
+ * @param newColumnId the ID of the column to move the note to
  * @returns ActionResult indicating success or failure of the operation
  */
-export function reorderColumnNotes(
-	projectId: string,
-	columnIndex: number,
-	notes: Note[]
-): ActionResult {
+export async function moveNote(noteId: string, newColumnId: string): Promise<ActionResult> {
 	try {
-		projects.update((state) =>
-			state.map((p) =>
-				p.id === projectId
-					? {
-							...p,
-							updatedAt: Date.now(),
-							columns: p.columns.map((col, i) => (i === columnIndex ? { ...col, notes } : col))
-						}
-					: p
-			)
-		);
+		const note = await noteRepository.get(noteId);
+		if (!note) {
+			return failure('Note not found');
+		}
+
+		note.columnId = newColumnId;
+		note.updatedAt = Date.now();
+
+		const result = await noteRepository.update(note);
+		if (result === 0) return failure('Note not found or no changes made');
+	} catch (error) {
+		return failure(`Error moving note: ${error}`);
+	}
+	return success('Note moved successfully');
+}
+
+/**
+ * Reorders notes within a column based on an array of note IDs in the desired order.
+ * @param noteIds an array of note IDs in the desired order
+ */
+export async function reorderNotes(noteIds: string[]): Promise<ActionResult> {
+	try {
+		await noteRepository.reorderAll(noteIds);
 	} catch (error) {
 		return failure(`Error reordering notes: ${error}`);
 	}

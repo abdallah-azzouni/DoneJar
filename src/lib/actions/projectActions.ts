@@ -1,13 +1,12 @@
 import { nanoid } from 'nanoid';
 import type { ActionResult, Column } from '$lib/types';
-import { failure, success } from '$lib/types';
+import { createColumn } from '$lib/types';
+import { failure, success, type Project } from '$lib/types';
 import { validateProjectCreation, validateProjectEdit } from '$lib/validators/projectValidators';
-import { projects } from '$lib/stores/userData';
-import { get } from 'svelte/store';
 import { goto } from '$app/navigation';
-import { currentProjectId } from '$lib/stores/currentProject';
 import { ROUTES } from '$lib/constants';
 import { resolve } from '$app/paths';
+import { projectRepository, projectService } from '$lib/db/dal';
 
 /**
  * Creates a new project and adds it to the projects store.
@@ -17,39 +16,51 @@ import { resolve } from '$app/paths';
  * @param customColumns only required if type is 'custom'; ignored otherwise
  * @returns ActionResult indicating success or failure and an accompanying message
  */
-export function createProject(
+export async function createProject(
 	name: string,
 	type: 'default' | 'blank' | 'custom',
 	color: string,
 	customColumns?: Column[]
-): ActionResult {
+): Promise<ActionResult> {
 	const validationResult = validateProjectCreation(name, type, color, customColumns);
 	if (validationResult.type === 'error') return validationResult;
+
+	const projectId = nanoid();
 
 	let newColumns: Column[] = [];
 	if (type === 'default') {
 		newColumns = [
-			{ name: 'TODO', notes: [], specialType: 'inbox' },
-			{ name: 'DOING', notes: [] },
-			{ name: 'DONE', notes: [], specialType: 'jar' }
+			createColumn({ id: nanoid(), projectId, name: 'TODO', position: 0, specialType: 'inbox' }),
+			createColumn({ id: nanoid(), projectId, name: 'DOING', position: 1, specialType: null }),
+			createColumn({ id: nanoid(), projectId, name: 'DONE', position: 2, specialType: 'jar' })
 		];
 	} else if (type === 'blank') {
-		newColumns = [{ name: '', notes: [], specialType: 'inbox' }];
+		newColumns = [
+			createColumn({ id: nanoid(), projectId, name: '', position: 0, specialType: 'inbox' })
+		];
 	} else if (type === 'custom') {
-		newColumns = customColumns || [];
+		newColumns = (customColumns || []).map((col, i) => ({
+			...col,
+			id: nanoid(),
+			projectId,
+			position: i
+		}));
 	}
 
 	try {
-		const newProject = {
-			id: nanoid(),
+		// Create project with columns
+		const newProject: Project = {
+			id: projectId,
 			name,
 			type,
 			color,
-			columns: newColumns,
 			createdAt: Date.now(),
-			updatedAt: Date.now()
+			updatedAt: Date.now(),
+			synced: false,
+			serverVersion: null
 		};
-		projects.update((state) => [...state, newProject]);
+
+		await projectService.createProjectWithColumns(newProject, newColumns);
 		setActiveProject(newProject.id);
 	} catch (error) {
 		return failure(`Error during project creation: ${error}`);
@@ -77,22 +88,17 @@ export function setActiveProject(projectId: string): ActionResult {
  * @param projectInfo the new project data; must include the id of the project to edit
  * @returns ActionResult indicating success or failure and an accompanying message
  */
-export function editProject(projectInfo: {
+export async function editProject(projectInfo: {
 	name: string;
 	color: string;
 	id: string;
-}): ActionResult {
+}): Promise<ActionResult> {
 	const validationResult = validateProjectEdit(projectInfo);
 	if (validationResult.type === 'error') return validationResult;
 
 	try {
-		projects.update((state) =>
-			state.map((p) =>
-				p.id === projectInfo.id
-					? { ...p, name: projectInfo.name, color: projectInfo.color, updatedAt: Date.now() }
-					: p
-			)
-		);
+		const result = await projectRepository.update({ ...projectInfo, updatedAt: Date.now() });
+		if (result === 0) return failure('Project not found or no changes made');
 	} catch (error) {
 		return failure(`Error editing project: ${error}`);
 	}
@@ -104,26 +110,9 @@ export function editProject(projectInfo: {
  * @param projectId the id of the project to delete
  * @returns ActionResult indicating success or failure and an accompanying message
  */
-export function deleteProject(projectId: string): ActionResult {
+export async function deleteProject(projectId: string): Promise<ActionResult> {
 	try {
-		const currentProjects = get(projects);
-		const currentActiveId = get(currentProjectId);
-
-		const deleteIndex = currentProjects.findIndex((p) => p.id === projectId);
-		const updatedProjects = currentProjects.filter((p) => p.id !== projectId);
-		projects.set(updatedProjects);
-
-		// Update active project if we deleted the active one
-		if (projectId === currentActiveId) {
-			if (updatedProjects.length === 0) {
-				goto(resolve(ROUTES.APP));
-			} else {
-				let newActiveId = '';
-				const nextIndex = Math.min(deleteIndex, updatedProjects.length - 1);
-				newActiveId = updatedProjects[nextIndex].id;
-				setActiveProject(newActiveId);
-			}
-		}
+		await projectService.deleteFullProject(projectId);
 	} catch (error) {
 		return failure(`Error deleting project: ${error}`);
 	}

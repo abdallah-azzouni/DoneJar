@@ -81,13 +81,33 @@ The app handles the rest and opens up at `http://localhost:5173`.
 
 ## Roadmap
 
-The core task management experience is built and live. What's next, roughly in priority order:
+DoneJar is developed in clear, incremental phases.
+
+### ✅ Phase 1 — Core Experience (Completed)
+
+- Kanban workflow (TODO → DOING → DONE)
+- Multi-project support with colors
+- Physics-based satisfaction jar
+- Drag-and-drop task management
+- Responsive, hand-drawn UI
+- Deployed production website
+
+### ✅ Phase 2 — Task & Project Management (Completed)
+
+- Edit and delete tasks
+- Edit and delete projects
+- Task descriptions with rich text
+- Task dates and tags
+- Improved menus for tasks and projects
+- Local Database (Dexie) integration
+
+### 🚧 Phase 3 — Quality of Life & Sync (In Progress)
 
 - **Cross-device sync** — actively building out seamless replication with PocketBase and Cloudflare R2
 - **Mobile layout** — improving the kanban board experience on smaller screens
 - **Column editing** — rename, reorder, add/remove columns on existing projects
-- **Data export/import** — JSON backup and restore for local Dexie database
 - **Jar browsing** — a way to view and retrieve notes from inside the physics jar
+- **Data export/import** — JSON backup and restore for local Dexie database
 - **Accessibility** — keyboard navigation, ARIA roles, focus management
 
 See [open issues](https://github.com/abdallah-azzouni/DoneJar/issues) for what's actively being worked on.

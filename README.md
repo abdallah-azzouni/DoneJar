@@ -1,6 +1,6 @@
 # DoneJar
 
-A kanban-style task manager where completed tasks drop into a physics-simulated jar. Built with SvelteKit and deployed on Cloudflare Pages.
+DoneJar is an offline-first, kanban-style task manager where your completed tasks literally drop into a physics-simulated jar. It solves the mundane feeling of crossing items off a to-do list by making task completion tactile and fun, while still functioning as a robust, capable productivity tool.
 
 **[Live →](https://donejar.pages.dev)**
 
@@ -10,79 +10,58 @@ A kanban-style task manager where completed tasks drop into a physics-simulated 
 
 ---
 
-## Features
+## Key Features
 
 - **Kanban board** with drag-and-drop (svelte-dnd-action)
-- **Physics jar** — completed tasks fall into a Matter.js-powered beaker
-- **Multi-project** — create multiple boards with custom names and colors
-- **Flexible columns** — default (TODO/DOING/DONE), blank, or fully custom layouts with optional inbox/jar designation
-- **Rich text notes** — Quill editor for task descriptions (headers, lists, links, code, video)
-- **Due dates** — optional date and time per task, with overdue indicators
-- **CRUD** — create, edit, delete for both projects and notes, with confirmation dialogs
-- **Client-side only** — all data in localStorage via svelte-persisted-store
-- **Hand-drawn aesthetic** — doodle.css borders, Patrick Hand font
-
-![Drag and drop between columns](src/lib/assets/landing/step2.gif)
-
-![Multi-project management](src/lib/assets/landing/projects.gif)
+- **Physics jar** — completed tasks bounce and stack inside a Matter.js-powered beaker
+- **Offline-first** — absolutely no load screens; everything saves locally right away
+- **Attachments** — drag and drop files directly onto your notes
+- **Cross-device sync** — keeps your data updated across devices using PocketBase + R2
+- **Rich note styling** — Tags, priority flags, and a visual color picker for all notes
+- **Rich text editor** — Quill powers the task descriptions (headers, lists, links, code, video)
+- **Multi-project** — create multiple boards with custom names and flexible columns
 
 ---
 
 ## Tech Stack
 
-| Category  | Tools                                                        |
-| --------- | ------------------------------------------------------------ |
-| Framework | SvelteKit, Svelte 5, TypeScript, Vite                        |
-| Styling   | TailwindCSS 4 (Vite plugin), doodle.css, tailwindcss-animate |
-| UI        | bits-ui, phosphor-svelte, Quill                              |
-| State     | Svelte stores, svelte-persisted-store, runed                 |
-| Physics   | Matter.js                                                    |
-| DnD       | svelte-dnd-action                                            |
-| Dates     | @internationalized/date                                      |
-| Deploy    | Cloudflare Pages (adapter-cloudflare)                        |
-| Tooling   | ESLint, Prettier                                             |
+- **Framework**: SvelteKit, TypeScript
+- **Styling**: TailwindCSS 4.1, doodle.css
+- **Local Database**: Dexie (IndexedDB)
+- **Physics**: Matter.js
+- **Rich Text**: Quill
+- **Validation & IDs**: zod, nanoid
+
+---
+
+## Architecture
+
+DoneJar utilizes a **local-first** approach to guarantee incredible speed and offline availability.
+
+- **Storage**: All data relies on an IndexedDB foundation powered by Dexie, with a structured Data Access Layer (DAL) handling queries and mutations.
+- **Sync Design**: It seamlessly replicates data back and forth from PocketBase using a `serverVersion` sequence alongside a `synced` flag to track local vs. remote state without overriding newer edits. Attachments are securely shuffled into Cloudflare R2.
+- **State**: The application layers UI state management (stores) safely above the DAL infrastructure.
 
 ---
 
 ## Project Structure
 
-```
+```text
 src/
 ├── lib/
-│   ├── Actions.ts                # Data actions (CRUD for projects & notes)
-│   ├── UiHelper.ts               # Color contrast, date formatting utils
-│   ├── stores/
-│   │   ├── userData.ts            # Main app state (persisted)
-│   │   └── timer.ts              # Reactive clock store
-│   ├── components/
-│   │   ├── board.svelte           # Kanban board with columns and jar
-│   │   ├── BeakerPhysics.svelte   # Matter.js jar simulation
-│   │   ├── StickyNote.svelte      # Task card
-│   │   ├── QEditor.svelte         # Quill rich text editor wrapper
-│   │   ├── AppHeader.svelte       # Top bar
-│   │   ├── ProjectItem.svelte     # Sidebar project entry
-│   │   ├── Crumple.svelte         # Crumpled paper visual
-│   │   └── Loading.svelte         # Loading screen
-│   ├── popups/
-│   │   ├── ProjectMenu.svelte     # Create/edit project dialog
-│   │   ├── DeletePConfirmation.svelte
-│   │   ├── ThemedDialog.svelte    # Reusable dialog wrapper
-│   │   └── noteMenu/
-│   │       ├── NoteMenu.svelte    # Create/edit note dialog
-│   │       ├── DatePicker.svelte  # Date/time picker
-│   │       └── DeleteNConfirmation.svelte
-│   └── assets/                    # Images, icons, landing page assets
-├── routes/
-│   ├── +page.svelte               # Landing page
-│   ├── +layout.svelte
-│   └── app/
-│       └── +page.svelte           # Main app view
-└── app.html
+│   ├── actions/          # Domain actions (attachments, notes, projects)
+│   ├── components/       # Board, Physics Jar, Sticky notes, etc.
+│   ├── db/               # Dexie configuration & Data Access Layer (dal.ts)
+│   ├── popups/           # Menus, date pickers, delete confirmations
+│   ├── stores/           # App state (current info, UI states, timers)
+│   ├── validators/       # zod schemas for core data types
+│   └── assets/           # Images, icons, landing page assets
+└── routes/               # SvelteKit structure & pages
 ```
 
 ---
 
-## Getting Started
+## Local Development
 
 ```bash
 git clone https://github.com/abdallah-azzouni/DoneJar.git
@@ -91,18 +70,12 @@ npm install
 npm run dev
 ```
 
-Opens at `http://localhost:5173`.
-
-### Scripts
-
-| Command           | Description                       |
-| ----------------- | --------------------------------- |
-| `npm run dev`     | Dev server with HMR               |
-| `npm run build`   | Production build                  |
-| `npm run preview` | Preview production build          |
-| `npm run check`   | TypeScript + Svelte type checking |
-| `npm run format`  | Format with Prettier              |
-| `npm run lint`    | Lint with ESLint                  |
+The app handles the rest and opens up at `http://localhost:5173`.
+| `npm run build` | Production build |
+| `npm run preview` | Preview production build |
+| `npm run check` | TypeScript + Svelte type checking |
+| `npm run format` | Format with Prettier |
+| `npm run lint` | Lint with ESLint |
 
 ---
 
@@ -110,13 +83,12 @@ Opens at `http://localhost:5173`.
 
 The core task management experience is built and live. What's next, roughly in priority order:
 
-- **Mobile layout** — the app board doesn't work well on small screens yet
+- **Cross-device sync** — actively building out seamless replication with PocketBase and Cloudflare R2
+- **Mobile layout** — improving the kanban board experience on smaller screens
 - **Column editing** — rename, reorder, add/remove columns on existing projects
-- **Data export/import** — JSON backup and restore for localStorage data
+- **Data export/import** — JSON backup and restore for local Dexie database
 - **Jar browsing** — a way to view and retrieve notes from inside the physics jar
 - **Accessibility** — keyboard navigation, ARIA roles, focus management
-- **Data migration** — schema versioning so localStorage survives future changes
-- **Cross-device sync** — optional, longer term
 
 See [open issues](https://github.com/abdallah-azzouni/DoneJar/issues) for what's actively being worked on.
 

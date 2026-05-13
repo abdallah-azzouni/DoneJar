@@ -68,7 +68,6 @@
 		void $projects; // capture projects store to update board.
 
 		if (!project) return;
-		if (dragSourceColIdx !== null) return; // don't reload columns in the middle of a drag, as it causes weird flickering issues
 
 		const store = createColumnNotesStore(project.id); // trigger effect when notes change.
 		const unsub = store.subscribe((cols) => {

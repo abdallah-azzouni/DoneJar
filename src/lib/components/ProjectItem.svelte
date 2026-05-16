@@ -2,7 +2,7 @@
 	import kebabMenu from '$lib/assets/elements/kebabMenu.svg';
 	import grayBG from '$lib/assets/elements/grayBG.svg';
 
-	import { openProjectMenu } from '$lib/stores/projectMenuStore';
+	import { openProjectMenu } from '$lib/stores/dialog/projectMenuStore';
 	import { textColorFromHex } from '$lib/UiHelper';
 	import type { Project } from '$lib/types';
 	import { currentProject } from '$lib/stores/currentProject';

@@ -4,8 +4,8 @@
 	import { notify } from '$lib/stores/notificationStore';
 	import { type Column, type Project, failure, createColumn } from '$lib/types';
 	import { MAX_PROJECT_NAME_LENGTH, DEFAULT_PROJECT_COLOR } from '$lib/constants';
-	import { confirmDelete } from '$lib/stores/deleteConfirmStore';
-	import { projectMenuStore, closeProjectMenu } from '$lib/stores/projectMenuStore';
+	import { confirmDelete } from '$lib/stores/dialog/deleteConfirmStore';
+	import { projectMenuStore, closeProjectMenu } from '$lib/stores/dialog/projectMenuStore';
 	import { refreshProjects } from '$lib/stores/projects';
 
 	let project = $derived($projectMenuStore.project);

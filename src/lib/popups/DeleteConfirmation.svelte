@@ -2,7 +2,7 @@
 	import { deleteProject, deleteNote } from '$lib/actions';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import { notify } from '$lib/stores/notificationStore';
-	import { deleteConfirmStore, closeDelete } from '$lib/stores/deleteConfirmStore';
+	import { deleteConfirmStore, closeDelete } from '$lib/stores/dialog/deleteConfirmStore';
 	import { refreshProjects } from '$lib/stores/projects';
 	import { projects } from '$lib/stores/projects';
 	import { setActiveProject } from '$lib/actions';

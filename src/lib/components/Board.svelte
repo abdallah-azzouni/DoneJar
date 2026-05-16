@@ -13,6 +13,7 @@
 	import { currentProject } from '$lib/stores/currentProject';
 	import { columnRepository } from '$lib/db/dal';
 	import { projects } from '$lib/stores/projects';
+	import { searchQuery } from '$lib/stores/search';
 
 	// actions
 	import { reorderNotes, moveNote } from '$lib/actions';
@@ -105,20 +106,52 @@
 
 	function notePassesFilter(columnIdx: number, note: Note): boolean {
 		const filters = activeFilters[columnIdx] || {};
+		// 1. Check Color and Priority filters
 		for (const [key, arr] of Object.entries(filters)) {
 			if (!arr || arr.length === 0) continue;
 			if (key === 'color') {
 				if (!arr.includes(note.color)) return false;
 			} else if (key === 'priority') {
 				if (!arr.includes(note.priority || '')) return false;
-			} else if (key === 'tag') {
-				const noteTags = note.tags || [];
-				if (!arr.some((t) => noteTags.includes(t))) return false;
 			}
 		}
+		// 2. Extract plain text from description
+		const plainText = note.description.ops.reduce((text, op) => {
+			if (typeof op.insert === 'string') return text + op.insert;
+			return text;
+		}, '');
+
+		const search = $searchQuery.trim().toLowerCase();
+		if (!search) return true;
+
+		// 3. Parse tokens and extract prefixes
+		const tokens = search.split(' ').filter(Boolean);
+		const textTokens: string[] = [];
+		let colorFilter: string | null = null;
+		let priorityFilter: string | null = null;
+		let tagFilter: string | null = null;
+
+		for (const token of tokens) {
+			if (token.startsWith('color:')) colorFilter = token.slice(6);
+			else if (token.startsWith('priority:')) priorityFilter = token.slice(9);
+			else if (token.startsWith('tag:')) tagFilter = token.slice(4);
+			else textTokens.push(token);
+		}
+
+		if (colorFilter && note.color?.toLowerCase() !== colorFilter) return false;
+		if (priorityFilter && (note.priority ?? '').toLowerCase() !== priorityFilter) return false;
+		if (tagFilter && !(note.tags ?? []).some((t) => t.toLowerCase() === tagFilter)) return false;
+
+		if (textTokens.length > 0) {
+			const matchesSearch = textTokens.every(
+				(token) =>
+					note.title.toLowerCase().includes(token) || plainText.toLowerCase().includes(token)
+			);
+			if (!matchesSearch) return false;
+		}
+
 		return true;
 	}
-
 	// Utility to determine column width classes based on project and column types
 	function getColumnClass(
 		projectType: string | undefined,

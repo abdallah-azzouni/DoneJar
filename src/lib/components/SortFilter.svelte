@@ -41,16 +41,6 @@
 			label: 'Filter by priority',
 			type: 'list',
 			getOptions: () => ['low', 'medium', 'high']
-		},
-		{
-			key: 'tag',
-			label: 'Filter by tag',
-			type: 'list',
-			getOptions: () => {
-				const tags = new SvelteSet<string>();
-				notes.forEach((n) => n.tags?.forEach((t) => tags.add(t)));
-				return [...tags];
-			}
 		}
 	];
 

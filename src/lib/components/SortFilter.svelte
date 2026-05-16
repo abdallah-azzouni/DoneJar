@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { Note } from '$lib/types';
 	import FunnelSimpleIcon from 'phosphor-svelte/lib/FunnelSimpleIcon';
-	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { sortOptions } from '$lib/sort';
 	import { type SortOption } from '$lib/types';
@@ -13,21 +12,20 @@
 		onSort,
 		onFiltersChange,
 		activeSortKey = null,
+		activeFilters = {},
 		onActiveSortKeyChange
 	}: {
 		notes: Note[];
 		onSort: (compareFn: (a: Note, b: Note) => number) => void;
 		onFiltersChange?: (filters: Record<string, string[]>) => void;
 		activeSortKey?: string | null;
+		activeFilters?: Record<string, string[]>;
 		onActiveSortKeyChange?: (key: string | null) => void;
 	} = $props();
 
 	// ═══ State ═══
 
 	let isOpen = $state(false);
-	let colorFilters = new SvelteSet<string>();
-	let priorityFilters = new SvelteSet<string>();
-	let tagFilters = new SvelteSet<string>();
 	let panelEl: HTMLDivElement | undefined = $state();
 
 	// Filters collection (modular). Each filter exposes a getOptions(), set, and toggle handler.
@@ -36,17 +34,13 @@
 			key: 'color',
 			label: 'Filter by color',
 			type: 'swatch',
-			getOptions: () => [...new Set(notes.map((n) => n.color))].filter(Boolean),
-			set: colorFilters,
-			toggle: (c: string) => toggleColor(c)
+			getOptions: () => [...new Set(notes.map((n) => n.color))].filter(Boolean)
 		},
 		{
 			key: 'priority',
 			label: 'Filter by priority',
 			type: 'list',
-			getOptions: () => ['low', 'medium', 'high'],
-			set: priorityFilters,
-			toggle: (p: string) => togglePriority(p)
+			getOptions: () => ['low', 'medium', 'high']
 		},
 		{
 			key: 'tag',
@@ -56,23 +50,14 @@
 				const tags = new SvelteSet<string>();
 				notes.forEach((n) => n.tags?.forEach((t) => tags.add(t)));
 				return [...tags];
-			},
-			set: tagFilters,
-			toggle: (t: string) => toggleTag(t)
+			}
 		}
 	];
 
 	// Whether any sort or filter is active
-	let hasActive = $derived(activeSortKey !== null || filters.some((f) => f.set.size > 0));
-
-	// Callbacks: call the modular `onFiltersChange` with the record of active filter sets.
-	$effect(() => {
-		const activeRecord: Record<string, string[]> = {};
-		for (const f of filters) activeRecord[f.key] = [...f.set];
-		untrack(() => {
-			if (typeof onFiltersChange === 'function') onFiltersChange(activeRecord);
-		});
-	});
+	let hasActive = $derived(
+		activeSortKey !== null || filters.some((f) => (activeFilters[f.key] ?? []).length > 0)
+	);
 
 	// ═══ Handlers ═══
 
@@ -81,24 +66,16 @@
 		onSort(option.compare);
 	}
 
-	function toggleColor(color: string) {
-		if (colorFilters.has(color)) colorFilters.delete(color);
-		else colorFilters.add(color);
-	}
-
-	function togglePriority(priority: string) {
-		if (priorityFilters.has(priority)) priorityFilters.delete(priority);
-		else priorityFilters.add(priority);
-	}
-
-	function toggleTag(tag: string) {
-		if (tagFilters.has(tag)) tagFilters.delete(tag);
-		else tagFilters.add(tag);
+	function toggleFilter(key: string, value: string) {
+		const current = new SvelteSet(activeFilters[key] ?? []);
+		if (current.has(value)) current.delete(value);
+		else current.add(value);
+		onFiltersChange?.({ ...activeFilters, [key]: [...current] });
 	}
 
 	function clearAll() {
 		onActiveSortKeyChange?.(null);
-		for (const f of filters) f.set.clear();
+		onFiltersChange?.({});
 	}
 
 	function handleClickOutside(e: MouseEvent) {
@@ -160,9 +137,11 @@
 							{#each filter.getOptions() as opt (opt)}
 								<button
 									class="size-7 rounded-full border-2 transition-transform
-										{filter.set.has(opt) ? 'scale-110 border-black' : 'border-gray-300 hover:border-gray-400'}"
+										{(activeFilters[filter.key] ?? []).includes(opt)
+										? 'scale-110 border-black'
+										: 'border-gray-300 hover:border-gray-400'}"
 									style="background-color: {opt}"
-									onclick={() => filter.toggle(opt)}
+									onclick={() => toggleFilter(filter.key, opt)}
 									title="Toggle {opt}"
 								></button>
 							{/each}
@@ -170,8 +149,8 @@
 							{#each filter.getOptions() as opt (opt)}
 								<button
 									class="rounded px-2 py-1 text-left text-lg
-										{filter.set.has(opt) ? 'bg-gray-200 font-bold' : 'hover:bg-gray-100'}"
-									onclick={() => filter.toggle(opt)}
+										{(activeFilters[filter.key] ?? []).includes(opt) ? 'bg-gray-200 font-bold' : 'hover:bg-gray-100'}"
+									onclick={() => toggleFilter(filter.key, opt)}
 									role="menuitem"
 								>
 									{opt}

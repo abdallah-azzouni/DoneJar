@@ -71,11 +71,18 @@
 
 		const store = createColumnNotesStore(project.id); // trigger effect when notes change.
 		const unsub = store.subscribe((cols) => {
-			columnItems = cols;
-			activeFilters = cols.map((col) => col.filters);
-			activeSortComparators = cols.map((col) =>
+			const newComparators = cols.map((col) =>
 				col.sortKey ? getSortComparator(col.sortKey) : null
 			);
+
+			columnItems = cols.map((col, i) => {
+				const cmp = newComparators[i];
+				if (cmp) return { ...col, notes: [...col.notes].sort(cmp) };
+				return col;
+			});
+			activeFilters = cols.map((col) => col.filters);
+			activeSortKeys = cols.map((col) => col.sortKey ?? null);
+			activeSortComparators = newComparators;
 		});
 		return () => unsub();
 	});
@@ -179,13 +186,14 @@
 							onSort={(cmp) => handleColumnSort(columnIdx, cmp)}
 							onFiltersChange={async (filters) => {
 								activeFilters[columnIdx] = filters;
-								const plain = $state.snapshot(columnItems[columnIdx]);
-								await columnRepository.update({ ...plain, filters });
+								const plain = $state.snapshot(filters);
+								await columnRepository.update({ id: columnItems[columnIdx].id, filters: plain });
 							}}
 							activeSortKey={activeSortKeys[columnIdx]}
+							activeFilters={activeFilters[columnIdx]}
 							onActiveSortKeyChange={async (key) => {
 								activeSortKeys[columnIdx] = key;
-								await columnRepository.update({ ...columnItems[columnIdx], sortKey: key });
+								await columnRepository.update({ id: columnItems[columnIdx].id, sortKey: key });
 							}}
 						/>
 					</div>

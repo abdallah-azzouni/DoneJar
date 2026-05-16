@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 import Delta from 'quill-delta';
-import { noteRepository, columnRepository } from '$lib/db/dal';
+import { noteRepository, columnRepository, noteService } from '$lib/db/dal';
 
 import { failure, success, type ActionResult, type Note } from '$lib/types';
 import { validateNoteCreation, validateNoteEdit } from '$lib/validators/noteValidators';
@@ -98,7 +98,7 @@ export async function editNote(note: Note): Promise<ActionResult> {
  */
 export async function deleteNote(noteId: string): Promise<ActionResult> {
 	try {
-		await noteRepository.delete(noteId);
+		await noteService.deleteNoteWithAttachments(noteId);
 	} catch (error) {
 		return failure(`Error deleting note: ${error}`);
 	}

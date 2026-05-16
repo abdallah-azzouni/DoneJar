@@ -69,6 +69,18 @@ export const attachmentRepository = {
 	delete: async (id: string) => await db.attachments.delete(id)
 };
 
+export const noteService = {
+	deleteNoteWithAttachments: async (noteId: string): Promise<void> => {
+		return await db.transaction('rw', [db.notes, db.attachments], async () => {
+			// 1. delete attachments of the note
+			await db.attachments.where('noteId').equals(noteId).delete();
+
+			// 2. delete the note itself
+			await db.notes.delete(noteId);
+		});
+	}
+};
+
 export const projectService = {
 	/**
 	 * Orchestrates project & column creation in one atomic step.
@@ -82,15 +94,24 @@ export const projectService = {
 	},
 
 	deleteFullProject: async (projectId: string) => {
-		return await db.transaction('rw', [db.projects, db.columns, db.notes], async () => {
-			// 1. Delete all notes belonging to the project
-			await db.notes.where('projectId').equals(projectId).delete();
+		return await db.transaction(
+			'rw',
+			[db.projects, db.columns, db.notes, db.attachments],
+			async () => {
+				const noteIds = await db.notes.where('projectId').equals(projectId).primaryKeys();
 
-			// 2. Delete all columns belonging to the project
-			await db.columns.where('projectId').equals(projectId).delete();
+				// 1. delete attachments of notes in the project
+				await db.attachments.where('noteId').anyOf(noteIds).delete();
 
-			// 3. Delete the project itself
-			await db.projects.delete(projectId);
-		});
+				// 2. delete notes in the project
+				await db.notes.where('projectId').equals(projectId).delete();
+
+				// 3. delete columns in the project
+				await db.columns.where('projectId').equals(projectId).delete();
+
+				// 4. delete the project itself
+				await db.projects.delete(projectId);
+			}
+		);
 	}
 };

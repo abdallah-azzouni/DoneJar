@@ -9,15 +9,7 @@ export const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 export const DEFAULT_NOTE_COLOR = '#fab005';
 export const DEFAULT_PROJECT_COLOR = '#495057';
 
-export const DEFAULT_MENU_COLORS = [
-	'#fab005',
-	'#ffadad',
-	'#ffd6a5',
-	'#fdffb6',
-	'#caffbf',
-	'#9bf6ff',
-	'#a0c4ff'
-];
+export const DEFAULT_MENU_COLORS = ['#fab005', '#ffadad', '#fdffb6', '#caffbf'];
 
 // ── Regex ──────────────────────────────────────────────────────────────────────
 export const HEX_COLOR_REGEX = /^#[0-9a-fA-F]{6}$/;

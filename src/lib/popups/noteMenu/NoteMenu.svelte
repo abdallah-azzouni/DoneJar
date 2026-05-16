@@ -14,6 +14,7 @@
 	import { nanoid } from 'nanoid';
 	import { projects } from '$lib/stores/projects';
 	import { onMount } from 'svelte';
+	import { textColorFromHex } from '$lib/UiHelper';
 
 	// ─── Props ───────────────────────────────────────
 	let { isOpen = $bindable(false), note }: { isOpen: boolean; note: Note | null } = $props();
@@ -250,7 +251,7 @@
 				</div>
 			</div>
 
-			<div class="mx-2 mt-auto flex justify-end gap-3 border-t-2 border-gray-100 pt-4">
+			<div class="mx-2 mt-auto flex justify-end gap-3 border-t-2 border-gray-200 pt-4">
 				<button
 					class="rounded-2xl border-2 border-black px-6 py-2 font-bold transition-transform active:translate-y-1"
 					type="button"
@@ -266,201 +267,207 @@
 				</button>
 			</div>
 		</form>
-		<div class="flex w-60 flex-col gap-6 border-l-2 border-gray-500 pl-4 font-patrick-hand text-xl">
-			<div>
-				<span class="mb-1 block">Project</span>
-				<div class="relative">
-					<span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2">📁</span>
-					<select
-						bind:value={workingNote.projectId}
-						class="doodle-border w-full cursor-pointer bg-transparent py-2 pr-4 pl-10"
-					>
-						{#each $projects as project (project.id)}
-							<option value={project.id}>{project.name}</option>
+		<div class="flex w-60 flex-col gap-1 border-l-2 border-gray-500 pl-4 font-patrick-hand text-xl">
+			<div class="overflow-x-hidden overflow-y-auto">
+				<div>
+					<span class="mb-1 block">Project</span>
+					<div class="relative">
+						<span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2">📁</span>
+						<select
+							bind:value={workingNote.projectId}
+							class="doodle-border w-full cursor-pointer bg-transparent py-2 pr-4 pl-10"
+						>
+							{#each $projects as project (project.id)}
+								<option value={project.id}>{project.name}</option>
+							{/each}
+						</select>
+					</div>
+				</div>
+				<div>
+					<span class="mb-1 block">Color</span>
+					<div class="flex flex-wrap gap-1">
+						{#each DEFAULT_MENU_COLORS as paletteColor (paletteColor)}
+							<button
+								type="button"
+								class="size-10 rounded-xl border-2 border-black transition-all"
+								style:background-color={paletteColor}
+								class:border-4={workingNote.color === paletteColor}
+								onclick={() => (workingNote.color = paletteColor)}
+								title="Select color {paletteColor}"
+							>
+							</button>
 						{/each}
-					</select>
-				</div>
-			</div>
-			<div>
-				<span class="mb-1 block">Color</span>
-				<div class="flex flex-wrap gap-3">
-					{#each DEFAULT_MENU_COLORS as paletteColor (paletteColor)}
-						<button
-							type="button"
-							class="size-8 rounded-xl border-2 border-black transition-all"
-							style:background-color={paletteColor}
-							class:border-4={workingNote.color === paletteColor}
-							onclick={() => (workingNote.color = paletteColor)}
-							title="Select color {paletteColor}"
+
+						<label
+							class="relative flex size-10 transform cursor-pointer items-center justify-center rounded-full border-2 border-black transition-all hover:scale-110 active:scale-100"
+							style:background-color={workingNote.color}
+							class:border-4={!DEFAULT_MENU_COLORS.includes(workingNote.color)}
 						>
-						</button>
-					{/each}
-
-					<label
-						class="relative flex size-8 cursor-pointer items-center justify-center rounded-full border-2 border-black transition-all"
-						style:background-color={workingNote.color}
-						class:border-4={!DEFAULT_MENU_COLORS.includes(workingNote.color)}
-					>
-						<span class="text-xs font-bold text-white mix-blend-difference">+</span>
-						<input
-							type="color"
-							bind:value={workingNote.color}
-							class="absolute inset-0 cursor-pointer opacity-0"
-						/>
-					</label>
-				</div>
-			</div>
-
-			<div>
-				<span class="mb-1 block">Due Date</span>
-				<button
-					class="doodle-border flex w-full items-center justify-center gap-2 py-2"
-					onclick={() => (showDatePicker = true)}
-				>
-					{#if workingNote.dueDate}
-						<span class={isDueDatePast(workingNote.dueDate, new Date()) ? 'text-red-500' : ''}>
-							{formatDueDate(workingNote.dueDate)}
-						</span>
-					{:else}
-						<span class="text-gray-400">Set Date...</span>
-					{/if}
-				</button>
-			</div>
-			<div>
-				<span class="mb-1 block">Priority</span>
-				<div class="flex w-full items-center gap-2 font-patrick-hand text-2xl">
-					<button
-						class="doodle-border flex-1 {workingNote.priority === 'low'
-							? 'bg-blue-100 text-blue-800'
-							: ''}"
-						onclick={() => {
-							workingNote.priority = workingNote.priority === 'low' ? null : 'low';
-						}}>Low</button
-					>
-					<button
-						class=" doodle-border flex-1 {workingNote.priority === 'medium'
-							? 'bg-amber-100 text-amber-800'
-							: ''}"
-						onclick={() => {
-							workingNote.priority = workingNote.priority === 'medium' ? null : 'medium';
-						}}>Medium</button
-					>
-					<button
-						class=" doodle-border flex-1 {workingNote.priority === 'high'
-							? 'bg-red-100 text-red-800'
-							: ''}"
-						onclick={() => {
-							workingNote.priority = workingNote.priority === 'high' ? null : 'high';
-						}}>High</button
-					>
-				</div>
-			</div>
-			<div class="relative">
-				<span class="mb-1 flex items-center gap-2">
-					Tags
-					{#if workingNote.tags?.length > 0}
-						<span
-							class="rounded-full bg-black px-1.5 py-1 text-xs leading-none font-bold text-white"
-						>
-							{workingNote.tags.length}
-						</span>
-					{/if}
-					<button
-						type="button"
-						class="ml-auto text-sm opacity-50 transition-transform hover:opacity-100"
-						class:rotate-180={showTags}
-						onclick={() => (showTags = !showTags)}
-					>
-						▼
-					</button>
-				</span>
-
-				<!-- Input Area -->
-				<div
-					class="doodle-border flex items-center bg-white/50 p-1 pl-2 transition-colors focus-within:bg-white"
-				>
-					<input
-						type="text"
-						placeholder="Add tag..."
-						class="w-full bg-transparent font-patrick-hand text-lg outline-none"
-						bind:value={tagInputText}
-						onfocus={() => (showTags = true)}
-						onkeydown={(e) => {
-							if (e.key === 'Enter') {
-								e.preventDefault();
-								addTag();
-							}
-							if (e.key === 'Escape') showTags = false;
-						}}
-					/>
-					<!-- The Plus Button -->
-					<button
-						type="button"
-						title="Add file or image"
-						class="flex size-7 items-center justify-center rounded-full border-2 border-black bg-amber-400 text-xl font-bold opacity-75 shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all hover:bg-amber-300 active:translate-y-px active:shadow-none"
-						onclick={addTag}
-					>
-						+
-					</button>
+							<span class="text-m font-bold" style:color={textColorFromHex(workingNote.color)}
+								>+</span
+							>
+							<input
+								type="color"
+								bind:value={workingNote.color}
+								class="absolute inset-0 cursor-pointer opacity-0"
+							/>
+						</label>
+					</div>
 				</div>
 
-				<!-- Dropdown Menu -->
-				{#if showTags}
+				<div>
+					<span class="mb-1 block">Due Date</span>
 					<button
-						type="button"
-						aria-label="Close tags dropdown"
-						class="fixed inset-0 z-10 cursor-default"
-						onclick={() => (showTags = false)}
+						class="doodle-border flex w-full items-center justify-center gap-2 py-2"
+						onclick={() => (showDatePicker = true)}
 					>
-					</button>
-
-					<div
-						class="doodle-border absolute right-0 bottom-[calc(100%+6px)] left-0 z-20 flex max-h-48 flex-col gap-2 overflow-y-auto bg-white p-3"
-					>
-						{#if (workingNote.tags || []).length === 0}
-							<span class="text-center text-sm text-gray-400 italic">No tags yet...</span>
+						{#if workingNote.dueDate}
+							<span class={isDueDatePast(workingNote.dueDate, new Date()) ? 'text-red-500' : ''}>
+								{formatDueDate(workingNote.dueDate)}
+							</span>
 						{:else}
-							<div class="flex flex-wrap gap-2">
-								{#each workingNote.tags as tag (tag)}
-									<span
-										class="flex items-center gap-1 rounded border border-black bg-gray-50 px-2 py-0.5 text-sm shadow-[1px_1px_0px_rgba(0,0,0,1)]"
-									>
-										#{tag}
-										<button
-											type="button"
-											class="font-bold hover:text-red-500"
-											onclick={() => (workingNote.tags = workingNote.tags.filter((t) => t !== tag))}
-										>
-											×
-										</button>
-									</span>
-								{/each}
-							</div>
+							<span class="text-gray-400">Set Date...</span>
+						{/if}
+					</button>
+				</div>
+				<div>
+					<span class="mb-1 block">Priority</span>
+					<div class="flex w-full items-center gap-2 font-patrick-hand text-2xl">
+						<button
+							class="doodle-border flex-1 {workingNote.priority === 'low'
+								? 'bg-blue-100 text-blue-800'
+								: ''}"
+							onclick={() => {
+								workingNote.priority = workingNote.priority === 'low' ? null : 'low';
+							}}>Low</button
+						>
+						<button
+							class=" doodle-border flex-1 {workingNote.priority === 'medium'
+								? 'bg-amber-100 text-amber-800'
+								: ''}"
+							onclick={() => {
+								workingNote.priority = workingNote.priority === 'medium' ? null : 'medium';
+							}}>Medium</button
+						>
+						<button
+							class=" doodle-border flex-1 {workingNote.priority === 'high'
+								? 'bg-red-100 text-red-800'
+								: ''}"
+							onclick={() => {
+								workingNote.priority = workingNote.priority === 'high' ? null : 'high';
+							}}>High</button
+						>
+					</div>
+				</div>
+				<div class="relative">
+					<span class="mb-1 flex items-center gap-2">
+						Tags
+						{#if workingNote.tags?.length > 0}
+							<span
+								class="rounded-full bg-black px-1.5 py-1 text-xs leading-none font-bold text-white"
+							>
+								{workingNote.tags.length}
+							</span>
 						{/if}
 						<button
 							type="button"
-							class="mt-1 w-full border-t border-dashed border-gray-300 pt-2 text-center text-xs font-bold tracking-widest text-gray-500 uppercase hover:text-black"
-							onclick={() => (showTags = false)}
+							class="ml-auto text-sm opacity-50 transition-transform hover:opacity-100"
+							class:rotate-180={showTags}
+							onclick={() => (showTags = !showTags)}
 						>
-							Close Menu
+							▼
+						</button>
+					</span>
+
+					<!-- Input Area -->
+					<div
+						class="doodle-border flex items-center bg-white/50 p-1 pl-2 transition-colors focus-within:bg-white"
+					>
+						<input
+							type="text"
+							placeholder="Add tag..."
+							class="w-full bg-transparent font-patrick-hand text-lg outline-none"
+							bind:value={tagInputText}
+							onfocus={() => (showTags = true)}
+							onkeydown={(e) => {
+								if (e.key === 'Enter') {
+									e.preventDefault();
+									addTag();
+								}
+								if (e.key === 'Escape') showTags = false;
+							}}
+						/>
+						<!-- The Plus Button -->
+						<button
+							type="button"
+							title="Add file or image"
+							class="flex size-7 items-center justify-center rounded-full border-2 border-black bg-amber-400 text-xl font-bold opacity-75 shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all hover:bg-amber-300 active:translate-y-px active:shadow-none"
+							onclick={addTag}
+						>
+							+
 						</button>
 					</div>
-				{/if}
-			</div>
 
-			<button
-				class="mt-auto ml-auto size-fit rounded-2xl bg-red-700 px-5 py-3 font-bold text-white"
-				class:hidden={workingNote.id === ''}
-				onclick={() => {
-					isOpen = false;
-					confirmDelete({
-						type: 'note',
-						id: workingNote.id,
-						projectId: workingNote.projectId,
-						name: workingNote.title
-					});
-				}}>Delete</button
-			>
+					<!-- Dropdown Menu -->
+					{#if showTags}
+						<button
+							type="button"
+							aria-label="Close tags dropdown"
+							class="fixed inset-0 z-10 cursor-default"
+							onclick={() => (showTags = false)}
+						>
+						</button>
+
+						<div
+							class="doodle-border absolute right-0 bottom-[calc(100%+6px)] left-0 z-20 flex max-h-48 flex-col gap-2 overflow-y-auto bg-white p-3"
+						>
+							{#if (workingNote.tags || []).length === 0}
+								<span class="text-center text-sm text-gray-400 italic">No tags yet...</span>
+							{:else}
+								<div class="flex flex-wrap gap-2">
+									{#each workingNote.tags as tag (tag)}
+										<span
+											class="flex items-center gap-1 rounded border border-black bg-gray-50 px-2 py-0.5 text-sm shadow-[1px_1px_0px_rgba(0,0,0,1)]"
+										>
+											#{tag}
+											<button
+												type="button"
+												class="font-bold hover:text-red-500"
+												onclick={() =>
+													(workingNote.tags = workingNote.tags.filter((t) => t !== tag))}
+											>
+												×
+											</button>
+										</span>
+									{/each}
+								</div>
+							{/if}
+							<button
+								type="button"
+								class="mt-1 w-full border-t border-dashed border-gray-300 pt-2 text-center text-xs font-bold tracking-widest text-gray-500 uppercase hover:text-black"
+								onclick={() => (showTags = false)}
+							>
+								Close Menu
+							</button>
+						</div>
+					{/if}
+				</div>
+			</div>
+			<div class="mt-auto flex justify-end gap-3 border-t-2 border-gray-200 pt-2">
+				<button
+					class="mt-auto ml-auto size-fit rounded-2xl bg-red-700 px-5 py-3 font-bold text-white"
+					class:hidden={workingNote.id === ''}
+					onclick={() => {
+						isOpen = false;
+						confirmDelete({
+							type: 'note',
+							id: workingNote.id,
+							projectId: workingNote.projectId,
+							name: workingNote.title
+						});
+					}}>Delete</button
+				>
+			</div>
 		</div>
 	</div>
 </ThemedDialog>

@@ -28,7 +28,7 @@ body {
 	display: none;
 }
 
-@media (max-width: 1024px) {
+/* @media (max-width: 1024px) {
 	.desktop-only-notice {
 		display: flex;
 		position: fixed;
@@ -42,7 +42,7 @@ body {
 		text-align: center;
 		padding: 2rem;
 	}
-}
+} */
 
 select option {
 	font-size: var(--text-xl);

@@ -135,7 +135,8 @@
 	{#each columnItems as column, columnIdx (column.id)}
 		{#if column.specialType === 'jar'}
 			<div
-				class="relative m-2 flex aspect-777/1024 h-auto max-h-[75%] min-h-0 w-auto max-w-[33.333%] min-w-[28%] flex-col justify-end self-end"
+				class="relative m-2 flex flex-col justify-end self-end"
+				style="height: min(60vh, calc(100vh - 80px)); aspect-ratio: 777 / 1250; flex-shrink: 0;"
 			>
 				<div
 					class="relative flex items-center justify-center border-2 border-dashed border-gray-400 p-16"
@@ -153,17 +154,13 @@
 							data-id={note.id}
 						></div>
 					{/each}
-
-					<span class="pointer-events-none absolute z-0 object-contain text-gray-400">
-						Drop notes here!
-					</span>
+					<span class="pointer-events-none absolute z-0 text-gray-400">Drop notes here!</span>
 				</div>
 
-				<div class="relative aspect-777/1024 w-full">
+				<div class="relative min-h-0 w-full flex-1">
 					<button class="size-full">
 						<BeakerPhysics items={columnItems[columnIdx]?.notes ?? []} />
-
-						<img src={beaker} alt="" class="pointer-events-none h-full w-full object-contain" />
+						<img src={beaker} alt="" class="pointer-events-none absolute inset-0 h-full w-full" />
 					</button>
 				</div>
 			</div>

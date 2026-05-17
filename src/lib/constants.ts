@@ -3,7 +3,7 @@ export const MAX_NOTE_TITLE_LENGTH = 50;
 export const MAX_PROJECT_NAME_LENGTH = 50;
 
 export const MAX_DESCRIPTION_LENGTH = 25000;
-export const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+export const MAX_NOTE_ATTACHMENTS_SIZE = 2 * 1024 * 1024; // 2MB
 
 // ── Default values ─────────────────────────────────────────────────────────────
 export const DEFAULT_NOTE_COLOR = '#fab005';

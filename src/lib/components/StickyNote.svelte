@@ -3,6 +3,8 @@
 	import { now } from '$lib/stores/timer';
 	import NoteMenu from '$lib/popups/noteMenu/NoteMenu.svelte';
 	import type { Note } from '$lib/types';
+	import { togglePinNote } from '$lib/actions';
+	import { notify } from '$lib/stores/notificationStore';
 
 	let { note, dragDisabled = $bindable(false) }: { note: Note; dragDisabled: boolean } = $props();
 	let showNoteMenu = $state(false);
@@ -19,6 +21,13 @@
 
 	let isPast = $derived(note.dueDate ? isDueDatePast(note.dueDate, $now) : false); // to avoid rerendering note when $now changes
 
+	async function handlePinNote() {
+		const result = await togglePinNote(note.id);
+		if (result.type === 'error') {
+			notify(result);
+		}
+	}
+
 	$effect(() => {
 		dragDisabled = showNoteMenu; // Disable dragging when menu is open
 	});
@@ -26,10 +35,19 @@
 	let size = 'size-[19vh]'; // Default size
 </script>
 
-<div data-id={note.id} class="inline-block">
+<div data-id={note.id} class="relative inline-block">
 	{#key showNoteMenu}
 		<NoteMenu bind:isOpen={showNoteMenu} {note} />
 	{/key}
+	<button
+		class="absolute top-3 right-3 z-50 size-7 rounded-full border border-black {note.pinned
+			? 'bg-amber-400'
+			: 'bg-white'} hover:bg-amber-200"
+		onclick={(e) => {
+			e.stopPropagation();
+			handlePinNote();
+		}}>📌</button
+	>
 	<button onclick={() => (showNoteMenu = true)}>
 		<svg
 			version="1.1"

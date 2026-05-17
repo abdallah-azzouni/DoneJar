@@ -33,6 +33,7 @@ export async function createNote(note: Note): Promise<ActionResult> {
 			position: note.position,
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
+			pinned: note.pinned || false,
 			synced: false,
 			serverVersion: null
 		};
@@ -79,7 +80,8 @@ export async function editNote(note: Note): Promise<ActionResult> {
 			priority: note.priority,
 			position: note.position,
 			createdAt: note.createdAt || Date.now(),
-			updatedAt: Date.now()
+			updatedAt: Date.now(),
+			pinned: note.pinned
 		} as Note);
 		if (updateResult === 0) {
 			return failure('Note not found or no changes made');
@@ -140,4 +142,23 @@ export async function reorderNotes(noteIds: string[]): Promise<ActionResult> {
 		return failure(`Error reordering notes: ${error}`);
 	}
 	return success('Notes reordered successfully');
+}
+
+export async function togglePinNote(noteId: string): Promise<ActionResult> {
+	try {
+		const note = await noteRepository.get(noteId);
+		if (!note) {
+			return failure('Note not found');
+		}
+
+		note.pinned = !note.pinned;
+		note.updatedAt = Date.now();
+		console.log('Toggling pin on note:', note);
+
+		const result = await noteRepository.update(note);
+		if (result === 0) return failure('Note not found or no changes made');
+	} catch (error) {
+		return failure(`Error toggling pin on note: ${error}`);
+	}
+	return success('Note pin toggled successfully');
 }

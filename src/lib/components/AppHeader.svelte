@@ -2,6 +2,8 @@
 	import menu from '$lib/assets/icons/menu.svg';
 	import { textColorFromHex } from '$lib/UiHelper';
 	import { currentProject } from '$lib/stores/currentProject';
+	import { openSideMenu } from '$lib/stores/dialog/sideMenuStore';
+	import SideMenu from '$lib/popups/sideMenu.svelte';
 	import { searchQuery } from '$lib/stores/search';
 
 	let searchOpen = $state(false);
@@ -14,6 +16,7 @@
 	}
 </script>
 
+<SideMenu />
 <header class="doodle-border m-2 px-4">
 	<div class="flex h-16 items-center justify-between">
 		<div class="flex items-center gap-4">
@@ -64,6 +67,7 @@
 
 			<button
 				class="ml-3 size-12 rounded-full border border-black bg-transparent p-2 hover:bg-gray-100"
+				onclick={() => openSideMenu()}
 			>
 				<img src={menu} alt="menu" class="pointer-events-none size-full select-none" />
 			</button>

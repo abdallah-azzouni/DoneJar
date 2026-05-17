@@ -35,13 +35,13 @@
 	let size = 'size-[19vh]'; // Default size
 </script>
 
-<div data-id={note.id} class="relative inline-block">
+<div data-id={note.id} class="group relative inline-block">
 	{#key showNoteMenu}
 		<NoteMenu bind:isOpen={showNoteMenu} {note} />
 	{/key}
 	<button
-		class="absolute top-3 right-3 z-50 size-7 rounded-full border border-black {note.pinned
-			? 'bg-amber-400'
+		class="absolute top-3 right-3 z-50 hidden size-7 rounded-full border border-black group-hover:block {note.pinned
+			? 'block! bg-amber-400'
 			: 'bg-white'} hover:bg-amber-200"
 		onclick={(e) => {
 			e.stopPropagation();

@@ -41,7 +41,7 @@
 	{/key}
 	<button
 		class="absolute top-3 right-3 z-50 hidden size-7 rounded-full border border-black group-hover:block {note.pinned
-			? 'block! bg-amber-400'
+			? 'block! bg-gray-300'
 			: 'bg-white'} hover:bg-amber-200"
 		onclick={(e) => {
 			e.stopPropagation();

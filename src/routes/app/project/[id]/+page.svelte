@@ -4,7 +4,6 @@
 	import { goto } from '$app/navigation';
 	import { ROUTES } from '$lib/constants';
 	import { resolve } from '$app/paths';
-	console.log($currentProject?.id);
 </script>
 
 {#if $currentProject?.id}

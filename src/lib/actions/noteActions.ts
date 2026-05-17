@@ -153,7 +153,6 @@ export async function togglePinNote(noteId: string): Promise<ActionResult> {
 
 		note.pinned = !note.pinned;
 		note.updatedAt = Date.now();
-		console.log('Toggling pin on note:', note);
 
 		const result = await noteRepository.update(note);
 		if (result === 0) return failure('Note not found or no changes made');

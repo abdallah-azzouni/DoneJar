@@ -78,8 +78,10 @@
 
 			columnItems = cols.map((col, i) => {
 				const cmp = newComparators[i];
-				if (cmp) return { ...col, notes: [...col.notes].sort(cmp) };
-				return col;
+				let notes = cmp ? [...col.notes].sort(cmp) : [...col.notes];
+				// pins always on top
+				notes.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+				return { ...col, notes };
 			});
 			activeFilters = cols.map((col) => col.filters);
 			activeSortKeys = cols.map((col) => col.sortKey ?? null);
@@ -165,13 +167,6 @@
 			return 'w-3/9';
 		}
 	}
-
-	// Sort pinned notes to the top
-	let visibleNotesByColumn = $derived((columnIdx: number) => {
-		return [...columnItems[columnIdx].notes]
-			.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
-			.filter((note) => notePassesFilter(columnIdx, note));
-	});
 </script>
 
 {#key showCreateNote}
@@ -247,7 +242,7 @@
 						onconsider={(e) => handleDnd(columnIdx, 'consider', e)}
 						onfinalize={(e) => handleDnd(columnIdx, 'finalize', e)}
 					>
-						{#each visibleNotesByColumn(columnIdx) as note (note.id)}
+						{#each columnItems[columnIdx].notes as note (note.id)}
 							<div class=" {notePassesFilter(columnIdx, note) ? 'inline-block' : 'hidden'} ">
 								<StickyNote {note} bind:dragDisabled />
 							</div>

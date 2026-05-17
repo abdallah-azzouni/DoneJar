@@ -13,8 +13,10 @@
 	import { untrack } from 'svelte';
 	import { nanoid } from 'nanoid';
 	import { projects } from '$lib/stores/projects';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { textColorFromHex } from '$lib/UiHelper';
+	import { SvelteMap } from 'svelte/reactivity';
+	import { MAX_NOTE_ATTACHMENTS_SIZE } from '$lib/constants';
 
 	// ─── Props ───────────────────────────────────────
 	let { isOpen = $bindable(false), note }: { isOpen: boolean; note: Note | null } = $props();
@@ -85,6 +87,13 @@
 
 	onMount(async () => {
 		attachments = await attachmentRepository.getManyByNoteId(workingNote.id);
+
+		// load attachments in cache
+		for (const a of attachments) {
+			if (a.localBlob) {
+				blobUrlCache.set(a.id, URL.createObjectURL(a.localBlob));
+			} // if no local blob, getPreviewUrl will fallback to the server URL.
+		}
 	});
 
 	let fileInput: HTMLInputElement;
@@ -94,38 +103,89 @@
 		fileInput.click();
 	}
 
+	function handlePinAttachment(attachmentId: string) {
+		const target = attachments.find((a) => a.id === attachmentId);
+		if (!target) return;
+
+		const toggled = { ...target, pinned: !target.pinned };
+		const rest = attachments.filter((a) => a.id !== attachmentId);
+
+		if (toggled.pinned) {
+			attachments = [toggled, ...rest];
+		} else {
+			attachments = [...rest, toggled];
+		}
+	}
+
+	function getTotalAttachmentsSize() {
+		return attachments.reduce((sum, a) => sum + a.size, 0);
+	}
+
 	function handleFileSelected(event: Event) {
-		const file = (event.target as HTMLInputElement).files?.[0];
-		if (!file) return;
+		const files = (event.target as HTMLInputElement).files;
+		if (!files) return;
 
-		const newAttachment: Attachment = {
-			id: nanoid(),
-			noteId,
-			filename: file.name,
-			mimeType: file.type,
-			size: file.size,
-			url: null,
-			localBlob: file,
-			synced: false,
-			serverVersion: null,
-			createdAt: 0,
-			updatedAt: 0
-		};
+		for (const file of files) {
+			if (getTotalAttachmentsSize() + file.size > MAX_NOTE_ATTACHMENTS_SIZE) {
+				notify({
+					type: 'error',
+					message: `Adding ${file.name} would exceed the ${MAX_NOTE_ATTACHMENTS_SIZE / (1024 * 1024)}MB total limit`
+				});
+				break;
+			}
 
-		attachments = [...attachments, newAttachment]; // Update local state to show the new attachment
+			const newAttachment: Attachment = {
+				id: nanoid(),
+				noteId,
+				filename: file.name,
+				mimeType: file.type,
+				size: file.size,
+				url: null,
+				localBlob: file,
+				synced: false,
+				serverVersion: null,
+				createdAt: 0,
+				updatedAt: 0,
+				pinned: false
+			};
+
+			addAttachment(newAttachment);
+		}
+
+		// Reset so the same files can be re-selected if needed
+		(event.target as HTMLInputElement).value = '';
+	}
+
+	const blobUrlCache = new SvelteMap<string, string>();
+
+	function addAttachment(attachment: Attachment) {
+		if (attachment.localBlob && !blobUrlCache.has(attachment.id)) {
+			blobUrlCache.set(attachment.id, URL.createObjectURL(attachment.localBlob));
+		}
+		attachments = [...attachments, attachment];
 	}
 
 	function getPreviewUrl(attachment: Attachment): string | null {
-		if (attachment.localBlob) {
-			return URL.createObjectURL(attachment.localBlob);
-		}
-		return attachment.url; // fallback to server url if no local blob
+		return blobUrlCache.get(attachment.id) ?? attachment.url;
 	}
 
 	function handleDeleteAttachment(attachmentId: string) {
+		const url = blobUrlCache.get(attachmentId);
+		if (url) {
+			URL.revokeObjectURL(url); // Clean up blob URL
+			blobUrlCache.delete(attachmentId);
+		}
 		deletedAttachmentIds.push(attachmentId); // track attachments to delete
 		attachments = attachments.filter((a) => a.id !== attachmentId); // Update local state to remove the attachment
 	}
+
+	onDestroy(() => {
+		// Clean up any remaining blob URLs when the component is destroyed
+		for (const url of blobUrlCache.values()) {
+			URL.revokeObjectURL(url);
+		}
+		blobUrlCache.clear();
+	});
 
 	function formatSize(bytes: number): string {
 		if (bytes === 0) return '0 MB';
@@ -165,7 +225,13 @@
 							>Attachments</span
 						>
 						<!-- The "Add" Action -->
-						<input bind:this={fileInput} type="file" class="hidden" onchange={handleFileSelected} />
+						<input
+							bind:this={fileInput}
+							type="file"
+							multiple
+							class="hidden"
+							onchange={handleFileSelected}
+						/>
 						<button
 							type="button"
 							title="Add file or image"
@@ -177,10 +243,10 @@
 						<div class="flex-1 border-t-2 border-dashed border-gray-400"></div>
 					</div>
 
-					<div class="flex flex-col gap-3 py-4 pr-2">
-						{#each attachments as attachment (attachment.id)}
-							<!-- BIG PREVIEW: Image/Screenshot -->
-							{#if attachment.mimeType.startsWith('image/')}
+					<div class=" gap-2 py-4 pr-2">
+						<!-- BIG PREVIEW: Image/Screenshot -->
+						<div class="flex w-full flex-wrap gap-3">
+							{#each attachments.filter( (a) => a.mimeType.startsWith('image/') ) as attachment (attachment.id)}
 								<div class="group relative mt-2 self-start">
 									<!-- Washi Tape Effect -->
 									<div
@@ -188,7 +254,7 @@
 									></div>
 
 									<div
-										class="doodle-border flex w-64 flex-col overflow-hidden bg-white p-2 shadow-[6px_6px_0px_rgba(0,0,0,1)] transition-transform hover:rotate-1"
+										class="doodle-border flex w-64 flex-col overflow-hidden bg-white p-2 transition-transform hover:rotate-1"
 									>
 										<div
 											class="aspect-video w-full overflow-hidden border border-gray-200 bg-gray-100"
@@ -209,10 +275,17 @@
 											<span class="truncate text-xs font-bold italic">{attachment.filename}</span>
 											<div class="flex gap-1">
 												<button
-													class="size-6 rounded border border-black bg-white text-xs hover:bg-amber-200"
-													>📌</button
+													type="button"
+													onclick={(e) => {
+														e.stopPropagation();
+														handlePinAttachment(attachment.id);
+													}}
+													class="size-6 rounded border border-black {attachment.pinned
+														? 'bg-amber-400'
+														: 'bg-white'} text-xs hover:bg-amber-200">📌</button
 												>
 												<button
+													type="button"
 													class="size-6 rounded border border-black bg-white text-xs hover:bg-red-200"
 													onclick={(e) => {
 														e.stopPropagation();
@@ -223,7 +296,14 @@
 										</div>
 									</div>
 								</div>
-							{:else}<!-- LIST ROW: Standard File -->
+							{:else}
+								<span class="text-center text-sm italic text-gray-400">No image attachments...</span
+								>
+							{/each}
+						</div>
+						<div class="mt-4 border-t-2 border-dashed border-gray-300 pt-4">
+							<!-- LIST ROW: Standard File -->
+							{#each attachments.filter((a) => !a.mimeType.startsWith('image/')) as attachment (attachment.id)}
 								<div class="doodle-border flex items-center gap-3 bg-white p-2 hover:bg-gray-50">
 									<span class="text-2xl">📄</span>
 									<div class="flex flex-1 flex-col">
@@ -233,11 +313,19 @@
 										>
 									</div>
 									<button
-										class="size-8 rounded-full border border-black hover:bg-amber-200"
+										type="button"
+										class="size-8 rounded-full border border-black {attachment.pinned
+											? 'bg-amber-400'
+											: 'bg-white'} hover:bg-amber-200"
+										onclick={(e) => {
+											e.stopPropagation();
+											handlePinAttachment(attachment.id);
+										}}
 										title="Pin attachment">📌</button
 									>
 									<button
-										class="size-8 rounded-full border border-black hover:bg-red-200"
+										type="button"
+										class="size-8 rounded-full border border-black bg-white hover:bg-red-200"
 										onclick={(e) => {
 											e.stopPropagation(); // Prevent triggering parent click events
 											handleDeleteAttachment(attachment.id);
@@ -245,8 +333,10 @@
 										title="Delete">x</button
 									>
 								</div>
-							{/if}
-						{/each}
+							{:else}
+								<span class="text-center text-sm italic text-gray-400">No file attachments...</span>
+							{/each}
+						</div>
 					</div>
 				</div>
 			</div>

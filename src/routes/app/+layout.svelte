@@ -6,7 +6,7 @@
 	import Loading from '$lib/components/Loading.svelte';
 	import { page } from '$app/state';
 	import { currentProject } from '$lib/stores/currentProject';
-	import { openProjectMenu } from '$lib/stores/dialog/projectMenuStore';
+	import { openProjectMenu } from '$lib/stores/dialog';
 	import DeleteConfirmation from '$lib/popups/DeleteConfirmation.svelte';
 	import { projectRepository } from '$lib/db/dal';
 	import { notify } from '$lib/stores/notificationStore';

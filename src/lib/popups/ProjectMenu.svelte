@@ -4,11 +4,11 @@
 	import { notify } from '$lib/stores/notificationStore';
 	import { type Column, type Project, failure, createColumn } from '$lib/types';
 	import { MAX_PROJECT_NAME_LENGTH, DEFAULT_PROJECT_COLOR } from '$lib/constants';
-	import { confirmDelete } from '$lib/stores/dialog/deleteConfirmStore';
-	import { projectMenuStore, closeProjectMenu } from '$lib/stores/dialog/projectMenuStore';
+	import { confirmDelete } from '$lib/stores/dialog';
+	import { projectMenuStore, closeProjectMenu } from '$lib/stores/dialog';
 	import { refreshProjects } from '$lib/stores/projects';
 
-	let project = $derived($projectMenuStore.project);
+	let project = $derived($projectMenuStore.data);
 	let isOpen = $derived($projectMenuStore.isOpen);
 
 	let newProject = $state({} as Project);

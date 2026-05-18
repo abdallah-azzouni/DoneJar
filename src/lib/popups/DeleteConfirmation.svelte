@@ -2,13 +2,13 @@
 	import { deleteProject, deleteNote } from '$lib/actions';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import { notify } from '$lib/stores/notificationStore';
-	import { deleteConfirmStore, closeDelete } from '$lib/stores/dialog/deleteConfirmStore';
+	import { deleteConfirmStore, closeDelete } from '$lib/stores/dialog';
 	import { refreshProjects } from '$lib/stores/projects';
 	import { projects } from '$lib/stores/projects';
 	import { setActiveProject } from '$lib/actions';
 
-	let target = $derived($deleteConfirmStore);
-	let isOpen = $derived(target !== null);
+	let target = $derived($deleteConfirmStore.data);
+	let isOpen = $derived($deleteConfirmStore.isOpen);
 
 	async function handleDelete(e: Event) {
 		e.preventDefault();

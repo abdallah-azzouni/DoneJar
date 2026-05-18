@@ -7,6 +7,7 @@
 		mt = 'mt-[5%]',
 		cls = 'justify-self-center',
 		isOpen = $bindable(false),
+		closeOnBackdrop = false,
 		cancelable = true,
 		onClose,
 		children
@@ -16,6 +17,7 @@
 		mt?: string;
 		cls?: string;
 		isOpen?: boolean;
+		closeOnBackdrop?: boolean;
 		cancelable?: boolean;
 		onClose?: () => void;
 		children?: Snippet;
@@ -43,7 +45,10 @@
 	oncancel={(e) => {
 		if (!cancelable) e.preventDefault();
 	}}
-	class="{mt} {h} {w} {cls} rounded-2xl bg-white p-6 shadow-lg"
+	onclick={(e) => {
+		if (closeOnBackdrop && e.target === dialog) closeDialog();
+	}}
+	class="{mt} {h} {w}  {cls} rounded-2xl bg-white p-6 shadow-lg"
 >
 	<div class="flex h-full flex-col">
 		{@render children?.()}

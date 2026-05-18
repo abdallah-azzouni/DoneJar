@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { openProjectMenu } from '$lib/stores/dialog/projectMenuStore';
+	import { openProjectMenu } from '$lib/stores/dialog';
 </script>
 
 <div class="flex h-full w-full flex-1 flex-col items-center justify-center">

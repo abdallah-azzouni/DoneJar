@@ -8,7 +8,7 @@
 	import { notify } from '$lib/stores/notificationStore';
 	import { emptyNote, type Note, type Attachment } from '$lib/types';
 	import { MAX_NOTE_TITLE_LENGTH, DEFAULT_NOTE_COLOR, DEFAULT_MENU_COLORS } from '$lib/constants';
-	import { confirmDelete } from '$lib/stores/dialog/deleteConfirmStore';
+	import { confirmDelete } from '$lib/stores/dialog';
 	import { currentProject } from '$lib/stores/currentProject';
 	import { untrack } from 'svelte';
 	import { nanoid } from 'nanoid';

@@ -2,13 +2,17 @@
 	import menu from '$lib/assets/icons/menu.svg';
 	import { textColorFromHex } from '$lib/UiHelper';
 	import { currentProject } from '$lib/stores/currentProject';
-	import { openSideMenu } from '$lib/stores/dialog/sideMenuStore';
-	import SideMenu from '$lib/popups/sideMenu.svelte';
+	import { sideMenuStore } from '$lib/stores/dialog';
+	import SideMenu from '$lib/popups/sideMenu/sideMenu.svelte';
+	import ImportMenu from '$lib/popups/sideMenu/sideMenuItems/importMenu.svelte';
 	import { searchQuery } from '$lib/stores/search';
 
 	let searchOpen = $state(false);
 	function toggleSearch() {
 		searchOpen = !searchOpen;
+		if (!searchOpen) {
+			searchQuery.set('');
+		}
 	}
 
 	function focus(node: HTMLElement) {
@@ -17,6 +21,8 @@
 </script>
 
 <SideMenu />
+<!-- Side menu Items -->
+<ImportMenu />
 <header class="doodle-border m-2 px-4">
 	<div class="flex h-16 items-center justify-between">
 		<div class="flex items-center gap-4">
@@ -56,6 +62,11 @@
 			{#if searchOpen}
 				<div class="ml-1">
 					<input
+						onkeydown={(e) => {
+							if (e.key === 'Escape') {
+								toggleSearch();
+							}
+						}}
 						use:focus
 						type="text"
 						class="w-80 rounded-xl border border-black bg-white/20 p-3 backdrop-blur-md focus:ring-0 focus:outline-none md:w-105"
@@ -67,7 +78,7 @@
 
 			<button
 				class="ml-3 size-12 rounded-full border border-black bg-transparent p-2 hover:bg-gray-100"
-				onclick={() => openSideMenu()}
+				onclick={() => sideMenuStore.open()}
 			>
 				<img src={menu} alt="menu" class="pointer-events-none size-full select-none" />
 			</button>

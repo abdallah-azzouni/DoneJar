@@ -74,13 +74,13 @@ The app handles the rest and opens up at `http://localhost:5173`.
 
 ### Scripts
 
-| Command | Description |
-| --- | --- |
-| `npm run build` | Production build |
-| `npm run preview` | Preview production build |
-| `npm run check` | TypeScript + Svelte type checking |
-| `npm run format` | Format with Prettier |
-| `npm run lint` | Lint with ESLint |
+| Command           | Description                       |
+| ----------------- | --------------------------------- |
+| `npm run build`   | Production build                  |
+| `npm run preview` | Preview production build          |
+| `npm run check`   | TypeScript + Svelte type checking |
+| `npm run format`  | Format with Prettier              |
+| `npm run lint`    | Lint with ESLint                  |
 
 ---
 

@@ -1,12 +1,34 @@
 <script lang="ts">
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import { importStore } from '$lib/stores/dialog';
+	import { importBackup } from '$lib/actions';
+	import { notify } from '$lib/stores/notificationStore';
+	import { failure } from '$lib/types';
 
 	let dragOver = $state(false);
 	let selectedFile = $state<File | null>(null);
 	let fileInput: HTMLInputElement;
 
-	function handleImport() {}
+	async function handleImport() {
+		if (!selectedFile) return;
+		const file = await selectedFile.text();
+
+		let backupData;
+		try {
+			backupData = JSON.parse(file);
+		} catch {
+			notify(failure('Invalid JSON file'));
+			return;
+		}
+
+		const result = await importBackup(backupData);
+		if (result.type === 'error') {
+			notify(failure(result.message));
+			return;
+		} else {
+			importStore.close();
+		}
+	}
 </script>
 
 <ThemedDialog isOpen={$importStore.isOpen} closeOnBackdrop={true} w="w-1/2" h="h-fit">

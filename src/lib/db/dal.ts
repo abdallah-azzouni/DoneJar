@@ -1,6 +1,7 @@
 // data access layer
 import { db } from '$lib/db/db';
-import type { Project, Column, Note, Attachment } from '$lib/types';
+import type { Project, Column, Note, Attachment, Backup } from '$lib/types';
+import { nanoid } from 'nanoid';
 
 export const noteRepository = {
 	get: async (id: string): Promise<Note | undefined> => {
@@ -38,6 +39,7 @@ export const columnRepository = {
 		return await db.columns.update(column.id, column);
 	},
 	addAll: async (columns: Column[]) => await db.columns.bulkAdd(columns),
+	add: async (column: Column) => await db.columns.add(column),
 	findInboxColumn: async (projectId: string): Promise<Column | undefined> => {
 		return db.columns.where('[projectId+specialType]').equals([projectId, 'inbox']).first();
 	}
@@ -113,5 +115,46 @@ export const projectService = {
 				await db.projects.delete(projectId);
 			}
 		);
+	}
+};
+
+export const backupService = {
+	importBackup: async (backup: Backup) => {
+		await db.transaction('rw', [db.projects, db.columns, db.notes, db.attachments], async () => {
+			// Add projects
+			const projectIdMap: Record<string, string> = {};
+			for (const project of backup.projects) {
+				const newProject = { ...project, id: nanoid() };
+				projectIdMap[project.id] = newProject.id;
+				await projectRepository.add(newProject);
+			}
+
+			// Add columns
+			const columnIdMap: Record<string, string> = {};
+			for (const column of backup.columns) {
+				const newColumn = { ...column, id: nanoid(), projectId: projectIdMap[column.projectId] };
+				columnIdMap[column.id] = newColumn.id;
+				await columnRepository.add(newColumn);
+			}
+
+			// Add notes
+			const noteIdMap: Record<string, string> = {};
+			for (const note of backup.notes) {
+				const newNote = {
+					...note,
+					id: nanoid(),
+					columnId: columnIdMap[note.columnId],
+					projectId: projectIdMap[note.projectId]
+				};
+				noteIdMap[note.id] = newNote.id;
+				await noteRepository.add(newNote);
+			}
+
+			// Add attachments
+			for (const attachment of backup.attachments) {
+				const newAttachment = { ...attachment, id: nanoid(), noteId: noteIdMap[attachment.noteId] };
+				await attachmentRepository.add(newAttachment);
+			}
+		});
 	}
 };

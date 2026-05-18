@@ -3,7 +3,6 @@
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import { notify } from '$lib/stores/notificationStore';
 	import { deleteConfirmStore, closeDelete } from '$lib/stores/dialog';
-	import { refreshProjects } from '$lib/stores/projects';
 	import { projects } from '$lib/stores/projects';
 	import { setActiveProject } from '$lib/actions';
 
@@ -25,8 +24,6 @@
 		if (target.type === 'project') {
 			const all = $projects;
 			const deletedIndex = all.findIndex((p) => p.id === target.id); // save deleted index before deletion
-
-			await refreshProjects(); // refresh project list to reflect deletion
 
 			// navigate smartly after deletion.
 			const remaining = $projects;

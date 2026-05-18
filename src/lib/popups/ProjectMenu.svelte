@@ -6,7 +6,6 @@
 	import { MAX_PROJECT_NAME_LENGTH, DEFAULT_PROJECT_COLOR } from '$lib/constants';
 	import { confirmDelete } from '$lib/stores/dialog';
 	import { projectMenuStore, closeProjectMenu } from '$lib/stores/dialog';
-	import { refreshProjects } from '$lib/stores/projects';
 
 	let project = $derived($projectMenuStore.data);
 	let isOpen = $derived($projectMenuStore.isOpen);
@@ -74,7 +73,6 @@
 		}
 
 		if (pass) {
-			await refreshProjects(); // refresh project list to reflect new/edited project
 			closeProjectMenu();
 		}
 	}

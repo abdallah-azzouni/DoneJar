@@ -1,24 +1,29 @@
-import { writable } from 'svelte/store';
+import { liveQuery } from 'dexie';
+import { readable } from 'svelte/store';
 import { browser } from '$app/environment';
 import { projectRepository } from '$lib/db/dal';
-import type { Project } from '$lib/types';
 import { currentProject } from '$lib/stores/currentProject';
 import { get } from 'svelte/store';
+import type { Project } from '$lib/types';
 
-export const projects = writable<Project[]>([]);
+export const projects = readable<Project[]>([], (set) => {
+	if (!browser) return;
 
-export async function refreshProjects() {
-	const all = await projectRepository.getAll();
-	projects.set(all);
+	const subscription = liveQuery(() => projectRepository.getAll()).subscribe({
+		next(all) {
+			set(all);
 
-	// also sync currentProject if one is active
-	const currentId = get(currentProject)?.id;
-	if (currentId) {
-		const updated = all.find((p) => p.id === currentId);
-		currentProject.set(updated ?? null);
-	}
-}
+			// sync currentProject
+			const currentId = get(currentProject)?.id;
+			if (currentId) {
+				const updated = all.find((p) => p.id === currentId);
+				currentProject.set(updated ?? null);
+			}
+		},
+		error(err) {
+			console.error('liveQuery error:', err);
+		}
+	});
 
-if (browser) {
-	refreshProjects();
-}
+	return () => subscription.unsubscribe();
+});

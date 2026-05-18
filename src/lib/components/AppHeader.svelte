@@ -5,6 +5,7 @@
 	import { sideMenuStore } from '$lib/stores/dialog';
 	import SideMenu from '$lib/popups/sideMenu/sideMenu.svelte';
 	import ImportMenu from '$lib/popups/sideMenu/sideMenuItems/importMenu.svelte';
+	import ExportMenu from '$lib/popups/sideMenu/sideMenuItems/exportMenu.svelte';
 	import { searchQuery } from '$lib/stores/search';
 
 	let searchOpen = $state(false);
@@ -23,6 +24,7 @@
 <SideMenu />
 <!-- Side menu Items -->
 <ImportMenu />
+<ExportMenu />
 <header class="doodle-border m-2 px-4">
 	<div class="flex h-16 items-center justify-between">
 		<div class="flex items-center gap-4">

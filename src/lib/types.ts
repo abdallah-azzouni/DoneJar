@@ -66,7 +66,7 @@ export const ProjectSchema = z.object({
 			`Project name cannot be longer than ${MAX_PROJECT_NAME_LENGTH} characters`
 		),
 	type: z.enum(['default', 'blank', 'custom'], {
-		errorMap: () => ({ message: 'Invalid project type' })
+		message: 'Invalid project type'
 	}),
 	color: z.string().regex(HEX_COLOR_REGEX, 'Project color must be a valid hex color'),
 	createdAt: z.number(),
@@ -140,7 +140,18 @@ export type Column = z.infer<typeof ColumnSchema>;
 export type Project = z.infer<typeof ProjectSchema>;
 export type Attachment = z.infer<typeof attachmentSchema>;
 export type ColumnWithNotes = Column & { notes: Note[] };
+export type ProjectWithColumns = Project & { columns: Column[] };
 export type Backup = z.infer<typeof BackupSchema>;
+
+export type SerializedAttachment = Omit<Attachment, 'localBlob'> & { localBlob: string | null };
+export type ExportBackup = Omit<Backup, 'attachments'> & { attachments: SerializedAttachment[] };
+export const ExportBackupSchema = BackupSchema.extend({
+	attachments: z.array(
+		attachmentSchema.extend({
+			localBlob: z.string().nullable().default(null)
+		})
+	)
+});
 
 export type NoteInsertTarget =
 	| { type: 'index'; value: number }

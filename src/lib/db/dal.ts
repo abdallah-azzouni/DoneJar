@@ -1,6 +1,14 @@
 // data access layer
 import { db } from '$lib/db/db';
-import type { Project, Column, Note, Attachment, Backup } from '$lib/types';
+import type {
+	Project,
+	Column,
+	Note,
+	Attachment,
+	Backup,
+	SerializedAttachment,
+	ExportBackup
+} from '$lib/types';
 import { nanoid } from 'nanoid';
 
 export const noteRepository = {
@@ -119,7 +127,7 @@ export const projectService = {
 };
 
 export const backupService = {
-	importBackup: async (backup: Backup) => {
+	import: async (backup: Backup) => {
 		await db.transaction('rw', [db.projects, db.columns, db.notes, db.attachments], async () => {
 			// Add projects
 			const projectIdMap: Record<string, string> = {};
@@ -156,5 +164,55 @@ export const backupService = {
 				await attachmentRepository.add(newAttachment);
 			}
 		});
+	},
+
+	export: async (payload: { projectIds: string[]; columnIds: string[] }): Promise<ExportBackup> => {
+		const { projectIds, columnIds } = payload;
+
+		// Fetch projects
+		const projects = await db.projects.where('id').anyOf(projectIds).toArray();
+
+		// Fetch columns
+		const columns = await db.columns.where('id').anyOf(columnIds).toArray();
+
+		// Fetch notes for the selected columns
+		const notes = await db.notes.where('columnId').anyOf(columnIds).toArray();
+
+		// Fetch attachments for the selected notes
+		const noteIds = notes.map((note) => note.id);
+		const rawAttachments = await db.attachments.where('noteId').anyOf(noteIds).toArray();
+
+		// Process attachments to convert binary Blobs into Base64 strings
+		const attachments: SerializedAttachment[] = await Promise.all(
+			rawAttachments.map(async (attachment) => {
+				if (attachment.localBlob instanceof Blob) {
+					return {
+						...attachment,
+						// Convert the real Blob into a text string for the JSON file
+						localBlob: await blobToBase64(attachment.localBlob)
+					};
+				}
+				return {
+					...attachment,
+					localBlob: attachment.localBlob ?? null
+				};
+			})
+		);
+
+		return {
+			projects,
+			columns,
+			notes,
+			attachments
+		};
 	}
 };
+
+function blobToBase64(blob: Blob): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onloadend = () => resolve(reader.result as string);
+		reader.onerror = reject;
+		reader.readAsDataURL(blob);
+	});
+}

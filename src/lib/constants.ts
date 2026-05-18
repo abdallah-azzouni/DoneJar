@@ -12,7 +12,7 @@ export const DEFAULT_PROJECT_COLOR = '#495057';
 export const DEFAULT_MENU_COLORS = ['#fab005', '#ffadad', '#fdffb6', '#caffbf'];
 
 // ── Regex ──────────────────────────────────────────────────────────────────────
-export const HEX_COLOR_REGEX = /^#[0-9a-fA-F]{6}$/;
+export const HEX_COLOR_REGEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 export const ROUTES = {

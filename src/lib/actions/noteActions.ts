@@ -2,15 +2,15 @@ import { nanoid } from 'nanoid';
 import Delta from 'quill-delta';
 import { noteRepository, columnRepository, noteService } from '$lib/db/dal';
 
-import { failure, success, type ActionResult, type Note } from '$lib/types';
-import { validateNoteCreation, validateNoteEdit } from '$lib/validators/noteValidators';
+import { failure, success, type ActionResult, type Note, NoteSchema } from '$lib/types';
+import { validateData } from '$lib/validators/dataValidators';
 
 /**
  * Creates a new note in the inbox column of a project.
  * @param note the note payload (title, color, projectId, etc.)
  */
 export async function createNote(note: Note): Promise<ActionResult> {
-	const validationResult = validateNoteCreation(note);
+	const validationResult = validateData(NoteSchema, note, 'Valid Note');
 	if (validationResult.type === 'error') return validationResult;
 
 	try {
@@ -51,7 +51,7 @@ export async function createNote(note: Note): Promise<ActionResult> {
  * @returns ActionResult indicating success or failure of the operation
  */
 export async function editNote(note: Note): Promise<ActionResult> {
-	const validationResult = validateNoteEdit(note);
+	const validationResult = validateData(NoteSchema, note, 'Valid Note');
 	if (validationResult.type === 'error') return validationResult;
 
 	let col = await columnRepository.get(note.columnId);

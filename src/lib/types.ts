@@ -1,13 +1,13 @@
 import { z } from 'zod';
 import Delta from 'quill-delta';
+import { MAX_NOTE_TITLE_LENGTH, MAX_PROJECT_NAME_LENGTH } from './constants';
+import { HEX_COLOR_REGEX } from './constants';
 
 export type ActionResult = { type: 'error' | 'success'; message: string };
 export const failure = (message: string): ActionResult => ({ type: 'error', message });
 export const success = (message: string): ActionResult => ({ type: 'success', message });
 
 // --- runtime schemas --------------------------------------------------
-
-const colorRegex = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
 const DeltaSchema = z.object({
 	ops: z.array(
@@ -24,10 +24,16 @@ export const NoteSchema = z.object({
 	id: z.string(),
 	columnId: z.string(),
 	projectId: z.string(),
-	title: z.string(),
+	title: z
+		.string()
+		.min(1, 'Note title cannot be empty')
+		.max(
+			MAX_NOTE_TITLE_LENGTH,
+			`Note title cannot be longer than ${MAX_NOTE_TITLE_LENGTH} characters`
+		),
 	tags: z.array(z.string()).default([]),
 	description: DeltaSchema.transform((d) => d as unknown as Delta),
-	color: z.string().regex(colorRegex),
+	color: z.string().regex(HEX_COLOR_REGEX, 'Note color must be a valid hex color'),
 	dueDate: z.object({ timestamp: z.number(), hasTime: z.boolean() }).nullable(),
 	priority: z.enum(['low', 'medium', 'high']).nullable().catch(null),
 	position: z.number(),
@@ -41,7 +47,7 @@ export const NoteSchema = z.object({
 export const ColumnSchema = z.object({
 	id: z.string(),
 	projectId: z.string(),
-	name: z.string().default('New Column'),
+	name: z.string().min(1, 'All columns must have a name').default('New Column'),
 	sortKey: z.string().nullable().default(null),
 	filters: z.record(z.string(), z.array(z.string())).default({}),
 	position: z.number(),
@@ -52,9 +58,17 @@ export const ColumnSchema = z.object({
 
 export const ProjectSchema = z.object({
 	id: z.string(),
-	name: z.string(),
-	type: z.enum(['default', 'blank', 'custom']),
-	color: z.string().regex(colorRegex),
+	name: z
+		.string()
+		.min(1, 'Project name cannot be empty')
+		.max(
+			MAX_PROJECT_NAME_LENGTH,
+			`Project name cannot be longer than ${MAX_PROJECT_NAME_LENGTH} characters`
+		),
+	type: z.enum(['default', 'blank', 'custom'], {
+		errorMap: () => ({ message: 'Invalid project type' })
+	}),
+	color: z.string().regex(HEX_COLOR_REGEX, 'Project color must be a valid hex color'),
 	createdAt: z.number(),
 	updatedAt: z.number(),
 	synced: z.boolean().default(false),

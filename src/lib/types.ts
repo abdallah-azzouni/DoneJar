@@ -32,10 +32,10 @@ export const NoteSchema = z.object({
 			`Note title cannot be longer than ${MAX_NOTE_TITLE_LENGTH} characters`
 		),
 	tags: z.array(z.string()).default([]),
-	description: DeltaSchema.transform((d) => d as unknown as Delta),
+	description: DeltaSchema.default({ ops: [] }).transform((d) => d as unknown as Delta),
 	color: z.string().regex(HEX_COLOR_REGEX, 'Note color must be a valid hex color'),
-	dueDate: z.object({ timestamp: z.number(), hasTime: z.boolean() }).nullable(),
-	priority: z.enum(['low', 'medium', 'high']).nullable().catch(null),
+	dueDate: z.object({ timestamp: z.number(), hasTime: z.boolean() }).nullable().default(null),
+	priority: z.enum(['low', 'medium', 'high']).nullable().default(null).catch(null),
 	position: z.number(),
 	pinned: z.boolean().default(false),
 	createdAt: z.number(),

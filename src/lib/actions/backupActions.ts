@@ -7,7 +7,6 @@ import {
 	type ExportBackup,
 	ExportBackupSchema
 } from '$lib/types';
-import { validateData } from '$lib/validators/dataValidators';
 import { backupService } from '$lib/db/dal';
 
 /**
@@ -15,10 +14,13 @@ import { backupService } from '$lib/db/dal';
  * @param backup the backup payload
  */
 export async function importBackup(backup: Backup): Promise<ActionResult> {
-	const validationResult = validateData(BackupSchema, backup, 'Valid Backup');
-	if (validationResult.type === 'error') return failure(validationResult.message);
+	const validationResult = BackupSchema.safeParse(backup);
+	if (!validationResult.success) {
+		console.error('Backup validation failed:', validationResult.error);
+		return failure('Invalid backup data');
+	}
 
-	const validBackup = backup;
+	const validBackup = validationResult.data;
 	if (!validBackup) return failure('Invalid backup data');
 
 	try {
@@ -39,10 +41,14 @@ export async function exportBackup(payload: {
 }): Promise<{ result: ActionResult; backup: ExportBackup | null }> {
 	try {
 		const backup = await backupService.export(payload);
-		const result = validateData(ExportBackupSchema, backup, 'Valid Backup');
-		if (result.type === 'error') return { result: failure(result.message), backup: null };
+		const result = ExportBackupSchema.safeParse(backup);
+		if (!result.success) {
+			console.error('Backup validation failed:', result.error);
+			return { result: failure('Exported backup data is invalid'), backup: null };
+		}
 
-		return { result: success('Backup exported successfully'), backup };
+		const validBackup = result.data;
+		return { result: success('Backup exported successfully'), backup: validBackup };
 	} catch (error) {
 		return { result: failure(`Error exporting backup: ${error}`), backup: null };
 	}

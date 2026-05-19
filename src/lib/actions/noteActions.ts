@@ -3,37 +3,41 @@ import Delta from 'quill-delta';
 import { noteRepository, columnRepository, noteService } from '$lib/db/dal';
 
 import { failure, success, type ActionResult, type Note, NoteSchema } from '$lib/types';
-import { validateData } from '$lib/validators/dataValidators';
 
 /**
  * Creates a new note in the inbox column of a project.
  * @param note the note payload (title, color, projectId, etc.)
  */
 export async function createNote(note: Note): Promise<ActionResult> {
-	const validationResult = validateData(NoteSchema, note, 'Valid Note');
-	if (validationResult.type === 'error') return validationResult;
+	const validationResult = NoteSchema.safeParse(note);
+	if (!validationResult.success) {
+		console.error('Note validation failed:', validationResult.error);
+		return failure('Invalid note data');
+	}
+
+	const validNote = validationResult.data;
 
 	try {
-		const col = await columnRepository.findInboxColumn(note.projectId);
+		const col = await columnRepository.findInboxColumn(validNote.projectId);
 
 		if (!col) {
 			return failure('Inbox column not found for the specified project');
 		}
 
 		const newNote: Note = {
-			id: note.id || nanoid(),
-			columnId: col?.id || '',
-			projectId: note.projectId,
-			title: note.title,
-			tags: note.tags,
-			description: new Delta(note.description),
-			color: note.color,
-			dueDate: note.dueDate,
-			priority: note.priority,
-			position: note.position,
+			id: validNote.id || nanoid(),
+			columnId: col.id,
+			projectId: validNote.projectId,
+			title: validNote.title,
+			tags: validNote.tags,
+			description: new Delta(validNote.description),
+			color: validNote.color,
+			dueDate: validNote.dueDate,
+			priority: validNote.priority,
+			position: validNote.position,
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
-			pinned: note.pinned || false,
+			pinned: validNote.pinned,
 			synced: false,
 			serverVersion: null
 		};
@@ -51,37 +55,44 @@ export async function createNote(note: Note): Promise<ActionResult> {
  * @returns ActionResult indicating success or failure of the operation
  */
 export async function editNote(note: Note): Promise<ActionResult> {
-	const validationResult = validateData(NoteSchema, note, 'Valid Note');
-	if (validationResult.type === 'error') return validationResult;
+	const validationResult = NoteSchema.safeParse(note);
+	if (!validationResult.success) {
+		console.error('Note validation failed:', validationResult.error);
+		return failure('Invalid note data');
+	}
 
-	let col = await columnRepository.get(note.columnId);
+	const validNote = validationResult.data;
+
+	let col = await columnRepository.get(validNote.columnId);
 	if (!col) {
 		return failure('Inbox column not found for the specified project');
 	}
 
 	try {
 		// Change columnId to inbox if note is moved to new project.
-		if (col?.projectId != note.projectId) {
-			col = await columnRepository.findInboxColumn(note.projectId);
+		if (col?.projectId != validNote.projectId) {
+			col = await columnRepository.findInboxColumn(validNote.projectId);
 			if (!col) {
 				return failure('System error: Target project is missing an Inbox');
 			}
 		}
 
 		const updateResult = await noteRepository.update({
-			id: note.id,
-			columnId: col?.id || '',
-			projectId: note.projectId,
-			title: note.title,
-			tags: note.tags,
-			description: new Delta(note.description),
-			color: note.color,
-			dueDate: note.dueDate,
-			priority: note.priority,
-			position: note.position,
-			createdAt: note.createdAt || Date.now(),
+			id: validNote.id,
+			columnId: col.id,
+			projectId: validNote.projectId,
+			title: validNote.title,
+			tags: validNote.tags,
+			description: new Delta(validNote.description),
+			color: validNote.color,
+			dueDate: validNote.dueDate,
+			priority: validNote.priority,
+			position: validNote.position,
+			createdAt: validNote.createdAt || Date.now(),
 			updatedAt: Date.now(),
-			pinned: note.pinned
+			pinned: validNote.pinned,
+			synced: validNote.synced || false,
+			serverVersion: validNote.serverVersion || null
 		} as Note);
 		if (updateResult === 0) {
 			return failure('Note not found or no changes made');

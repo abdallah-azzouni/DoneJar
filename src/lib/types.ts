@@ -144,14 +144,19 @@ export type ProjectWithColumns = Project & { columns: Column[] };
 export type Backup = z.infer<typeof BackupSchema>;
 
 export type SerializedAttachment = Omit<Attachment, 'localBlob'> & { localBlob: string | null };
-export type ExportBackup = Omit<Backup, 'attachments'> & { attachments: SerializedAttachment[] };
 export const ExportBackupSchema = BackupSchema.extend({
+	projects: z.array(ProjectSchema.omit({ synced: true, serverVersion: true })),
+	columns: z.array(ColumnSchema.omit({ synced: true, serverVersion: true })),
+	notes: z.array(NoteSchema.omit({ synced: true, serverVersion: true })),
 	attachments: z.array(
 		attachmentSchema.extend({
-			localBlob: z.string().nullable().default(null)
+			localBlob: z.string().nullable().default(null),
+			synced: z.boolean().default(false),
+			serverVersion: z.number().nullable().default(null)
 		})
 	)
 });
+export type ExportBackup = z.infer<typeof ExportBackupSchema>;
 
 export type NoteInsertTarget =
 	| { type: 'index'; value: number }

@@ -4,7 +4,6 @@
 	import { importBackup } from '$lib/actions';
 	import { notify } from '$lib/stores/notificationStore';
 	import { ExportBackupSchema, failure, type Backup, type SerializedAttachment } from '$lib/types';
-	import { validateData } from '$lib/validators/dataValidators';
 
 	let dragOver = $state(false);
 	let selectedFile = $state<File | null>(null);
@@ -27,9 +26,9 @@
 			return;
 		}
 
-		const validationResult = validateData(ExportBackupSchema, rawJson, 'Valid Backup');
-		if (validationResult.type === 'error') {
-			notify(validationResult);
+		const validationResult = ExportBackupSchema.safeParse(rawJson);
+		if (!validationResult.success) {
+			notify(failure('Invalid backup data'));
 			return;
 		}
 

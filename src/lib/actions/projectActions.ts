@@ -7,6 +7,7 @@ import { goto } from '$app/navigation';
 import { ROUTES } from '$lib/constants';
 import { resolve } from '$app/paths';
 import { projectRepository, projectService } from '$lib/db/dal';
+import { softDelete } from '$lib/actions';
 
 /**
  * Creates a new project and adds it to the projects store.
@@ -112,7 +113,7 @@ export async function editProject(projectInfo: {
  */
 export async function deleteProject(projectId: string): Promise<ActionResult> {
 	try {
-		await projectService.deleteFullProject(projectId);
+		await softDelete(projectId, 'project');
 	} catch (error) {
 		return failure(`Error deleting project: ${error}`);
 	}

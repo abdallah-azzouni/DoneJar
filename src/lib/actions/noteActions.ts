@@ -1,8 +1,9 @@
 import { nanoid } from 'nanoid';
 import Delta from 'quill-delta';
-import { noteRepository, columnRepository, noteService } from '$lib/db/dal';
+import { noteRepository, columnRepository } from '$lib/db/dal';
 
 import { failure, success, type ActionResult, type Note, NoteSchema } from '$lib/types';
+import { softDelete } from '$lib/actions';
 
 /**
  * Creates a new note in the inbox column of a project.
@@ -111,7 +112,7 @@ export async function editNote(note: Note): Promise<ActionResult> {
  */
 export async function deleteNote(noteId: string): Promise<ActionResult> {
 	try {
-		await noteService.deleteNoteWithAttachments(noteId);
+		await softDelete(noteId, 'note');
 	} catch (error) {
 		return failure(`Error deleting note: ${error}`);
 	}

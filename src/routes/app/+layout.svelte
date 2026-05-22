@@ -8,9 +8,17 @@
 	import { currentProject } from '$lib/stores/currentProject';
 	import { openProjectMenu } from '$lib/stores/dialog';
 	import DeleteConfirmation from '$lib/popups/DeleteConfirmation.svelte';
-	import { projectRepository } from '$lib/db/dal';
+	import {
+		projectRepository,
+		columnRepository,
+		noteRepository,
+		attachmentRepository,
+		deletedLogRepository
+	} from '$lib/db/dal';
 	import { notify } from '$lib/stores/notificationStore';
 	import { projects } from '$lib/stores/projects';
+	import { deletedLogStore } from '$lib/stores/deletedLogStore';
+	import { failure } from '$lib/types';
 
 	let { children } = $props();
 	let currentProjectId: string | null = null;
@@ -29,6 +37,23 @@
 					notify({ type: 'error', message: 'The project data seems to be corrupted or missing.' });
 				}
 			});
+	});
+
+	$effect(() => {
+		const confirmed = $deletedLogStore;
+		for (const entry of confirmed) {
+			(async () => {
+				try {
+					if (entry.itemType === 'project') await projectRepository.deleteFullProject(entry.itemId);
+					if (entry.itemType === 'column') await columnRepository.deleteFullColumn(entry.itemId);
+					if (entry.itemType === 'note') await noteRepository.deleteFullNote(entry.itemId);
+					if (entry.itemType === 'attachment') await attachmentRepository.delete(entry.itemId);
+					if (entry.synced) await deletedLogRepository.delete(entry.id);
+				} catch (error) {
+					notify(failure(`Error syncing deletions: ${error}`));
+				}
+			})();
+		}
 	});
 </script>
 

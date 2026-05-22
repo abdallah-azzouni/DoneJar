@@ -90,6 +90,14 @@ export const attachmentSchema = z.object({
 	updatedAt: z.number()
 });
 
+export const deletedLogSchema = z.object({
+	id: z.string(),
+	itemId: z.string(),
+	itemType: z.enum(['note', 'column', 'project', 'attachment']),
+	synced: z.boolean().default(false),
+	deletedAt: z.number()
+});
+
 export const BackupSchema = z.object({
 	projects: z.array(ProjectSchema),
 	columns: z.array(ColumnSchema),
@@ -141,6 +149,7 @@ export type Project = z.infer<typeof ProjectSchema>;
 export type Attachment = z.infer<typeof attachmentSchema>;
 export type ColumnWithNotes = Column & { notes: Note[] };
 export type ProjectWithColumns = Project & { columns: Column[] };
+export type DeletedLog = z.infer<typeof deletedLogSchema>;
 export type Backup = z.infer<typeof BackupSchema>;
 
 export type SerializedAttachment = Omit<Attachment, 'localBlob'> & { localBlob: string | null };

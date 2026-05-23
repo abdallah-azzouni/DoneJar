@@ -4,6 +4,7 @@
 	import Loading from '$lib/components/Loading.svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { isLoggedIn } from '$lib/pb/auth';
 
 	import heroImage from '$lib/assets/landing/hero.png';
 	import howItWorksStep1 from '$lib/assets/landing/step1.png';
@@ -12,6 +13,10 @@
 	import featureDragDrop from '$lib/assets/landing/drag-drop.png';
 	import featureBeaker from '$lib/assets/landing/beaker.png';
 	import featureProjects from '$lib/assets/landing/projects.gif';
+
+	function getStarted() {
+		goto(resolve(isLoggedIn() ? '/app' : '/auth/login'));
+	}
 </script>
 
 {#if !$isLoaded}
@@ -31,7 +36,7 @@
 				</p>
 
 				<button
-					onclick={() => goto(resolve('/app'))}
+					onclick={getStarted}
 					class="doodle-border group relative overflow-hidden bg-yellow-400 px-12 py-4 font-patrick-hand text-3xl font-bold text-gray-900 transition-all duration-300 hover:scale-105 hover:bg-yellow-500"
 				>
 					Get Started
@@ -204,7 +209,7 @@
 					Start filling your jar today. It's free to get started.
 				</p>
 				<button
-					onclick={() => goto(resolve('/app'))}
+					onclick={getStarted}
 					class="doodle-border group relative overflow-hidden bg-yellow-400 px-12 py-4 font-patrick-hand text-3xl font-bold text-gray-900 transition-all duration-300 hover:scale-105 hover:bg-yellow-500"
 				>
 					Get Started
@@ -227,7 +232,7 @@
 							GitHub
 						</a>
 						<button
-							onclick={() => goto(resolve('/app'))}
+							onclick={getStarted}
 							class="font-patrick-hand text-xl text-gray-600 transition-colors hover:text-gray-900"
 						>
 							Get Started

@@ -2,9 +2,13 @@
 	import ProjectMenu from '$lib/popups/ProjectMenu.svelte';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import ProjectItem from '$lib/components/ProjectItem.svelte';
-	import { isLoaded } from '$lib/stores/appState';
+	import { isLoaded, isLocal } from '$lib/stores/appState';
 	import Loading from '$lib/components/Loading.svelte';
 	import { page } from '$app/state';
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import { pb } from '$lib/pb/pb';
 	import { currentProject } from '$lib/stores/currentProject';
 	import { openProjectMenu } from '$lib/stores/dialog';
 	import DeleteConfirmation from '$lib/popups/DeleteConfirmation.svelte';
@@ -54,6 +58,15 @@
 				}
 			})();
 		}
+	});
+
+	onMount(() => {
+		// Redirect immediately if not authenticated and watch for auth changes
+		if (!pb.authStore.isValid && !$isLocal) goto(resolve('/auth/login'));
+
+		pb.authStore.onChange((token, model) => {
+			if (!model && !$isLocal) goto(resolve('/auth/login'));
+		});
 	});
 </script>
 

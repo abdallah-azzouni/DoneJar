@@ -12,6 +12,15 @@ import type {
 } from '$lib/types';
 import { nanoid } from 'nanoid';
 
+export function clearDatabase() {
+	return db.transaction('rw', [db.projects, db.columns, db.notes, db.attachments], async () => {
+		await db.attachments.clear();
+		await db.notes.clear();
+		await db.columns.clear();
+		await db.projects.clear();
+	});
+}
+
 export const noteRepository = {
 	get: async (id: string): Promise<Note | undefined> => {
 		return db.notes.get(id);

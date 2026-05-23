@@ -25,9 +25,9 @@
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
 		try {
-			hasElements = $projects.length > 0;
-			if (hasElements) return; // let Dialog handle the flow
 			if (isLogin) {
+				hasElements = $projects.length > 0;
+				if (hasElements) return; // let Dialog handle the flow
 				await continueOnline();
 			} else {
 				await register(email, password, name);
@@ -49,6 +49,8 @@
 					notify(failure('This email is already registered.'));
 				else if (authError.status === 400)
 					notify(failure('Please check your details and try again.'));
+				else if (authError.status === 429)
+					notify(failure('Too many attempts. Please wait and try again later.'));
 				else notify(failure('Something went wrong. Please try again.'));
 			}
 		}

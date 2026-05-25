@@ -11,6 +11,8 @@ import type {
 	DeletedLog
 } from '$lib/types';
 import { nanoid } from 'nanoid';
+import { get } from 'svelte/store';
+import { serverVersion } from '$lib/stores/appState';
 
 export function clearDatabase() {
 	return db.transaction('rw', [db.projects, db.columns, db.notes, db.attachments], async () => {
@@ -32,6 +34,10 @@ export const noteRepository = {
 		return await db.notes.update(note.id, note);
 	},
 	add: async (note: Note) => await db.notes.add(note),
+	getBulkByIds: async (ids: string[]): Promise<Note[]> => {
+		return await db.notes.where('id').anyOf(ids).toArray();
+	},
+	bulkPut: async (notes: Note[]) => await db.notes.bulkPut(notes),
 	delete: async (id: string) => await db.notes.delete(id),
 	updatePosition: async (id: string, index: number): Promise<number> => {
 		return await db.notes.update(id, { position: index });
@@ -62,6 +68,9 @@ export const columnRepository = {
 	update: async (column: Partial<Column> & Pick<Column, 'id'>): Promise<number> => {
 		return await db.columns.update(column.id, column);
 	},
+	getBulkByIds: async (ids: string[]): Promise<Column[]> => {
+		return await db.columns.where('id').anyOf(ids).toArray();
+	},
 	addAll: async (columns: Column[]) => await db.columns.bulkAdd(columns),
 	add: async (column: Column) => await db.columns.add(column),
 	findInboxColumn: async (projectId: string): Promise<Column | undefined> => {
@@ -81,7 +90,7 @@ export const columnRepository = {
 
 export const projectRepository = {
 	get: async (id: string): Promise<Project | undefined> => {
-		return db.projects.get(id);
+		return await db.projects.get(id);
 	},
 	getAll: async (): Promise<Project[]> => {
 		return await db.projects.orderBy('createdAt').toArray();
@@ -91,6 +100,11 @@ export const projectRepository = {
 		return await db.projects.update(project.id, project);
 	},
 	add: async (project: Project) => await db.projects.add(project),
+	getBulkByIds: async (ids: string[]): Promise<Project[]> => {
+		return await db.projects.where('id').anyOf(ids).toArray();
+	},
+	bulkPut: async (projects: Project[]) => await db.projects.bulkPut(projects),
+	delete: async (id: string) => await db.projects.delete(id),
 	hasElements: async () => (await db.projects.limit(1).count()) > 0,
 	deleteFullProject: async (projectId: string) => {
 		return await db.transaction(
@@ -110,7 +124,13 @@ export const projectRepository = {
 export const attachmentRepository = {
 	add: async (attachment: Attachment) => await db.attachments.add(attachment),
 	getManyByNoteId: async (id: string): Promise<Attachment[]> => {
-		return db.attachments.where('noteId').equals(id).sortBy('createdAt');
+		return await db.attachments.where('noteId').equals(id).sortBy('createdAt');
+	},
+	get: async (id: string): Promise<Attachment | undefined> => {
+		return await db.attachments.get(id);
+	},
+	getBulkByIds: async (ids: string[]): Promise<Attachment[]> => {
+		return await db.attachments.where('id').anyOf(ids).toArray();
 	},
 	put: async (attachment: Attachment) => {
 		await db.attachments.put(attachment);
@@ -229,3 +249,49 @@ function blobToBase64(blob: Blob): Promise<string> {
 		reader.readAsDataURL(blob);
 	});
 }
+
+export const syncService = {
+	getUnsynced: async (): Promise<{
+		projects: Project[];
+		columns: Column[];
+		notes: Note[];
+		attachments: Attachment[];
+		deletedLogs: DeletedLog[];
+	}> => {
+		const projects = await db.projects.where('synced').equals(0).toArray();
+		const columns = await db.columns.where('synced').equals(0).toArray();
+		const notes = await db.notes.where('synced').equals(0).toArray();
+		const attachments = await db.attachments.where('synced').equals(0).toArray();
+		const deletedLogs = await db.deleted_log.where('synced').equals(0).toArray();
+
+		return { projects, columns, notes, attachments, deletedLogs };
+	},
+
+	getServerVersion: (): number | null => {
+		return get(serverVersion);
+	},
+
+	setServerVersion: (version: number) => {
+		serverVersion.set(version);
+	},
+
+	putAll: async (data: {
+		projects: Project[];
+		columns: Column[];
+		notes: Note[];
+		attachments: Attachment[];
+		deletedLogs: DeletedLog[];
+	}) => {
+		await db.transaction(
+			'rw',
+			[db.projects, db.columns, db.notes, db.attachments, db.deleted_log],
+			async () => {
+				await db.deleted_log.bulkPut(data.deletedLogs);
+				await db.projects.bulkPut(data.projects);
+				await db.columns.bulkPut(data.columns);
+				await db.notes.bulkPut(data.notes);
+				await db.attachments.bulkPut(data.attachments);
+			}
+		);
+	}
+};

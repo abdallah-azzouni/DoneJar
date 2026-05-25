@@ -30,7 +30,7 @@
 						createdAt: 0,
 						updatedAt: 0,
 						synced: false,
-						serverVersion: null
+						version: null
 					};
 			customColumns = [];
 			inboxIndex = null;

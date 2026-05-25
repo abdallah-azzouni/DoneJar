@@ -58,7 +58,7 @@ export async function createProject(
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
 			synced: false,
-			serverVersion: null
+			version: null
 		};
 
 		await projectService.createProjectWithColumns(newProject, newColumns);

@@ -40,7 +40,7 @@ export async function createNote(note: Note): Promise<ActionResult> {
 			updatedAt: Date.now(),
 			pinned: validNote.pinned,
 			synced: false,
-			serverVersion: null
+			version: null
 		};
 
 		await noteRepository.add(newNote);
@@ -93,7 +93,7 @@ export async function editNote(note: Note): Promise<ActionResult> {
 			updatedAt: Date.now(),
 			pinned: validNote.pinned,
 			synced: validNote.synced || false,
-			serverVersion: validNote.serverVersion || null
+			version: validNote.version || null
 		} as Note);
 		if (updateResult === 0) {
 			return failure('Note not found or no changes made');

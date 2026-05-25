@@ -143,7 +143,7 @@
 				url: null,
 				localBlob: file,
 				synced: false,
-				serverVersion: null,
+				version: null,
 				createdAt: 0,
 				updatedAt: 0,
 				pinned: false

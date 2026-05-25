@@ -41,7 +41,7 @@ export const NoteSchema = z.object({
 	createdAt: z.number(),
 	updatedAt: z.number(),
 	synced: z.boolean().default(false),
-	serverVersion: z.number().nullable().default(null)
+	version: z.number().nullable().default(null)
 });
 
 export const ColumnSchema = z.object({
@@ -53,7 +53,7 @@ export const ColumnSchema = z.object({
 	position: z.number(),
 	specialType: z.enum(['jar', 'inbox']).nullable().optional().default(null),
 	synced: z.boolean().default(false),
-	serverVersion: z.number().nullable().default(null)
+	version: z.number().nullable().default(null)
 });
 
 export const ProjectSchema = z.object({
@@ -72,7 +72,7 @@ export const ProjectSchema = z.object({
 	createdAt: z.number(),
 	updatedAt: z.number(),
 	synced: z.boolean().default(false),
-	serverVersion: z.number().nullable().default(null)
+	version: z.number().nullable().default(null)
 });
 
 export const attachmentSchema = z.object({
@@ -85,7 +85,7 @@ export const attachmentSchema = z.object({
 	localBlob: z.instanceof(Blob).nullable().default(null),
 	pinned: z.boolean().default(false),
 	synced: z.boolean().default(false),
-	serverVersion: z.number().nullable().default(null),
+	version: z.number().nullable().default(null),
 	createdAt: z.number(),
 	updatedAt: z.number()
 });
@@ -106,13 +106,8 @@ export const BackupSchema = z.object({
 });
 
 export function createColumn(
-	partial: Omit<
-		Column,
-		'sortKey' | 'filters' | 'specialType' | 'name' | 'version' | 'synced' | 'serverVersion'
-	> &
-		Partial<
-			Pick<Column, 'sortKey' | 'filters' | 'specialType' | 'name' | 'synced' | 'serverVersion'>
-		>
+	partial: Omit<Column, 'sortKey' | 'filters' | 'specialType' | 'name' | 'version' | 'synced'> &
+		Partial<Pick<Column, 'sortKey' | 'filters' | 'specialType' | 'name' | 'synced' | 'version'>>
 ): Column {
 	return {
 		sortKey: null,
@@ -120,7 +115,7 @@ export function createColumn(
 		specialType: null,
 		name: 'New Column',
 		synced: false,
-		serverVersion: null,
+		version: null,
 		...partial
 	};
 }
@@ -139,7 +134,7 @@ export const emptyNote: Note = {
 	createdAt: 0,
 	updatedAt: 0,
 	synced: false,
-	serverVersion: null
+	version: null
 };
 
 // derive TS types from schemas for consumption elsewhere
@@ -154,14 +149,14 @@ export type Backup = z.infer<typeof BackupSchema>;
 
 export type SerializedAttachment = Omit<Attachment, 'localBlob'> & { localBlob: string | null };
 export const ExportBackupSchema = BackupSchema.extend({
-	projects: z.array(ProjectSchema.omit({ synced: true, serverVersion: true })),
-	columns: z.array(ColumnSchema.omit({ synced: true, serverVersion: true })),
-	notes: z.array(NoteSchema.omit({ synced: true, serverVersion: true })),
+	projects: z.array(ProjectSchema.omit({ synced: true, version: true })),
+	columns: z.array(ColumnSchema.omit({ synced: true, version: true })),
+	notes: z.array(NoteSchema.omit({ synced: true, version: true })),
 	attachments: z.array(
 		attachmentSchema.extend({
 			localBlob: z.string().nullable().default(null),
 			synced: z.boolean().default(false),
-			serverVersion: z.number().nullable().default(null)
+			version: z.number().nullable().default(null)
 		})
 	)
 });

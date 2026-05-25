@@ -1,6 +1,9 @@
 import { pb } from '$lib/pb/pb';
+import { clearDatabase } from '$lib/db/dal';
+import { isLocal } from '$lib/stores/appState';
 
 export async function login(email: string, password: string) {
+	isLocal.set(false); // Set to false on login attempt
 	const userData = await pb.collection('users').authWithPassword(email, password);
 	return userData;
 }
@@ -20,7 +23,8 @@ export async function resetPassword(email: string): Promise<boolean> {
 	return await pb.collection('users').requestPasswordReset(email);
 }
 
-export function logout() {
+export async function logout() {
+	await clearDatabase(); // Clear local data on logout
 	pb.authStore.clear();
 }
 

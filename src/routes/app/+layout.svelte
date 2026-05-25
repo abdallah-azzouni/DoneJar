@@ -8,7 +8,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { pb } from '$lib/pb/pb';
+	import { isLoggedIn, logout } from '$lib/pb/auth';
 	import { currentProject } from '$lib/stores/currentProject';
 	import { openProjectMenu } from '$lib/stores/dialog';
 	import DeleteConfirmation from '$lib/popups/DeleteConfirmation.svelte';
@@ -23,6 +23,7 @@
 	import { projects } from '$lib/stores/projects';
 	import { deletedLogStore } from '$lib/stores/deletedLogStore';
 	import { failure } from '$lib/types';
+	import { sync } from '$lib/sync/sync';
 
 	let { children } = $props();
 	let currentProjectId: string | null = null;
@@ -60,13 +61,15 @@
 		}
 	});
 
-	onMount(() => {
+	onMount(async () => {
 		// Redirect immediately if not authenticated and watch for auth changes
-		if (!pb.authStore.isValid && !$isLocal) goto(resolve('/auth/login'));
+		if (!isLoggedIn() && !$isLocal) {
+			await logout(); // Clear any local data and session
+			goto(resolve('/auth/login'));
+		}
 
-		pb.authStore.onChange((token, model) => {
-			if (!model && !$isLocal) goto(resolve('/auth/login'));
-		});
+		const result = await sync();
+		notify(result);
 	});
 </script>
 

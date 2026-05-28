@@ -122,12 +122,17 @@ export const projectRepository = {
 };
 
 export const attachmentRepository = {
-	add: async (attachment: Attachment) => await db.attachments.add(attachment),
+	add: async (attachment: Attachment) => {
+		await db.attachments.add(attachment);
+	},
 	getManyByNoteId: async (id: string): Promise<Attachment[]> => {
 		return await db.attachments.where('noteId').equals(id).sortBy('createdAt');
 	},
 	get: async (id: string): Promise<Attachment | undefined> => {
 		return await db.attachments.get(id);
+	},
+	update: async (attachment: Partial<Attachment> & Pick<Attachment, 'id'>): Promise<number> => {
+		return await db.attachments.update(attachment.id, attachment);
 	},
 	getBulkByIds: async (ids: string[]): Promise<Attachment[]> => {
 		return await db.attachments.where('id').anyOf(ids).toArray();
@@ -142,6 +147,9 @@ export const deletedLogRepository = {
 	add: async (log: DeletedLog) => await db.deleted_log.add(log),
 	getAll: async (): Promise<DeletedLog[]> => {
 		return await db.deleted_log.toArray();
+	},
+	update: async (log: Partial<DeletedLog> & Pick<DeletedLog, 'id'>): Promise<number> => {
+		return await db.deleted_log.update(log.id, log);
 	},
 	delete: async (id: string) => await db.deleted_log.delete(id)
 };

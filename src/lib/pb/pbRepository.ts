@@ -1,34 +1,40 @@
 import { pb } from '$lib/pb/pb';
-import { failure, success, type ActionResult } from '$lib/types';
 import {
 	projectRepository,
 	columnRepository,
 	noteRepository,
 	attachmentRepository
 } from '$lib/db/dal';
+import { guardSync } from './auth';
 
+// Meta
 export async function getUserServerVersion(): Promise<number | null> {
-	const guard = guardSync();
-	if (guard.type === 'error') throw new Error(`Cannot get user server version: ${guard.message}`);
-	try {
-		if (!pb.authStore.record?.id) throw new Error('User not found');
+	if (!pb.authStore.record?.id) throw new Error('User not found');
+	const record = await pb
+		.collection('users')
+		.getOne(pb.authStore.record.id, { fields: 'serverVersion' });
+	return record.serverVersion;
+}
 
-		const record = await pb
-			.collection('users')
-			.getOne(pb.authStore.record.id, { fields: 'serverVersion' });
-		return record.serverVersion;
-	} catch (error) {
-		throw new Error(
-			error instanceof Error ? error.message : 'Unknown error while fetching user server version'
-		);
+export async function setUserServerVersion(version: number): Promise<void> {
+	if (!pb.authStore.record?.id) throw new Error('User not found');
+	await pb.collection('users').update(pb.authStore.record.id, { serverVersion: version });
+}
+
+// Fetch delta (pull)
+async function getUpdatedEntities<T extends { id: string; version?: number }>(
+	rawItems: T[],
+	repository: {
+		getBulkByIds: (ids: string[]) => Promise<({ id: string; version?: number | null } | null)[]>;
 	}
+) {
+	const localItems = await repository.getBulkByIds(rawItems.map((i) => i.id));
+	const localMap = new Map(localItems.filter(Boolean).map((i) => [i!.id, i!.version ?? 0]));
+	const t = rawItems.filter(
+		(item) => !localMap.has(item.id) || localMap.get(item.id)! < (item.version ?? 0)
+	);
+	return t;
 }
-export function guardSync(): ActionResult {
-	if (typeof navigator !== 'undefined' && !navigator.onLine) return failure('offline');
-	if (!pb.authStore.isValid) return failure('unauthenticated');
-	return success('ok');
-}
-
 async function fetchServerData() {
 	const [projects, columns, notes, attachments, deletedLogs] = await Promise.all([
 		pb.collection('projects').getFullList(),
@@ -37,30 +43,13 @@ async function fetchServerData() {
 		pb.collection('attachments').getFullList(),
 		pb.collection('deleted_logs').getFullList()
 	]);
+
 	return { projects, columns, notes, attachments, deletedLogs };
 }
-
-async function getUpdatedEntities<T extends { id: string; version?: number }>(
-	rawItems: T[],
-	repository: {
-		getBulkByIds: (ids: string[]) => Promise<({ id: string; version?: number | null } | null)[]>;
-	}
-) {
-	const localItems = await repository.getBulkByIds(rawItems.map((i) => i.id));
-
-	const localMap = new Map(localItems.filter(Boolean).map((i) => [i!.id, i!.version ?? 0]));
-
-	return rawItems.filter((item) => (localMap.get(item.id) ?? 0) < (item.version ?? 0));
-}
-
 // function will get all data from server if the collection.version higher than local,
 export async function getAllDataFromServer() {
-	const guard = guardSync();
-	if (guard.type === 'error') throw new Error(`Cannot get data from server: ${guard.message}`);
-
 	try {
 		const serverData = await fetchServerData();
-
 		const [projects, columns, notes, attachments] = await Promise.all([
 			getUpdatedEntities(serverData.projects, projectRepository),
 			getUpdatedEntities(serverData.columns, columnRepository),
@@ -72,12 +61,41 @@ export async function getAllDataFromServer() {
 			projects: projects,
 			columns: columns,
 			notes: notes,
-			attachments: attachments,
+			attachments: attachments.map((a) => ({ ...a, url: pb.files.getURL(a, a.file) })),
 			deletedLogs: serverData.deletedLogs
 		};
 	} catch (error) {
 		throw new Error(
 			error instanceof Error ? error.message : 'Unknown error while fetching data from server'
 		);
+	}
+}
+
+// Push
+export async function upsert<T extends { id: string }>(collection: string, id: string, data: T) {
+	try {
+		return await pb.collection(collection).update(id, { ...data, userId: pb.authStore.record?.id });
+	} catch {
+		console.warn(
+			`Record with id ${id} not found in collection ${collection}, creating new record.`
+		);
+		return await pb.collection(collection).create({ ...data, id, userId: pb.authStore.record?.id });
+	}
+}
+
+export const fetchRecordById = async (collection: string, id: string) => {
+	try {
+		return await pb.collection(collection).getOne(id);
+	} catch (error) {
+		console.error(`Failed to fetch record ${id} from collection ${collection}:`, error);
+		return null;
+	}
+};
+
+export async function getUserInfo() {
+	try {
+		guardSync();
+	} catch (error) {
+		throw new Error(`Error fetching user info: ${error}`);
 	}
 }

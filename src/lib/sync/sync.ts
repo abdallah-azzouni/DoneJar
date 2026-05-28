@@ -1,11 +1,19 @@
 import { syncService } from '$lib/db/dal';
-import { guardSync, getUserServerVersion } from '$lib/pb/pbRepository';
+import { getUserServerVersion } from '$lib/pb/pbRepository';
+import { guardSync } from '$lib/pb/auth';
 import { failure, success, type ActionResult } from '$lib/types';
 import { pull } from '$lib/sync/pull';
 import { push } from '$lib/sync/push';
 
+let syncing = false;
+
 export async function sync(): Promise<ActionResult> {
 	try {
+		if (syncing) {
+			return failure('Sync is already in progress');
+		}
+		syncing = true;
+
 		// Check if we are online and logged in
 		const guard = guardSync();
 		if (guard.type === 'error') return guard;
@@ -37,26 +45,30 @@ export async function sync(): Promise<ActionResult> {
 		}
 	} catch (error) {
 		return failure(`Sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+	} finally {
+		syncing = false;
 	}
 }
 
 async function pullAndPush(onlineServerVersion: number | null): Promise<ActionResult> {
 	try {
 		await pull();
-		await pushWithCheck(onlineServerVersion);
+		const result = await pushWithCheck(onlineServerVersion);
 
-		return success('Sync successful');
+		return result || success('Sync successful');
 	} catch (error) {
-		console.error('Sync failed full error:', error);
 		return failure(`Sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
 	}
 }
 
 async function pushWithCheck(onlineServerVersion: number | null) {
-	await push();
+	const result = await push();
 	const newServerVersion = await getUserServerVersion();
-	if ((newServerVersion || 0) > (onlineServerVersion || 0)) {
+	if ((newServerVersion || 0) > (onlineServerVersion || 0) || result?.type === 'success') {
 		syncService.setServerVersion(onlineServerVersion || 0); // Update local server version after successful push
+		if (result?.type === 'success') {
+			return success('Sync successful (no local changes to push)');
+		}
 	} else {
 		throw new Error('Sync failed: Server version did not update after push');
 	}

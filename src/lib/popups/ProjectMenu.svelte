@@ -29,7 +29,7 @@
 						color: DEFAULT_PROJECT_COLOR,
 						createdAt: 0,
 						updatedAt: 0,
-						synced: false,
+						synced: 0,
 						version: null
 					};
 			customColumns = [];
@@ -249,7 +249,7 @@
 					onclick={() => {
 						closeProjectMenu();
 
-						confirmDelete({ type: 'project', id: newProject.id, name: newProject.name });
+						confirmDelete({ type: 'projects', id: newProject.id, name: newProject.name });
 					}}>Delete</button
 				>
 			</div>

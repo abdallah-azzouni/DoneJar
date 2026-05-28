@@ -51,9 +51,10 @@
 		}
 
 		const plainAttachments = $state.snapshot(attachments) as unknown as Attachment[]; // snapshot to unwarp any proxies made by $state
+		const newAttachments = plainAttachments.filter((a) => !a.createdAt); // only save new attachments.
 		const attachmentResults = await saveNoteAttachments(
 			noteId,
-			plainAttachments,
+			newAttachments,
 			deletedAttachmentIds
 		); // create after note has been created.
 
@@ -142,8 +143,7 @@
 				size: file.size,
 				url: null,
 				localBlob: file,
-				synced: false,
-				version: null,
+				synced: 0,
 				createdAt: 0,
 				updatedAt: 0,
 				pinned: false
@@ -452,7 +452,7 @@
 				<div class="relative">
 					<span class="mb-1 flex items-center gap-2">
 						Tags
-						{#if workingNote.tags?.length > 0}
+						{#if workingNote.tags != null && workingNote.tags.length > 0}
 							<span
 								class="rounded-full bg-black px-1.5 py-1 text-xs leading-none font-bold text-white"
 							>
@@ -524,7 +524,7 @@
 												type="button"
 												class="font-bold hover:text-red-500"
 												onclick={() =>
-													(workingNote.tags = workingNote.tags.filter((t) => t !== tag))}
+													(workingNote.tags = (workingNote.tags || []).filter((t) => t !== tag))}
 											>
 												×
 											</button>
@@ -550,7 +550,7 @@
 					onclick={() => {
 						isOpen = false;
 						confirmDelete({
-							type: 'note',
+							type: 'notes',
 							id: workingNote.id,
 							projectId: workingNote.projectId,
 							name: workingNote.title

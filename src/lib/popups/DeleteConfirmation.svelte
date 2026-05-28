@@ -14,14 +14,14 @@
 		if (!target) return;
 
 		const result =
-			target.type === 'project' ? await deleteProject(target.id) : await deleteNote(target.id);
+			target.type === 'projects' ? await deleteProject(target.id) : await deleteNote(target.id);
 
 		if (result.type === 'error') {
 			notify(result);
 			return;
 		}
 
-		if (target.type === 'project') {
+		if (target.type === 'projects') {
 			const all = $projects;
 			const deletedIndex = all.findIndex((p) => p.id === target.id); // save deleted index before deletion
 
@@ -37,13 +37,13 @@
 
 <ThemedDialog {isOpen} onClose={closeDelete}>
 	<h1 class="m-4 text-2xl font-bold">
-		Delete {target?.type === 'project' ? 'project' : 'note'}?
+		Delete {target?.type === 'projects' ? 'project' : 'note'}?
 	</h1>
 	<hr class="border-gray-500" />
 	<div class="m-4 mx-16 space-y-4">
 		<span>
 			The <b>{target?.name}</b>
-			{target?.type === 'project' ? 'project and all of its tasks' : 'note and all of its data'} will
+			{target?.type === 'projects' ? 'project and all of its tasks' : 'note and all of its data'} will
 			be permanently deleted.
 		</span>
 	</div>

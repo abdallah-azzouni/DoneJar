@@ -12,7 +12,7 @@ export const softDelete = async (itemId: string, itemType: DeletedLog['itemType'
 		id: nanoid(),
 		itemId,
 		itemType,
-		synced: false,
+		synced: 0,
 		deletedAt: Date.now()
 	});
 };

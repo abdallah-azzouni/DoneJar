@@ -22,6 +22,7 @@
 	import { notify } from '$lib/stores/notificationStore';
 	import { projects } from '$lib/stores/projects';
 	import { deletedLogStore } from '$lib/stores/deletedLogStore';
+	import { unsyncedItemsStore } from '$lib/stores/unsyncedStore';
 	import { failure } from '$lib/types';
 	import { sync } from '$lib/sync/sync';
 
@@ -49,15 +50,34 @@
 		for (const entry of confirmed) {
 			(async () => {
 				try {
-					if (entry.itemType === 'project') await projectRepository.deleteFullProject(entry.itemId);
-					if (entry.itemType === 'column') await columnRepository.deleteFullColumn(entry.itemId);
-					if (entry.itemType === 'note') await noteRepository.deleteFullNote(entry.itemId);
-					if (entry.itemType === 'attachment') await attachmentRepository.delete(entry.itemId);
+					if (entry.itemType === 'projects')
+						await projectRepository.deleteFullProject(entry.itemId);
+					if (entry.itemType === 'columns') await columnRepository.deleteFullColumn(entry.itemId);
+					if (entry.itemType === 'notes') await noteRepository.deleteFullNote(entry.itemId);
+					if (entry.itemType === 'attachments') await attachmentRepository.delete(entry.itemId);
 					if (entry.synced) await deletedLogRepository.delete(entry.id);
 				} catch (error) {
 					notify(failure(`Error syncing deletions: ${error}`));
 				}
 			})();
+		}
+	});
+
+	$effect(() => {
+		const data = $unsyncedItemsStore;
+
+		const totalCount =
+			data.projects.length +
+			data.columns.length +
+			data.notes.length +
+			data.attachments.length +
+			data.deletedLogs.length;
+
+		// 3. If we have items and we aren't already syncing, fire it off
+		if (totalCount > 0) {
+			sync().then((result) => {
+				if (result.type === 'error') notify(result);
+			});
 		}
 	});
 
@@ -67,9 +87,6 @@
 			await logout(); // Clear any local data and session
 			goto(resolve('/auth/login'));
 		}
-
-		const result = await sync();
-		notify(result);
 	});
 </script>
 

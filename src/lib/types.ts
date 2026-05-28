@@ -31,8 +31,11 @@ export const NoteSchema = z.object({
 			MAX_NOTE_TITLE_LENGTH,
 			`Note title cannot be longer than ${MAX_NOTE_TITLE_LENGTH} characters`
 		),
-	tags: z.array(z.string()).default([]),
-	description: DeltaSchema.default({ ops: [] }).transform((d) => d as unknown as Delta),
+	tags: z.array(z.string()).nullable().default([]),
+	description: z.preprocess(
+		(val) => val ?? { ops: [] },
+		DeltaSchema.transform((d) => d as unknown as Delta)
+	),
 	color: z.string().regex(HEX_COLOR_REGEX, 'Note color must be a valid hex color'),
 	dueDate: z.object({ timestamp: z.number(), hasTime: z.boolean() }).nullable().default(null),
 	priority: z.enum(['low', 'medium', 'high']).nullable().default(null).catch(null),
@@ -40,7 +43,7 @@ export const NoteSchema = z.object({
 	pinned: z.boolean().default(false),
 	createdAt: z.number(),
 	updatedAt: z.number(),
-	synced: z.boolean().default(false),
+	synced: z.number().default(0),
 	version: z.number().nullable().default(null)
 });
 
@@ -51,8 +54,11 @@ export const ColumnSchema = z.object({
 	sortKey: z.string().nullable().default(null),
 	filters: z.record(z.string(), z.array(z.string())).default({}),
 	position: z.number(),
-	specialType: z.enum(['jar', 'inbox']).nullable().optional().default(null),
-	synced: z.boolean().default(false),
+	specialType: z.preprocess(
+		(val) => (val === '' ? null : val),
+		z.enum(['jar', 'inbox']).nullable().optional().default(null)
+	),
+	synced: z.number().default(0),
 	version: z.number().nullable().default(null)
 });
 
@@ -71,7 +77,7 @@ export const ProjectSchema = z.object({
 	color: z.string().regex(HEX_COLOR_REGEX, 'Project color must be a valid hex color'),
 	createdAt: z.number(),
 	updatedAt: z.number(),
-	synced: z.boolean().default(false),
+	synced: z.number().default(0),
 	version: z.number().nullable().default(null)
 });
 
@@ -84,8 +90,7 @@ export const attachmentSchema = z.object({
 	url: z.string().nullable().default(null),
 	localBlob: z.instanceof(Blob).nullable().default(null),
 	pinned: z.boolean().default(false),
-	synced: z.boolean().default(false),
-	version: z.number().nullable().default(null),
+	synced: z.number().default(0),
 	createdAt: z.number(),
 	updatedAt: z.number()
 });
@@ -93,8 +98,8 @@ export const attachmentSchema = z.object({
 export const deletedLogSchema = z.object({
 	id: z.string(),
 	itemId: z.string(),
-	itemType: z.enum(['note', 'column', 'project', 'attachment']),
-	synced: z.boolean().default(false),
+	itemType: z.enum(['notes', 'columns', 'projects', 'attachments']),
+	synced: z.number().default(0),
 	deletedAt: z.number()
 });
 
@@ -103,6 +108,14 @@ export const BackupSchema = z.object({
 	columns: z.array(ColumnSchema),
 	notes: z.array(NoteSchema),
 	attachments: z.array(attachmentSchema)
+});
+
+export const userSchema = z.object({
+	id: z.string(),
+	email: z.email(),
+	name: z.string(),
+	verified: z.boolean(),
+	serverVersion: z.number()
 });
 
 export function createColumn(
@@ -114,7 +127,7 @@ export function createColumn(
 		filters: {},
 		specialType: null,
 		name: 'New Column',
-		synced: false,
+		synced: 0,
 		version: null,
 		...partial
 	};
@@ -133,7 +146,7 @@ export const emptyNote: Note = {
 	position: 0,
 	createdAt: 0,
 	updatedAt: 0,
-	synced: false,
+	synced: 0,
 	version: null
 };
 
@@ -146,6 +159,7 @@ export type ColumnWithNotes = Column & { notes: Note[] };
 export type ProjectWithColumns = Project & { columns: Column[] };
 export type DeletedLog = z.infer<typeof deletedLogSchema>;
 export type Backup = z.infer<typeof BackupSchema>;
+export type User = z.infer<typeof userSchema>;
 
 export type SerializedAttachment = Omit<Attachment, 'localBlob'> & { localBlob: string | null };
 export const ExportBackupSchema = BackupSchema.extend({
@@ -155,8 +169,7 @@ export const ExportBackupSchema = BackupSchema.extend({
 	attachments: z.array(
 		attachmentSchema.extend({
 			localBlob: z.string().nullable().default(null),
-			synced: z.boolean().default(false),
-			version: z.number().nullable().default(null)
+			synced: z.number().default(0)
 		})
 	)
 });
@@ -167,8 +180,10 @@ export type NoteInsertTarget =
 	| { type: 'specialType'; value: 'inbox' | 'jar' };
 
 export type DeleteTarget =
-	| { type: 'project'; id: string; name: string }
-	| { type: 'note'; id: string; projectId: string; name: string }
+	| { type: 'projects'; id: string; name: string }
+	| { type: 'notes'; id: string; projectId: string; name: string }
+	| { type: 'columns'; id: string; projectId: string; name: string }
+	| { type: 'attachments'; id: string; noteId: string; name: string }
 	| null;
 
 // sort options

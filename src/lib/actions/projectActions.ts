@@ -57,7 +57,7 @@ export async function createProject(
 			color,
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
-			synced: false,
+			synced: 0,
 			version: null
 		};
 
@@ -98,7 +98,11 @@ export async function editProject(projectInfo: {
 	if (validationResult.type === 'error') return validationResult;
 
 	try {
-		const result = await projectRepository.update({ ...projectInfo, updatedAt: Date.now() });
+		const result = await projectRepository.update({
+			...projectInfo,
+			updatedAt: Date.now(),
+			synced: 0
+		});
 		if (result === 0) return failure('Project not found or no changes made');
 	} catch (error) {
 		return failure(`Error editing project: ${error}`);
@@ -113,7 +117,7 @@ export async function editProject(projectInfo: {
  */
 export async function deleteProject(projectId: string): Promise<ActionResult> {
 	try {
-		await softDelete(projectId, 'project');
+		await softDelete(projectId, 'projects');
 	} catch (error) {
 		return failure(`Error deleting project: ${error}`);
 	}

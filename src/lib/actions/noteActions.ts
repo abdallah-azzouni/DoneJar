@@ -39,7 +39,7 @@ export async function createNote(note: Note): Promise<ActionResult> {
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
 			pinned: validNote.pinned,
-			synced: false,
+			synced: 0,
 			version: null
 		};
 
@@ -92,7 +92,7 @@ export async function editNote(note: Note): Promise<ActionResult> {
 			createdAt: validNote.createdAt || Date.now(),
 			updatedAt: Date.now(),
 			pinned: validNote.pinned,
-			synced: validNote.synced || false,
+			synced: 0,
 			version: validNote.version || null
 		} as Note);
 		if (updateResult === 0) {
@@ -112,7 +112,7 @@ export async function editNote(note: Note): Promise<ActionResult> {
  */
 export async function deleteNote(noteId: string): Promise<ActionResult> {
 	try {
-		await softDelete(noteId, 'note');
+		await softDelete(noteId, 'notes');
 	} catch (error) {
 		return failure(`Error deleting note: ${error}`);
 	}
@@ -134,6 +134,7 @@ export async function moveNote(noteId: string, newColumnId: string): Promise<Act
 
 		note.columnId = newColumnId;
 		note.updatedAt = Date.now();
+		note.synced = 0;
 
 		const result = await noteRepository.update(note);
 		if (result === 0) return failure('Note not found or no changes made');

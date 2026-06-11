@@ -1,5 +1,6 @@
 import { createDialogStore } from './dialogFactory';
-import { type Project, type DeleteTarget } from '$lib/types';
+import { type DeleteTarget } from '$lib/types';
+import type { ProjectDocType } from '$lib/db/schemas';
 
 export * from './dialogFactory';
 
@@ -7,6 +8,7 @@ export * from './dialogFactory';
 // note: side menu items placed in AppHeader.svelte
 
 export const sideMenuStore = createDialogStore();
+sideMenuStore.close(); // there is bug that make side menu open on load, this is a workaround to fix it, will investigate later.
 
 export const sideMenuItems = [
 	{ index: 0, label: 'Import 📥', action: () => importStore.open() },
@@ -21,8 +23,9 @@ export const settingsStore = createDialogStore();
 export const profileMenuStore = createDialogStore();
 
 // --- PROJECT MENU ---
-export const projectMenuStore = createDialogStore<Project | null>(false, null);
-export const openProjectMenu = (project: Project | null = null) => projectMenuStore.open(project);
+export const projectMenuStore = createDialogStore<ProjectDocType | null>(false, null);
+export const openProjectMenu = (project: ProjectDocType | null = null) =>
+	projectMenuStore.open(project);
 export const closeProjectMenu = () => projectMenuStore.close();
 
 // --- DELETE CONFIRMATION ---

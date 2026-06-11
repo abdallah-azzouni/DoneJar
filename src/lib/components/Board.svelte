@@ -5,108 +5,162 @@
 	import SortFilter from '$lib/components/SortFilter.svelte';
 	// popups
 	import NoteMenu from '$lib/popups/noteMenu/NoteMenu.svelte';
-	// external libraries
-	import { dndzone, TRIGGERS } from 'svelte-dnd-action';
 	// assets
 	import beaker from '$lib/assets/elements/beaker.png';
 	// stores
-	import { currentProject } from '$lib/stores/currentProject';
+	import { projectStore } from '$lib/stores/projects.svelte';
 	import { columnRepository } from '$lib/db/dal';
-	import { projects } from '$lib/stores/projects';
 	import { searchQuery } from '$lib/stores/search';
 
 	// actions
 	import { reorderNotes, moveNote } from '$lib/actions';
-	import { type Note, type ColumnWithNotes } from '$lib/types';
+	import { type NoteDocType } from '$lib/db/schemas/index';
+	import type { ColumnWithNotes } from '$lib/types';
 	import { notify } from '$lib/stores/notificationStore';
-	import { createColumnNotesStore } from '$lib/stores/columnNotesStore';
+	import { columnService } from '$lib/db/dal';
+
+	import {
+		dropTargetForElements,
+		monitorForElements
+	} from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 
 	import { getSortComparator } from '$lib/sort';
+	import { Op } from 'quill-delta';
 
 	let showCreateNote = $state(false);
 
-	const flipDurationMs = 200;
+	let columns = $state<ColumnWithNotes[]>([]);
 
-	let dragDisabled = $state(false);
-	// Tracks which column index a drag originated from
-	let dragSourceColIdx = $state<number | null>(null);
-
-	async function handleDnd(columnIdx: number, type: 'consider' | 'finalize', e: CustomEvent) {
-		if (!$currentProject) return;
-		const { items, info } = e.detail;
-
-		if (type === 'consider') {
-			if (info?.trigger === TRIGGERS.DRAG_STARTED) dragSourceColIdx = columnIdx;
-			columnItems[columnIdx].notes = items;
-			return;
-		}
-
-		// finalize
-		columnItems[columnIdx].notes = items;
-		// If the drag started in this column and ended in the same column, clear any active sorts since the order has been manually changed.
-		if (dragSourceColIdx === columnIdx && info?.trigger === TRIGGERS.DROPPED_INTO_ZONE) {
-			activeSortComparators[columnIdx] = null;
-			activeSortKeys[columnIdx] = null;
-		}
-		if (dragSourceColIdx !== null && dragSourceColIdx !== columnIdx) {
-			const result = await moveNote(info.id, columnItems[columnIdx].id);
-			if (result.type === 'error') {
-				notify(result);
-				return;
-			}
-		}
-
-		dragSourceColIdx = null;
-		const result = await reorderNotes(items.map((n: Note) => n.id));
-		if (result.type === 'error') notify(result);
-	}
-
-	let columnItems = $state<ColumnWithNotes[]>([]);
+	let hoveredColumnId = $state<string | null>(null);
+	let activeHoveredNoteId = $state<string | null>(null);
 
 	// Load columns whenever current project changes.
 	$effect(() => {
-		const project = $currentProject; // capture dependency synchronously
-		void $projects; // capture projects store to update board.
+		const project = projectStore.current; // capture dependency synchronously
+		void projectStore.projects; // capture projects store to update board.
 
-		if (!project) return;
+		if (!project) {
+			columns = [];
+			return;
+		}
 
-		const store = createColumnNotesStore(project.id); // trigger effect when notes change.
-		const unsub = store.subscribe((cols) => {
-			const newComparators = cols.map((col) =>
-				col.sortKey ? getSortComparator(col.sortKey) : null
-			);
-
-			columnItems = cols.map((col, i) => {
-				const cmp = newComparators[i];
-				let notes = cmp ? [...col.notes].sort(cmp) : [...col.notes];
-				// pins always on top
-				notes.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
-				return { ...col, notes };
-			});
-			activeFilters = cols.map((col) => col.filters);
-			activeSortKeys = cols.map((col) => col.sortKey ?? null);
-			activeSortComparators = newComparators;
+		const sub = columnService.observeColumnsByProjectIdWithNotes(project.id).subscribe({
+			next: (data) => (columns = data),
+			error: (err) => notify({ type: 'error', message: String(err) })
 		});
-		return () => unsub();
+
+		const dndMonitorCleanup = monitorForElements({
+			async onDrop({ source, location }) {
+				const destination = location.current.dropTargets[0];
+				if (!destination) return;
+
+				const noteId = source.data.noteId as string;
+				const sourceColumnId = source.data.columnId as string;
+
+				// Pick up the target attributes now that the card exposes them!
+				const targetNoteId = destination.data.noteId as string | undefined;
+				const targetColumnId = destination.data.columnId as string;
+
+				if (!noteId || !targetColumnId) return;
+
+				// Case A: Dropped into a column empty space wrapper
+				if (!targetNoteId) {
+					if (sourceColumnId !== targetColumnId) {
+						const result = await moveNote(noteId, targetColumnId);
+						if (result && result.type === 'error') notify(result);
+					}
+					return;
+				}
+
+				// Case B: Dropped directly onto another card in the grid
+				if (targetNoteId) {
+					const targetColumn = columnItems.find((c) => c.id === targetColumnId);
+					if (!targetColumn) return;
+
+					const targetNotes = targetColumn.notes;
+					const targetIdx = targetNotes.findIndex((n) => n.id === targetNoteId);
+					if (targetIdx === -1) return;
+
+					// In grid layouts, we default to dropping right AFTER the targeted note
+					const prevNote = targetNotes[targetIdx];
+					const nextNote = targetNotes[targetIdx + 1];
+
+					const prevPos = prevNote ? (prevNote.position ?? 0) : 0;
+					// Generate a default high index if placing at the absolute end of the grid list
+					const nextPos = nextNote ? (nextNote.position ?? prevPos + 2000) : prevPos + 2000;
+
+					const newPosition = (prevPos + nextPos) / 2;
+
+					const result = await moveNote(noteId, targetColumnId, newPosition);
+					if (result && result.type === 'error') notify(result);
+				}
+			}
+		});
+
+		return () => {
+			sub.unsubscribe();
+			dndMonitorCleanup();
+		};
 	});
+
+	function buildColumnItems(cols: ColumnWithNotes[]) {
+		return cols.map((col) => {
+			// get custom sort key.
+			const cmp = col.sortKey ? getSortComparator(col.sortKey) : null;
+
+			// sort notes by custom comparator or position.
+			let notes = [...col.notes];
+			if (cmp) {
+				notes.sort(cmp);
+			} else {
+				notes.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+			}
+
+			// show pinned notes first.
+			notes.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+			return { ...col, notes };
+		});
+	}
+
+	let columnItems = $derived(buildColumnItems(columns));
+
+	// Dynamic Svelte action mapping column registration to its inline ID context
+	function dndColumn(node: HTMLElement, columnId: string) {
+		const cleanup = dropTargetForElements({
+			element: node,
+			getData: () => ({ columnId }),
+			onDragEnter: () => (hoveredColumnId = columnId),
+			onDragLeave: () => {
+				if (hoveredColumnId === columnId) hoveredColumnId = null;
+			},
+			onDrop: () => (hoveredColumnId = null)
+		});
+
+		return {
+			destroy: cleanup
+		};
+	}
 
 	// ── Sort & Filter ──
 	// per-column modular filters: record of filterKey -> Set<string>
 	let activeFilters: Record<string, string[]>[] = $state([]);
 
-	let activeSortComparators: (((a: Note, b: Note) => number) | null)[] = $state([]);
-	let activeSortKeys: (string | null)[] = $state([]);
+	let activeSortComparators: (((a: NoteDocType, b: NoteDocType) => number) | null)[] = $state([]);
+	let activeSortKeys: (string | undefined)[] = $state([]);
 
-	async function handleColumnSort(columnIdx: number, compareFn: (a: Note, b: Note) => number) {
-		if (!$currentProject) return;
+	async function handleColumnSort(
+		columnIdx: number,
+		compareFn: (a: NoteDocType, b: NoteDocType) => number
+	) {
+		if (!projectStore.current) return;
 		activeSortComparators[columnIdx] = compareFn;
 		const sorted = [...columnItems[columnIdx].notes].sort(compareFn);
 		columnItems[columnIdx].notes = sorted;
-		const result = await reorderNotes(sorted.map((n: Note) => n.id));
+		const result = await reorderNotes(sorted.map((n: NoteDocType) => n.id));
 		if (result.type === 'error') notify(result);
 	}
 
-	function notePassesFilter(columnIdx: number, note: Note): boolean {
+	function notePassesFilter(columnIdx: number, note: NoteDocType): boolean {
 		const filters = activeFilters[columnIdx] || {};
 		// 1. Check Color and Priority filters
 		for (const [key, arr] of Object.entries(filters)) {
@@ -118,10 +172,18 @@
 			}
 		}
 		// 2. Extract plain text from description
-		const plainText = note.description.ops.reduce((text, op) => {
-			if (typeof op.insert === 'string') return text + op.insert;
-			return text;
-		}, '');
+
+		let plainText = '';
+		if (note.description && typeof note.description === 'object' && 'ops' in note.description) {
+			const ops = note.description.ops as Op[];
+
+			plainText = ops.reduce((text, op) => {
+				if (typeof op.insert === 'string') return text + op.insert;
+				return text;
+			}, '');
+		} else if (typeof note.description === 'string') {
+			plainText = note.description;
+		}
 
 		const search = $searchQuery.trim().toLowerCase();
 		if (!search) return true;
@@ -177,24 +239,15 @@
 	{#each columnItems as column, columnIdx (column.id)}
 		{#if column.specialType === 'jar'}
 			<div
+				use:dndColumn={column.id}
 				class="relative m-2 flex flex-col justify-end self-end"
 				style="height: min(60vh, calc(100vh - 80px)); aspect-ratio: 777 / 1250; flex-shrink: 0;"
 			>
 				<div
 					class="relative flex items-center justify-center border-2 border-dashed border-gray-400 p-16"
-					use:dndzone={{
-						items: columnItems[columnIdx]?.notes ?? [],
-						flipDurationMs,
-						dragDisabled
-					}}
-					onconsider={(e) => handleDnd(columnIdx, 'consider', e)}
-					onfinalize={(e) => handleDnd(columnIdx, 'finalize', e)}
 				>
 					{#each column.notes as note (note.id)}
-						<div
-							class="pointer-events-none absolute top-0 left-0 size-10 opacity-0"
-							data-id={note.id}
-						></div>
+						<div class="pointer-events-none absolute top-0 left-0 size-10 opacity-0"></div>
 					{/each}
 					<span class="pointer-events-none absolute z-0 text-gray-400">Drop notes here!</span>
 				</div>
@@ -208,8 +261,9 @@
 			</div>
 		{:else}
 			<div
+				use:dndColumn={column.id}
 				class="relative m-2 flex max-h-full flex-col items-center {getColumnClass(
-					$currentProject?.type,
+					projectStore.current?.type,
 					column.specialType
 				)}"
 			>
@@ -232,19 +286,10 @@
 							}}
 						/>
 					</div>
-					<div
-						class="min-h-full w-full p-4"
-						use:dndzone={{
-							items: columnItems[columnIdx].notes,
-							flipDurationMs,
-							dragDisabled
-						}}
-						onconsider={(e) => handleDnd(columnIdx, 'consider', e)}
-						onfinalize={(e) => handleDnd(columnIdx, 'finalize', e)}
-					>
+					<div class="min-h-full w-full p-4">
 						{#each columnItems[columnIdx].notes as note (note.id)}
-							<div class=" {notePassesFilter(columnIdx, note) ? 'inline-block' : 'hidden'} ">
-								<StickyNote {note} bind:dragDisabled />
+							<div class="{notePassesFilter(columnIdx, note) ? 'inline-block' : 'hidden'} p-2">
+								<StickyNote {note} bind:hoveredNoteId={activeHoveredNoteId} />
 							</div>
 						{/each}
 					</div>

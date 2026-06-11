@@ -1,157 +1,250 @@
 // data access layer
 import { db } from '$lib/db/db';
-import type {
-	Project,
-	Column,
-	Note,
-	Attachment,
-	Backup,
-	SerializedAttachment,
-	ExportBackup,
-	DeletedLog
-} from '$lib/types';
-import { nanoid } from 'nanoid';
-import { get } from 'svelte/store';
-import { serverVersion } from '$lib/stores/appState';
+import { switchMap, map } from 'rxjs/operators';
+import { combineLatest, of, from } from 'rxjs';
 
-export function clearDatabase() {
-	return db.transaction('rw', [db.projects, db.columns, db.notes, db.attachments], async () => {
-		await db.attachments.clear();
-		await db.notes.clear();
-		await db.columns.clear();
-		await db.projects.clear();
-	});
+import type {
+	ProjectDocType,
+	ColumnDocType,
+	NoteDocType,
+	AttachmentDocType,
+	BackupDocType
+} from '$lib/db/schemas';
+import { nanoid } from 'nanoid';
+
+export async function clearDatabase() {
+	const db$ = await db();
+	await db$.remove();
+	await db$.close();
 }
 
 export const noteRepository = {
-	get: async (id: string): Promise<Note | undefined> => {
-		return db.notes.get(id);
+	get: async (id: string): Promise<NoteDocType | null> => {
+		const db$ = await db();
+		return await db$.notes.findOne(id).exec();
 	},
-	getByColumnId: async (columnId: string): Promise<Note[]> => {
-		return await db.notes.where('columnId').equals(columnId).toArray();
+	getByColumnId: async (columnId: string): Promise<NoteDocType[]> => {
+		const db$ = await db();
+		return await db$.notes.find({ selector: { columnId } }).exec();
 	},
-	update: async (note: Partial<Note> & Pick<Note, 'id'>): Promise<number> => {
-		return await db.notes.update(note.id, note);
+	add: async (note: NoteDocType) => {
+		const db$ = await db();
+		await db$.notes.insert(note);
 	},
-	add: async (note: Note) => await db.notes.add(note),
-	getBulkByIds: async (ids: string[]): Promise<Note[]> => {
-		return await db.notes.where('id').anyOf(ids).toArray();
+	update: async (note: Partial<NoteDocType> & Pick<NoteDocType, 'id'>): Promise<void> => {
+		const db$ = await db();
+		const doc = await db$.notes.findOne(note.id).exec();
+		if (!doc) return;
+		await doc.incrementalPatch(note);
 	},
-	bulkPut: async (notes: Note[]) => await db.notes.bulkPut(notes),
-	delete: async (id: string) => await db.notes.delete(id),
-	updatePosition: async (id: string, index: number): Promise<number> => {
-		return await db.notes.update(id, { position: index });
+	updatePosition: async (id: string, position: number): Promise<void> => {
+		const db$ = await db();
+		const doc = await db$.notes.findOne(id).exec();
+		if (!doc) return;
+		await doc.incrementalPatch({ position });
 	},
 	reorderAll: async (noteIds: string[]): Promise<void> => {
-		await db.transaction('rw', db.notes, async () => {
-			for (const [index, id] of noteIds.entries()) {
-				await db.notes.update(id, { position: index });
-			}
-		});
+		const db$ = await db();
+		const docs = await db$.notes.findByIds(noteIds).exec();
+		await Promise.all(
+			noteIds.map((id, index) => {
+				const doc = docs.get(id);
+				return doc ? doc.incrementalPatch({ position: index }) : Promise.resolve();
+			})
+		);
 	},
+	getBulkByIds: async (ids: string[]): Promise<NoteDocType[]> => {
+		const db$ = await db();
+		const map = await db$.notes.findByIds(ids).exec();
+		return [...map.values()];
+	},
+	bulkUpsert: async (notes: NoteDocType[]) => {
+		const db$ = await db();
+		await db$.notes.bulkUpsert(notes);
+	},
+
 	deleteFullNote: async (noteId: string) => {
-		return await db.transaction('rw', [db.notes, db.attachments], async () => {
-			await db.attachments.where('noteId').equals(noteId).delete();
-			await db.notes.delete(noteId);
-		});
+		const db$ = await db();
+		const attachments = await db$.attachments.find({ selector: { noteId } }).exec();
+		await Promise.all(attachments.map((a) => a.incrementalRemove()));
+		const note = await db$.notes.findOne(noteId).exec();
+		if (note) await note.incrementalRemove();
 	}
 };
 
 export const columnRepository = {
-	get: async (id: string): Promise<Column | undefined> => {
-		return db.columns.get(id);
+	get: async (id: string): Promise<ColumnDocType | null> => {
+		const db$ = await db();
+		return await db$.columns.findOne(id).exec();
 	},
-	getByProjectId: async (projectId: string): Promise<Column[]> => {
-		return await db.columns.where('projectId').equals(projectId).toArray();
+
+	getByProjectId: async (projectId: string): Promise<ColumnDocType[]> => {
+		const db$ = await db();
+		return await db$.columns.find({ selector: { projectId } }).exec();
 	},
-	// we can take partial column but we need the id.
-	update: async (column: Partial<Column> & Pick<Column, 'id'>): Promise<number> => {
-		return await db.columns.update(column.id, column);
+
+	add: async (column: ColumnDocType): Promise<void> => {
+		const db$ = await db();
+		await db$.columns.insert(column);
 	},
-	getBulkByIds: async (ids: string[]): Promise<Column[]> => {
-		return await db.columns.where('id').anyOf(ids).toArray();
+
+	addAll: async (columns: ColumnDocType[]): Promise<void> => {
+		const db$ = await db();
+		await db$.columns.bulkInsert(columns);
 	},
-	addAll: async (columns: Column[]) => await db.columns.bulkAdd(columns),
-	add: async (column: Column) => await db.columns.add(column),
-	findInboxColumn: async (projectId: string): Promise<Column | undefined> => {
-		return db.columns.where('[projectId+specialType]').equals([projectId, 'inbox']).first();
+
+	bulkUpsert: async (columns: ColumnDocType[]): Promise<void> => {
+		const db$ = await db();
+		await db$.columns.bulkUpsert(columns);
 	},
-	deleteFullColumn: async (columnId: string) => {
-		return await db.transaction('rw', [db.notes, db.attachments, db.columns], async () => {
-			const noteIds = await db.notes.where('columnId').equals(columnId).primaryKeys();
-			for (const noteId of noteIds) {
-				await db.attachments.where('noteId').equals(noteId).delete();
-				await db.notes.delete(noteId);
-			}
-			await db.columns.delete(columnId);
-		});
+
+	update: async (column: Partial<ColumnDocType> & Pick<ColumnDocType, 'id'>): Promise<void> => {
+		const db$ = await db();
+		const doc = await db$.columns.findOne(column.id).exec();
+		if (!doc) return;
+		await doc.incrementalPatch(column);
+	},
+
+	getBulkByIds: async (ids: string[]): Promise<ColumnDocType[]> => {
+		const db$ = await db();
+		const map = await db$.columns.findByIds(ids).exec();
+		return [...map.values()];
+	},
+
+	findInboxColumn: async (projectId: string): Promise<ColumnDocType | null> => {
+		const db$ = await db();
+		return await db$.columns.findOne({ selector: { projectId, specialType: 'inbox' } }).exec();
+	},
+
+	deleteFullColumn: async (columnId: string): Promise<void> => {
+		const db$ = await db();
+		const notes = await db$.notes.find({ selector: { columnId } }).exec();
+		for (const note of notes) {
+			const attachments = await db$.attachments.find({ selector: { noteId: note.id } }).exec();
+			await Promise.all(attachments.map((a) => a.incrementalRemove()));
+			await note.incrementalRemove();
+		}
+		const col = await db$.columns.findOne(columnId).exec();
+		if (col) await col.incrementalRemove();
 	}
 };
 
 export const projectRepository = {
-	get: async (id: string): Promise<Project | undefined> => {
-		return await db.projects.get(id);
+	get: async (id: string): Promise<ProjectDocType | null> => {
+		const db$ = await db();
+		return await db$.projects.findOne(id).exec();
 	},
-	getAll: async (): Promise<Project[]> => {
-		return await db.projects.orderBy('createdAt').toArray();
+
+	getAll: async (): Promise<ProjectDocType[]> => {
+		const db$ = await db();
+		return await db$.projects.find({ sort: [{ createdAt: 'asc' }] }).exec();
 	},
-	// we can take partial project but we need the id.
-	update: async (project: Partial<Project> & Pick<Project, 'id'>): Promise<number> => {
-		return await db.projects.update(project.id, project);
+
+	add: async (project: ProjectDocType): Promise<void> => {
+		const db$ = await db();
+		await db$.projects.insert(project);
 	},
-	add: async (project: Project) => await db.projects.add(project),
-	getBulkByIds: async (ids: string[]): Promise<Project[]> => {
-		return await db.projects.where('id').anyOf(ids).toArray();
+
+	update: async (project: Partial<ProjectDocType> & Pick<ProjectDocType, 'id'>): Promise<void> => {
+		const db$ = await db();
+		const doc = await db$.projects.findOne(project.id).exec();
+		if (!doc) return;
+		await doc.incrementalPatch(project);
 	},
-	bulkPut: async (projects: Project[]) => await db.projects.bulkPut(projects),
-	delete: async (id: string) => await db.projects.delete(id),
-	hasElements: async () => (await db.projects.limit(1).count()) > 0,
-	deleteFullProject: async (projectId: string) => {
-		return await db.transaction(
-			'rw',
-			[db.projects, db.columns, db.notes, db.attachments],
-			async () => {
-				const noteIds = await db.notes.where('projectId').equals(projectId).primaryKeys();
-				await db.attachments.where('noteId').anyOf(noteIds).delete();
-				await db.notes.where('projectId').equals(projectId).delete();
-				await db.columns.where('projectId').equals(projectId).delete();
-				await db.projects.delete(projectId);
-			}
-		);
+
+	getBulkByIds: async (ids: string[]): Promise<ProjectDocType[]> => {
+		const db$ = await db();
+		const map = await db$.projects.findByIds(ids).exec();
+		return [...map.values()];
+	},
+
+	bulkUpsert: async (projects: ProjectDocType[]): Promise<void> => {
+		const db$ = await db();
+		await db$.projects.bulkUpsert(projects);
+	},
+
+	hasElements: async (): Promise<boolean> => {
+		const db$ = await db();
+		const count = await db$.projects.count().exec();
+		return count > 0;
+	},
+
+	deleteFullProject: async (projectId: string): Promise<void> => {
+		const db$ = await db();
+		const notes = await db$.notes.find({ selector: { projectId } }).exec();
+		for (const note of notes) {
+			const attachments = await db$.attachments.find({ selector: { noteId: note.id } }).exec();
+			await Promise.all(attachments.map((a) => a.incrementalRemove()));
+			await note.incrementalRemove();
+		}
+		const columns = await db$.columns.find({ selector: { projectId } }).exec();
+		await Promise.all(columns.map((c) => c.incrementalRemove()));
+		const project = await db$.projects.findOne(projectId).exec();
+		if (project) await project.incrementalRemove();
 	}
 };
 
 export const attachmentRepository = {
-	add: async (attachment: Attachment) => {
-		await db.attachments.add(attachment);
+	// Helper to abstract Cache API
+	_getBlobFromCache: async (id: string): Promise<Blob | null> => {
+		const cache = await caches.open('donejar-attachments');
+		const response = await cache.match(id);
+		return response ? await response.blob() : null;
 	},
-	getManyByNoteId: async (id: string): Promise<Attachment[]> => {
-		return await db.attachments.where('noteId').equals(id).sortBy('createdAt');
-	},
-	get: async (id: string): Promise<Attachment | undefined> => {
-		return await db.attachments.get(id);
-	},
-	update: async (attachment: Partial<Attachment> & Pick<Attachment, 'id'>): Promise<number> => {
-		return await db.attachments.update(attachment.id, attachment);
-	},
-	getBulkByIds: async (ids: string[]): Promise<Attachment[]> => {
-		return await db.attachments.where('id').anyOf(ids).toArray();
-	},
-	put: async (attachment: Attachment) => {
-		await db.attachments.put(attachment);
-	},
-	delete: async (id: string) => await db.attachments.delete(id)
-};
 
-export const deletedLogRepository = {
-	add: async (log: DeletedLog) => await db.deleted_log.add(log),
-	getAll: async (): Promise<DeletedLog[]> => {
-		return await db.deleted_log.toArray();
+	get: async (id: string): Promise<{ doc: AttachmentDocType; blob: Blob | null } | null> => {
+		const db$ = await db();
+		const doc = await db$.attachments.findOne(id).exec();
+		if (!doc) return null;
+
+		const blob = await attachmentRepository._getBlobFromCache(id);
+		return { doc, blob };
 	},
-	update: async (log: Partial<DeletedLog> & Pick<DeletedLog, 'id'>): Promise<number> => {
-		return await db.deleted_log.update(log.id, log);
+	getManyByNoteId: async (
+		noteId: string
+	): Promise<{ doc: AttachmentDocType | undefined; blob: Blob | null }[]> => {
+		const db$ = await db();
+		const docs = await db$.attachments
+			.find({ selector: { noteId }, sort: [{ createdAt: 'asc' }] })
+			.exec();
+
+		return await Promise.all(
+			docs.map(async (doc) => {
+				const blob = await attachmentRepository._getBlobFromCache(doc.id);
+				return { doc, blob };
+			})
+		);
 	},
-	delete: async (id: string) => await db.deleted_log.delete(id)
+	add: async (attachment: AttachmentDocType, blob: Blob) => {
+		const db$ = await db();
+		const doc = await db$.notes.findOne(attachment.noteId).exec();
+		if (!doc) throw new Error('Note not found for attachment');
+		await db$.attachments.insert(attachment);
+
+		const cache = await caches.open('donejar-attachments');
+		await cache.put(attachment.id, new Response(blob));
+	},
+
+	getBulkByIds: async (ids: string[]): Promise<{ doc: AttachmentDocType; blob: Blob | null }[]> => {
+		const db$ = await db();
+		const map = await db$.attachments.findByIds(ids).exec();
+		const docs = [...map.values()];
+
+		return await Promise.all(
+			docs.map(async (doc) => {
+				const blob = await attachmentRepository._getBlobFromCache(doc.id);
+				return { doc, blob };
+			})
+		);
+	},
+	delete: async (id: string) => {
+		const db$ = await db();
+		const doc = await db$.attachments.findOne(id).exec();
+		if (!doc) return;
+		await doc.incrementalRemove();
+		const cache = await caches.open('donejar-attachments');
+		await cache.delete(id);
+	}
 };
 
 export const projectService = {
@@ -159,92 +252,164 @@ export const projectService = {
 	 * Orchestrates project & column creation in one atomic step.
 	 * Uses existing repos to maintain consistency.
 	 */
-	createProjectWithColumns: async (project: Project, columns: Column[]) => {
-		return await db.transaction('rw', [db.projects, db.columns], async () => {
-			await projectRepository.add(project);
-			await columnRepository.addAll(columns);
-		});
-	}
+	createProjectWithColumns: async (project: ProjectDocType, columns: ColumnDocType[]) => {
+		await projectRepository.add(project);
+		await columnRepository.addAll(columns);
+	},
+	observeAll: () =>
+		from(db()).pipe(
+			switchMap((database) => {
+				return database.projects
+					.find({ sort: [{ createdAt: 'asc' }] })
+					.$.pipe(map((docs) => docs.map((d) => d.toJSON())));
+			})
+		),
+
+	observeProjectsWithColumns: () =>
+		from(db()).pipe(
+			switchMap((database) =>
+				database.projects.find({ sort: [{ createdAt: 'asc' }] }).$.pipe(
+					switchMap((projects) => {
+						if (projects.length === 0) return of([]);
+						return combineLatest(
+							projects.map((proj) =>
+								database.columns
+									.find({ selector: { projectId: proj.id }, sort: [{ position: 'asc' }] })
+									.$.pipe(
+										map((cols) => ({
+											...proj.toJSON(),
+											columns: cols.map((c) => c.toJSON())
+										}))
+									)
+							)
+						);
+					})
+				)
+			)
+		)
+};
+
+export const columnService = {
+	observeColumnsByProjectIdWithNotes: (projectId: string) =>
+		from(db()).pipe(
+			switchMap((database) =>
+				database.columns.find({ selector: { projectId }, sort: [{ position: 'asc' }] }).$.pipe(
+					switchMap((cols) => {
+						if (cols.length === 0) return of([]);
+						return combineLatest(
+							cols.map((col) =>
+								database.notes
+									.find({ selector: { columnId: col.id }, sort: [{ position: 'asc' }] })
+									.$.pipe(
+										map((notes) => ({ ...col.toJSON(), notes: notes.map((n) => n.toJSON()) }))
+									)
+							)
+						);
+					})
+				)
+			)
+		)
 };
 
 export const backupService = {
-	import: async (backup: Backup) => {
-		await db.transaction('rw', [db.projects, db.columns, db.notes, db.attachments], async () => {
-			// Add projects
-			const projectIdMap: Record<string, string> = {};
-			for (const project of backup.projects) {
-				const newProject = { ...project, id: nanoid() };
-				projectIdMap[project.id] = newProject.id;
-				await projectRepository.add(newProject);
-			}
-
-			// Add columns
-			const columnIdMap: Record<string, string> = {};
-			for (const column of backup.columns) {
-				const newColumn = { ...column, id: nanoid(), projectId: projectIdMap[column.projectId] };
-				columnIdMap[column.id] = newColumn.id;
-				await columnRepository.add(newColumn);
-			}
-
-			// Add notes
-			const noteIdMap: Record<string, string> = {};
-			for (const note of backup.notes) {
-				const newNote = {
-					...note,
-					id: nanoid(),
-					columnId: columnIdMap[note.columnId],
-					projectId: projectIdMap[note.projectId]
-				};
-				noteIdMap[note.id] = newNote.id;
-				await noteRepository.add(newNote);
-			}
-
-			// Add attachments
-			for (const attachment of backup.attachments) {
-				const newAttachment = { ...attachment, id: nanoid(), noteId: noteIdMap[attachment.noteId] };
-				await attachmentRepository.add(newAttachment);
-			}
+	import: async (backup: BackupDocType) => {
+		// Add projects
+		const projectIdMap: Record<string, string> = {};
+		const projectsToInsert = backup.projects.map((project) => {
+			const newId = nanoid();
+			projectIdMap[project.id] = newId;
+			return { ...project, id: newId };
 		});
+
+		if (projectsToInsert.length) await projectRepository.bulkUpsert(projectsToInsert);
+
+		// Add columns
+		const columnIdMap: Record<string, string> = {};
+		const columnsToInsert = backup.columns.map((column) => {
+			const newId = nanoid();
+			columnIdMap[column.id] = newId;
+			return { ...column, id: newId, projectId: projectIdMap[column.projectId] };
+		});
+		if (columnsToInsert.length) await columnRepository.bulkUpsert(columnsToInsert);
+
+		// Add notes
+		const noteIdMap: Record<string, string> = {};
+		const notesToInsert = backup.notes.map((note) => {
+			const newId = nanoid();
+			noteIdMap[note.id] = newId;
+			return {
+				...note,
+				id: newId,
+				columnId: columnIdMap[note.columnId],
+				projectId: projectIdMap[note.projectId]
+			};
+		});
+		if (notesToInsert.length) await noteRepository.bulkUpsert(notesToInsert);
+
+		// Add attachments & blobs
+		const blobLookup = new Map(backup.blobs.map((b) => [b.attachmentId, b.data]));
+		const attachmentPromises = backup.attachments.map(async (attachment) => {
+			const newAttachment = {
+				...attachment,
+				id: nanoid(),
+				noteId: noteIdMap[attachment.noteId]
+			};
+
+			const rawData = blobLookup.get(attachment.id) || '';
+			let blob: Blob;
+			if (rawData) {
+				const res = await fetch(rawData);
+				blob = await res.blob();
+			} else {
+				blob = new Blob([]); // empty blob as fallback if data is missing
+			}
+
+			return attachmentRepository.add(newAttachment, blob);
+		});
+
+		await Promise.all(attachmentPromises);
 	},
 
-	export: async (payload: { projectIds: string[]; columnIds: string[] }): Promise<ExportBackup> => {
-		const { projectIds, columnIds } = payload;
+	export: async (_payload: {
+		projectIds: string[];
+		columnIds: string[];
+	}): Promise<BackupDocType> => {
+		const db$ = await db();
 
-		// Fetch projects
-		const projects = await db.projects.where('id').anyOf(projectIds).toArray();
+		const projects = await db$.projects
+			.findByIds(_payload.projectIds)
+			.exec()
+			.then((map) => [...map.values()]);
 
-		// Fetch columns
-		const columns = await db.columns.where('id').anyOf(columnIds).toArray();
+		const columns = await db$.columns
+			.findByIds(_payload.columnIds)
+			.exec()
+			.then((map) => [...map.values()]);
 
-		// Fetch notes for the selected columns
-		const notes = await db.notes.where('columnId').anyOf(columnIds).toArray();
+		const notes = await db$.notes
+			.find({ selector: { columnId: { $in: _payload.columnIds } } })
+			.exec();
 
-		// Fetch attachments for the selected notes
 		const noteIds = notes.map((note) => note.id);
-		const rawAttachments = await db.attachments.where('noteId').anyOf(noteIds).toArray();
+		const attachments = await db$.attachments
+			.find({ selector: { noteId: { $in: noteIds } } })
+			.exec();
 
-		// Process attachments to convert binary Blobs into Base64 strings
-		const attachments: SerializedAttachment[] = await Promise.all(
-			rawAttachments.map(async (attachment) => {
-				if (attachment.localBlob instanceof Blob) {
-					return {
-						...attachment,
-						// Convert the real Blob into a text string for the JSON file
-						localBlob: await blobToBase64(attachment.localBlob)
-					};
-				}
-				return {
-					...attachment,
-					localBlob: attachment.localBlob ?? null
-				};
+		const attachmentIds = attachments.map((a) => a.id);
+		const blobs = await Promise.all(
+			attachmentIds.map(async (id: string) => {
+				const blob = await attachmentRepository._getBlobFromCache(id);
+				const data = blob ? await blobToBase64(blob) : '';
+				return { attachmentId: id, data };
 			})
 		);
 
 		return {
-			projects,
-			columns,
-			notes,
-			attachments
+			projects: projects.map((p) => p.toJSON()),
+			columns: columns.map((c) => c.toJSON()),
+			notes: notes.map((n) => n.toJSON()),
+			attachments: attachments.map((a) => a.toJSON()),
+			blobs: blobs
 		};
 	}
 };
@@ -257,49 +422,3 @@ function blobToBase64(blob: Blob): Promise<string> {
 		reader.readAsDataURL(blob);
 	});
 }
-
-export const syncService = {
-	getUnsynced: async (): Promise<{
-		projects: Project[];
-		columns: Column[];
-		notes: Note[];
-		attachments: Attachment[];
-		deletedLogs: DeletedLog[];
-	}> => {
-		const projects = await db.projects.where('synced').equals(0).toArray();
-		const columns = await db.columns.where('synced').equals(0).toArray();
-		const notes = await db.notes.where('synced').equals(0).toArray();
-		const attachments = await db.attachments.where('synced').equals(0).toArray();
-		const deletedLogs = await db.deleted_log.where('synced').equals(0).toArray();
-
-		return { projects, columns, notes, attachments, deletedLogs };
-	},
-
-	getServerVersion: (): number | null => {
-		return get(serverVersion);
-	},
-
-	setServerVersion: (version: number) => {
-		serverVersion.set(version);
-	},
-
-	putAll: async (data: {
-		projects: Project[];
-		columns: Column[];
-		notes: Note[];
-		attachments: Attachment[];
-		deletedLogs: DeletedLog[];
-	}) => {
-		await db.transaction(
-			'rw',
-			[db.projects, db.columns, db.notes, db.attachments, db.deleted_log],
-			async () => {
-				await db.deleted_log.bulkPut(data.deletedLogs);
-				await db.projects.bulkPut(data.projects);
-				await db.columns.bulkPut(data.columns);
-				await db.notes.bulkPut(data.notes);
-				await db.attachments.bulkPut(data.attachments);
-			}
-		);
-	}
-};

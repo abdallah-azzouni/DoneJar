@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { login, register, isLoggedIn, resetPassword } from '$lib/pb/auth';
+	//import { login, register, isLoggedIn, resetPassword } from '$lib/pb/auth';
 	import { clearDatabase } from '$lib/db/dal';
 	import { isLocal } from '$lib/stores/appState.svelte';
 	import { notify } from '$lib/stores/notificationStore';
@@ -19,7 +19,7 @@
 	let name = $state('');
 
 	onMount(() => {
-		if (isLoggedIn()) goto(resolve('/app'));
+		goto(resolve('/app'));
 	});
 
 	async function handleSubmit(e: Event) {
@@ -30,7 +30,7 @@
 				if (hasElements) return; // let Dialog handle the flow
 				await continueOnline();
 			} else {
-				await register(email, password, name);
+				//await register(email, password, name);
 				notify({ type: 'success', message: 'Account created! Please sign in.' });
 				password = '';
 				name = '';
@@ -62,7 +62,7 @@
 			return;
 		}
 		try {
-			await resetPassword(email);
+			//await resetPassword(email);
 			notify({ type: 'success', message: 'Password reset email sent.' });
 		} catch {
 			notify(failure('Something went wrong. Please try again.'));
@@ -81,7 +81,7 @@
 
 	async function continueOnline() {
 		try {
-			await login(email, password);
+			//await login(email, password);
 			goto(resolve('/app'));
 		} catch {
 			notify(failure('Something went wrong. Please try again.'));

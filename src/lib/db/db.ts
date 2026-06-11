@@ -1,22 +1,59 @@
-import { Dexie, type EntityTable } from 'dexie';
-import { DB_VERSION } from '$lib/constants';
-import type { Note, Column, Project, Attachment, DeletedLog } from '$lib/types';
+import { dev } from '$app/environment';
+import { addRxPlugin, createRxDatabase, type RxDatabase } from 'rxdb/plugins/core';
+import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
+import { projectSchema, columnSchema, noteSchema, attachmentSchema } from '$lib/db/schemas';
+import { DB_NAME } from '$lib/constants';
 
-const db = new Dexie('DoneJarDB') as Dexie & {
-	projects: EntityTable<Project, 'id'>;
-	notes: EntityTable<Note, 'id'>;
-	columns: EntityTable<Column, 'id'>;
-	attachments: EntityTable<Attachment, 'id'>;
-	deleted_log: EntityTable<DeletedLog, 'id'>;
+// Plugins
+import { RxDBJsonDumpPlugin } from 'rxdb/plugins/json-dump';
+import { RxDBCleanupPlugin } from 'rxdb/plugins/cleanup';
+import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
+
+// Wrappers
+import { wrappedKeyCompressionStorage } from 'rxdb/plugins/key-compression';
+
+// plugins
+addRxPlugin(RxDBJsonDumpPlugin);
+addRxPlugin(RxDBCleanupPlugin);
+addRxPlugin(RxDBLeaderElectionPlugin);
+
+let dbPromise: Promise<RxDatabase> | null = null;
+
+const _create = async () => {
+	if (dev) {
+		const { RxDBDevModePlugin } = await import('rxdb/plugins/dev-mode');
+		addRxPlugin(RxDBDevModePlugin);
+	}
+	const dexieStorage = getRxStorageDexie();
+	const compressedStorage = wrappedKeyCompressionStorage({ storage: dexieStorage });
+	let finalStorage = compressedStorage;
+	if (dev) {
+		const { wrappedValidateAjvStorage } = await import('rxdb/plugins/validate-ajv');
+		finalStorage = wrappedValidateAjvStorage({ storage: compressedStorage });
+	}
+
+	const db = await createRxDatabase({
+		name: DB_NAME,
+		storage: finalStorage,
+		closeDuplicates: true,
+		cleanupPolicy: {
+			minimumDeletedTime: 1000 * 60 * 60 * 24 * 31, // 31 days
+			minimumCollectionAge: 1000 * 60, // 1 minute
+			awaitReplicationsInSync: true
+		}
+	});
+	// Collections
+	await db.addCollections({
+		projects: { schema: projectSchema },
+		columns: { schema: columnSchema },
+		notes: { schema: noteSchema },
+		attachments: { schema: attachmentSchema }
+	});
+
+	return db;
 };
 
-// Schema declaration:
-db.version(DB_VERSION).stores({
-	projects: 'id, createdAt, synced',
-	columns: 'id, projectId, [projectId+specialType], synced',
-	notes: 'id, columnId, projectId, synced',
-	attachments: 'id, noteId, synced',
-	deleted_log: 'id, itemId, itemType, synced'
-});
-
-export { db };
+export const db = (): Promise<RxDatabase> => {
+	if (!dbPromise) dbPromise = _create();
+	return dbPromise;
+};

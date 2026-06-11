@@ -3,12 +3,12 @@
 	import { resolve } from '$app/paths';
 	import { login, register, isLoggedIn, resetPassword } from '$lib/pb/auth';
 	import { clearDatabase } from '$lib/db/dal';
-	import { isLocal } from '$lib/stores/appState';
+	import { isLocal } from '$lib/stores/appState.svelte';
 	import { notify } from '$lib/stores/notificationStore';
 	import { failure } from '$lib/types';
 	import { onMount } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
-	import { projects } from '$lib/stores/projects';
+	import { projectStore } from '$lib/stores/projects.svelte';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 
 	let hasElements = $state(false);
@@ -26,7 +26,7 @@
 		e.preventDefault();
 		try {
 			if (isLogin) {
-				hasElements = $projects.length > 0;
+				hasElements = projectStore.projects && projectStore.projects.length > 0 ? true : false;
 				if (hasElements) return; // let Dialog handle the flow
 				await continueOnline();
 			} else {

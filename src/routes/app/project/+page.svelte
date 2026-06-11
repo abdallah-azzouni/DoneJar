@@ -3,10 +3,10 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { ROUTES } from '$lib/constants';
-	import { projects } from '$lib/stores/projects';
+	import { projectStore } from '$lib/stores/projects.svelte';
 
 	onMount(() => {
-		const all = $projects;
+		const all = projectStore.projects ?? [];
 		if (all.length > 0) {
 			goto(resolve(ROUTES.PROJECT(all[0].id)));
 		} else {

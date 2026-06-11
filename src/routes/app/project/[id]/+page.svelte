@@ -1,12 +1,12 @@
 <script lang="ts">
 	import Board from '$lib/components/Board.svelte';
-	import { currentProject } from '$lib/stores/currentProject';
+	import { projectStore } from '$lib/stores/projects.svelte';
 	import { goto } from '$app/navigation';
 	import { ROUTES } from '$lib/constants';
 	import { resolve } from '$app/paths';
 </script>
 
-{#if $currentProject?.id}
+{#if projectStore.current?.id}
 	<Board />
 {:else}
 	<div class="flex h-full w-full flex-1 flex-col items-center justify-center gap-6">

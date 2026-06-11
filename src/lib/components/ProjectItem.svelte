@@ -4,16 +4,16 @@
 
 	import { openProjectMenu } from '$lib/stores/dialog';
 	import { textColorFromHex } from '$lib/UiHelper';
-	import type { Project } from '$lib/types';
-	import { currentProject } from '$lib/stores/currentProject';
+	import type { ProjectDocType } from '$lib/db/schemas';
+	import { projectStore } from '$lib/stores/projects.svelte';
 	import { resolve } from '$app/paths';
 	import { ROUTES } from '$lib/constants';
 
-	let { project }: { project: Project } = $props();
+	let { project }: { project: ProjectDocType } = $props();
 </script>
 
 <a
-	class="doodle-border relative flex items-center gap-8 {$currentProject?.id === project.id
+	class="doodle-border relative flex items-center gap-8 {projectStore.current?.id === project.id
 		? ''
 		: 'is-hidden'} cursor-pointer"
 	href={resolve(ROUTES.PROJECT(project.id))}

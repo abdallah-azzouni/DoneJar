@@ -2,97 +2,40 @@
 	import ProjectMenu from '$lib/popups/ProjectMenu.svelte';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import ProjectItem from '$lib/components/ProjectItem.svelte';
-	import { isLoaded, isLocal } from '$lib/stores/appState';
+	import { appStore } from '$lib/stores/appState.svelte';
+	// isLocal
 	import Loading from '$lib/components/Loading.svelte';
 	import { page } from '$app/state';
-	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
-	import { isLoggedIn, logout } from '$lib/pb/auth';
-	import { currentProject } from '$lib/stores/currentProject';
+	// import { goto } from '$app/navigation';
+	// import { resolve } from '$app/paths';
+	// import { isLoggedIn, logout } from '$lib/pb/auth';
+	import { projectStore } from '$lib/stores/projects.svelte';
 	import { openProjectMenu } from '$lib/stores/dialog';
 	import DeleteConfirmation from '$lib/popups/DeleteConfirmation.svelte';
-	import {
-		projectRepository,
-		columnRepository,
-		noteRepository,
-		attachmentRepository,
-		deletedLogRepository
-	} from '$lib/db/dal';
 	import { notify } from '$lib/stores/notificationStore';
-	import { projects } from '$lib/stores/projects';
-	import { deletedLogStore } from '$lib/stores/deletedLogStore';
-	import { unsyncedItemsStore } from '$lib/stores/unsyncedStore';
-	import { failure } from '$lib/types';
-	import { sync } from '$lib/sync/sync';
 
 	let { children } = $props();
+
 	let currentProjectId: string | null = null;
-	let hasElements = $derived($projects.length > 0);
 
 	$effect(() => {
 		currentProjectId = page.params.id ?? null;
-
-		if (currentProjectId)
-			projectRepository.get(currentProjectId).then((proj) => {
-				if (proj) {
-					currentProject.set(proj);
-				} else {
-					// If we have an ID in the URL but can't find the project, it means the data is corrupted or missing. Alert the user.
-					currentProjectId = null;
-					notify({ type: 'error', message: 'The project data seems to be corrupted or missing.' });
-				}
-			});
-	});
-
-	$effect(() => {
-		const confirmed = $deletedLogStore;
-		for (const entry of confirmed) {
-			(async () => {
-				try {
-					if (entry.itemType === 'projects')
-						await projectRepository.deleteFullProject(entry.itemId);
-					if (entry.itemType === 'columns') await columnRepository.deleteFullColumn(entry.itemId);
-					if (entry.itemType === 'notes') await noteRepository.deleteFullNote(entry.itemId);
-					if (entry.itemType === 'attachments') await attachmentRepository.delete(entry.itemId);
-					if (entry.synced) await deletedLogRepository.delete(entry.id);
-				} catch (error) {
-					notify(failure(`Error syncing deletions: ${error}`));
-				}
-			})();
-		}
-	});
-
-	$effect(() => {
-		const data = $unsyncedItemsStore;
-
-		const totalCount =
-			data.projects.length +
-			data.columns.length +
-			data.notes.length +
-			data.attachments.length +
-			data.deletedLogs.length;
-
-		// 3. If we have items and we aren't already syncing, fire it off
-		if (totalCount > 0) {
-			sync().then((result) => {
-				if (result.type === 'error') notify(result);
-			});
-		}
-	});
-
-	onMount(async () => {
-		// Redirect immediately if not authenticated and watch for auth changes
-		if (!isLoggedIn() && !$isLocal) {
-			await logout(); // Clear any local data and session
-			goto(resolve('/auth/login'));
+		const projects = projectStore.projects;
+		if (currentProjectId && projects) {
+			const found = projects.find((p) => p.id === currentProjectId);
+			if (!found) {
+				currentProjectId = null;
+				notify({ type: 'error', message: 'The project you are looking for does not exist.' });
+			} else {
+				projectStore.select(found.id);
+			}
 		}
 	});
 </script>
 
 <svelte:head>
-	{#if $currentProject}
-		<title>DoneJar - {$currentProject.name}</title>
+	{#if projectStore.current}
+		<title>DoneJar - {projectStore.current.name}</title>
 	{:else}
 		<title>DoneJar - Track and organize your tasks</title>
 	{/if}
@@ -101,9 +44,9 @@
 <ProjectMenu />
 <DeleteConfirmation />
 
-{#if !$isLoaded}
+{#if !appStore.isLoaded}
 	<Loading />
-{:else if !hasElements}
+{:else if projectStore.projects.length == 0}
 	<div
 		class="flex h-screen flex-col items-center justify-center bg-linear-to-b from-amber-50 to-white px-6"
 	>
@@ -129,7 +72,7 @@
 		<AppHeader />
 		<div class="flex flex-1 flex-row overflow-hidden">
 			<!-- Project Sidebar -->
-			<div class="hand-drawn-border doodle-border m-2 w-40">
+			<aside class="hand-drawn-border doodle-border m-2 hidden w-40 xl:block">
 				<div class="flex max-h-full flex-col items-center gap-2 text-sm">
 					<div>
 						<button
@@ -141,12 +84,12 @@
 					</div>
 					<div class="w-full border-t-2 border-dashed border-gray-500"></div>
 					<div class="overflow-x-clip overflow-y-scroll">
-						{#each $projects as project (project.id)}
+						{#each projectStore.projects as project (project.id)}
 							<ProjectItem {project} />
 						{/each}
 					</div>
 				</div>
-			</div>
+			</aside>
 			{@render children()}
 		</div>
 	</div>

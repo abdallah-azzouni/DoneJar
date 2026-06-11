@@ -9,12 +9,12 @@
 
 	let {
 		isOpen = $bindable(false),
-		initialDate = null,
+		initialDate = undefined,
 		onSave
 	}: {
 		isOpen: boolean;
-		initialDate?: { timestamp: number; hasTime: boolean } | null;
-		onSave?: (value: { timestamp: number; hasTime: boolean } | null) => void;
+		initialDate?: { timestamp: number; hasTime: boolean } | undefined;
+		onSave?: (value: { timestamp: number; hasTime: boolean } | undefined) => void;
 	} = $props();
 
 	const tz = getLocalTimeZone();
@@ -94,7 +94,7 @@
 	}
 
 	function handleClear() {
-		onSave?.(null);
+		onSave?.(undefined);
 		isOpen = false;
 	}
 

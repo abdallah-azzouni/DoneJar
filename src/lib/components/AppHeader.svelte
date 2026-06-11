@@ -1,7 +1,7 @@
 <script lang="ts">
 	import menu from '$lib/assets/icons/menu.svg';
 	import { textColorFromHex } from '$lib/UiHelper';
-	import { currentProject } from '$lib/stores/currentProject';
+	import { projectStore } from '$lib/stores/projects.svelte';
 	import { sideMenuStore } from '$lib/stores/dialog';
 	import SideMenu from '$lib/popups/sideMenu/sideMenu.svelte';
 	import ImportMenu from '$lib/popups/sideMenu/sideMenuItems/importMenu.svelte';
@@ -30,20 +30,20 @@
 <header class="doodle-border m-2 px-4">
 	<div class="flex h-16 items-center justify-between">
 		<div class="flex items-center gap-4">
-			{#if $currentProject}
+			{#if projectStore.current}
 				<div
-					style="background-color: {$currentProject.color};"
+					style="background-color: {projectStore.current.color};"
 					class="flex size-14 items-center justify-center rounded-full border border-black"
 				>
 					<span
 						class="text-3xl font-bold"
-						style="color: {textColorFromHex($currentProject.color)};"
+						style="color: {textColorFromHex(projectStore.current.color)};"
 					>
-						{$currentProject.name[0].toUpperCase()}
+						{projectStore.current.name[0].toUpperCase()}
 					</span>
 				</div>
 				<h1 class="line-clamp-1 w-[25vw] text-3xl font-bold" style="overflow-wrap: break-word;">
-					{$currentProject.name}
+					{projectStore.current.name}
 				</h1>
 			{:else}
 				<div

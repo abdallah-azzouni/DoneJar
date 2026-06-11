@@ -3,44 +3,24 @@
 	import { importStore } from '$lib/stores/dialog';
 	import { importBackup } from '$lib/actions';
 	import { notify } from '$lib/stores/notificationStore';
-	import { ExportBackupSchema, failure, type Backup, type SerializedAttachment } from '$lib/types';
+	import { failure } from '$lib/types';
+	import type { BackupDocType } from '$lib/db/schemas';
 
 	let dragOver = $state(false);
 	let selectedFile = $state<File | null>(null);
 	let fileInput: HTMLInputElement;
 
-	async function base64ToBlob(base64Data: string): Promise<Blob> {
-		const res = await fetch(base64Data);
-		return await res.blob();
-	}
-
 	async function handleImport() {
 		if (!selectedFile) return;
 		const file = await selectedFile.text();
 
-		let rawJson;
+		let backupData: BackupDocType;
 		try {
-			rawJson = JSON.parse(file);
+			backupData = JSON.parse(file);
 		} catch {
 			notify(failure('Invalid JSON file'));
 			return;
 		}
-
-		const validationResult = ExportBackupSchema.safeParse(rawJson);
-		if (!validationResult.success) {
-			notify(failure('Invalid backup data'));
-			return;
-		}
-
-		const backupData: Backup = {
-			...rawJson,
-			attachments: await Promise.all(
-				rawJson.attachments.map(async (att: SerializedAttachment) => ({
-					...att,
-					localBlob: att.localBlob ? await base64ToBlob(att.localBlob) : null
-				}))
-			)
-		};
 
 		const result = await importBackup(backupData);
 		if (result.type === 'error') {

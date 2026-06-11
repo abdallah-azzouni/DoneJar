@@ -2,7 +2,8 @@
 	import { createProject, editProject } from '$lib/actions';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import { notify } from '$lib/stores/notificationStore';
-	import { type Column, type Project, failure, createColumn } from '$lib/types';
+	import { failure, createColumn } from '$lib/types';
+	import { type ColumnDocType, type ProjectDocType } from '$lib/db/schemas';
 	import { MAX_PROJECT_NAME_LENGTH, DEFAULT_PROJECT_COLOR } from '$lib/constants';
 	import { confirmDelete } from '$lib/stores/dialog';
 	import { projectMenuStore, closeProjectMenu } from '$lib/stores/dialog';
@@ -10,8 +11,8 @@
 	let project = $derived($projectMenuStore.data);
 	let isOpen = $derived($projectMenuStore.isOpen);
 
-	let newProject = $state({} as Project);
-	let customColumns: Column[] = $state([]);
+	let newProject = $state({} as ProjectDocType);
+	let customColumns: ColumnDocType[] = $state([]);
 
 	let newColumnName = $state('');
 
@@ -28,9 +29,7 @@
 						type: 'default',
 						color: DEFAULT_PROJECT_COLOR,
 						createdAt: 0,
-						updatedAt: 0,
-						synced: 0,
-						version: null
+						updatedAt: 0
 					};
 			customColumns = [];
 			inboxIndex = null;
@@ -39,10 +38,10 @@
 		}
 	});
 
-	function buildColumnsWithSpecialTypes(): Column[] {
+	function buildColumnsWithSpecialTypes(): ColumnDocType[] {
 		return customColumns.map((col, i) => ({
 			...col,
-			specialType: i === inboxIndex ? 'inbox' : i === jarIndex ? 'jar' : null
+			specialType: i === inboxIndex ? 'inbox' : i === jarIndex ? 'jar' : undefined
 		}));
 	}
 

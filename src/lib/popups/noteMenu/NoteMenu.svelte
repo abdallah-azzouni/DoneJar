@@ -6,27 +6,28 @@
 	import QEditor from '$lib/components/QEditor.svelte';
 	import { formatDueDate, isDueDatePast } from '$lib/UiHelper';
 	import { notify } from '$lib/stores/notificationStore';
-	import { emptyNote, type Note, type Attachment } from '$lib/types';
+	import { emptyNote, failure } from '$lib/types';
+	import type { NoteDocType, AttachmentDocType } from '$lib/db/schemas/index';
 	import { MAX_NOTE_TITLE_LENGTH, DEFAULT_NOTE_COLOR, DEFAULT_MENU_COLORS } from '$lib/constants';
 	import { confirmDelete } from '$lib/stores/dialog';
-	import { currentProject } from '$lib/stores/currentProject';
+	import { projectStore } from '$lib/stores/projects.svelte';
 	import { untrack } from 'svelte';
 	import { nanoid } from 'nanoid';
-	import { projects } from '$lib/stores/projects';
 	import { onMount, onDestroy } from 'svelte';
 	import { textColorFromHex } from '$lib/UiHelper';
 	import { SvelteMap } from 'svelte/reactivity';
 	import { MAX_NOTE_ATTACHMENTS_SIZE } from '$lib/constants';
+	import Delta from 'quill-delta';
 
 	// ─── Props ───────────────────────────────────────
-	let { isOpen = $bindable(false), note }: { isOpen: boolean; note: Note | null } = $props();
+	let { isOpen = $bindable(false), note }: { isOpen: boolean; note: NoteDocType | null } = $props();
 
 	// ─── Working Note State ───────────────────────────
 	let workingNote = $state(
 		untrack(() => {
 			if (note) return { ...note };
-			let newNote: Note = emptyNote;
-			newNote.projectId = $currentProject?.id || '';
+			let newNote: NoteDocType = emptyNote;
+			newNote.projectId = projectStore.current?.id || '';
 			newNote.color = DEFAULT_NOTE_COLOR;
 
 			return newNote;
@@ -42,7 +43,7 @@
 	async function handleSubmit() {
 		const action = workingNote.id === '' ? createNote : editNote;
 		workingNote.id = noteId;
-		const plain = $state.snapshot(workingNote) as unknown as Note; // snapshot to unwarp any proxies made by $state
+		const plain = $state.snapshot(workingNote) as unknown as NoteDocType; // snapshot to unwarp any proxies made by $state
 		const result = await action(plain);
 
 		if (result.type === 'error') {
@@ -50,12 +51,13 @@
 			return;
 		}
 
-		const plainAttachments = $state.snapshot(attachments) as unknown as Attachment[]; // snapshot to unwarp any proxies made by $state
+		const plainAttachments = $state.snapshot(attachments) as unknown as AttachmentDocType[]; // snapshot to unwarp any proxies made by $state
 		const newAttachments = plainAttachments.filter((a) => !a.createdAt); // only save new attachments.
 		const attachmentResults = await saveNoteAttachments(
 			noteId,
 			newAttachments,
-			deletedAttachmentIds
+			deletedAttachmentIds,
+			blobs
 		); // create after note has been created.
 
 		if (attachmentResults.type === 'error') {
@@ -83,16 +85,21 @@
 		}
 	}
 
-	let attachments = $state([] as Attachment[]);
+	let attachments = $state([] as AttachmentDocType[]);
+	let blobs = $state(new Map<string, Blob>());
 	const deletedAttachmentIds = [] as string[];
 
 	onMount(async () => {
-		attachments = await attachmentRepository.getManyByNoteId(workingNote.id);
+		const items = await attachmentRepository.getManyByNoteId(workingNote.id);
 
 		// load attachments in cache
-		for (const a of attachments) {
-			if (a.localBlob) {
-				blobUrlCache.set(a.id, URL.createObjectURL(a.localBlob));
+		for (const item of items) {
+			if (!item.doc) continue; // skip if doc is missing for some reason
+			attachments.push(item.doc);
+
+			if (item.blob) {
+				blobs.set(item.doc.id, item.blob);
+				blobUrlCache.set(item.doc.id, URL.createObjectURL(item.blob));
 			} // if no local blob, getPreviewUrl will fallback to the server URL.
 		}
 	});
@@ -128,27 +135,28 @@
 
 		for (const file of files) {
 			if (getTotalAttachmentsSize() + file.size > MAX_NOTE_ATTACHMENTS_SIZE) {
-				notify({
-					type: 'error',
-					message: `Adding ${file.name} would exceed the ${MAX_NOTE_ATTACHMENTS_SIZE / (1024 * 1024)}MB total limit`
-				});
+				notify(
+					failure(
+						`Adding ${file.name} would exceed the ${MAX_NOTE_ATTACHMENTS_SIZE / (1024 * 1024)}MB total limit`
+					)
+				);
 				break;
 			}
 
-			const newAttachment: Attachment = {
-				id: nanoid(),
+			const id = nanoid();
+			const newAttachment: AttachmentDocType = {
+				id: id,
 				noteId,
 				filename: file.name,
 				mimeType: file.type,
 				size: file.size,
-				url: null,
-				localBlob: file,
-				synced: 0,
+				url: undefined,
 				createdAt: 0,
 				updatedAt: 0,
 				pinned: false
 			};
 
+			blobs.set(id, file);
 			addAttachment(newAttachment);
 		}
 
@@ -158,14 +166,21 @@
 
 	const blobUrlCache = new SvelteMap<string, string>();
 
-	function addAttachment(attachment: Attachment) {
-		if (attachment.localBlob && !blobUrlCache.has(attachment.id)) {
-			blobUrlCache.set(attachment.id, URL.createObjectURL(attachment.localBlob));
+	function addAttachment(attachment: AttachmentDocType) {
+		const blob = blobs.get(attachment.id);
+		if (!blob) {
+			notify(
+				failure(`Attachment ${attachment.filename} is missing its file data and cannot be added.`)
+			);
+			return;
+		}
+		if (blob && !blobUrlCache.has(attachment.id)) {
+			blobUrlCache.set(attachment.id, URL.createObjectURL(blob));
 		}
 		attachments = [...attachments, attachment];
 	}
 
-	function getPreviewUrl(attachment: Attachment): string | null {
+	function getPreviewUrl(attachment: AttachmentDocType): string | undefined {
 		return blobUrlCache.get(attachment.id) ?? attachment.url;
 	}
 
@@ -216,7 +231,7 @@
 			<hr class=" border border-gray-500" />
 
 			<div class="overflow-y-auto">
-				<QEditor bind:description={workingNote.description} />
+				<QEditor bind:description={workingNote.description as Delta} />
 				<div class="mt-4 flex min-h-0 flex-1 flex-col">
 					<!-- Header Divider -->
 					<div class="flex w-full items-center gap-3 opacity-60">
@@ -367,7 +382,7 @@
 							bind:value={workingNote.projectId}
 							class="doodle-border w-full cursor-pointer bg-transparent py-2 pr-4 pl-10"
 						>
-							{#each $projects as project (project.id)}
+							{#each projectStore.projects as project (project.id)}
 								<option value={project.id}>{project.name}</option>
 							{/each}
 						</select>
@@ -428,7 +443,7 @@
 								? 'bg-blue-100 text-blue-800'
 								: ''}"
 							onclick={() => {
-								workingNote.priority = workingNote.priority === 'low' ? null : 'low';
+								workingNote.priority = workingNote.priority === 'low' ? undefined : 'low';
 							}}>Low</button
 						>
 						<button
@@ -436,7 +451,7 @@
 								? 'bg-amber-100 text-amber-800'
 								: ''}"
 							onclick={() => {
-								workingNote.priority = workingNote.priority === 'medium' ? null : 'medium';
+								workingNote.priority = workingNote.priority === 'medium' ? undefined : 'medium';
 							}}>Medium</button
 						>
 						<button
@@ -444,7 +459,7 @@
 								? 'bg-red-100 text-red-800'
 								: ''}"
 							onclick={() => {
-								workingNote.priority = workingNote.priority === 'high' ? null : 'high';
+								workingNote.priority = workingNote.priority === 'high' ? undefined : 'high';
 							}}>High</button
 						>
 					</div>

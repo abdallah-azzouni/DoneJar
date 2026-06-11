@@ -1,10 +1,8 @@
 <script lang="ts">
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import { sideMenuStore, sideMenuItems } from '$lib/stores/dialog';
-	import { isLoggedIn } from '$lib/pb/auth';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { currentUser } from '$lib/stores/currentUser';
 </script>
 
 <ThemedDialog
@@ -23,14 +21,23 @@
 			>
 				<span>{item.label}</span>
 			</button>
-		{:else if isLoggedIn()}
+		{:else if true}
+			<hr class="my-4 mt-auto border-2 border-dashed border-gray-300" />
 			<button
 				class="doodle-border mb-4 w-full rounded-lg p-2 text-left font-patrick-hand text-xl"
 				onclick={() => item.action()}
 			>
-				<span>{$currentUser?.name}</span>
+				<img
+					//src={getURLfromObject($currentUser, $currentUser?.avatar)}
+					alt="Avatar"
+					class=" mr-2 inline-block size-9 rounded-full border-2 border-black p-1"
+				/>
+				<!-- <span>{$currentUser?.name}</span> -->
+				<span>Lorem ipsum</span>
 			</button>
 		{:else}
+			<hr class="my-4 mt-auto border-2 border-dashed border-gray-300" />
+
 			<button
 				class="doodle-border mb-4 w-full rounded-lg p-2 text-left font-patrick-hand text-xl"
 				onclick={() => {
@@ -38,7 +45,6 @@
 					goto(resolve('/auth/login'));
 				}}
 			>
-				<img src={$currentUser?.avatar} alt="avatar" class="mr-2 inline-block h-5 w-5" />
 				<span>Login</span>
 			</button>
 		{/if}

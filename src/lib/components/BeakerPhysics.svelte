@@ -3,14 +3,14 @@
 	import Matter from 'matter-js';
 	import paperTexture from '$lib/assets/elements/paper.png';
 	import { SvelteMap } from 'svelte/reactivity';
-	import { currentProject } from '$lib/stores/currentProject';
+	import { projectStore } from '$lib/stores/projects.svelte';
 
 	// ============================================================================
 	// PROPS & STATE
 	// ============================================================================
 
 	let { items = [] } = $props();
-	let activeProject = $currentProject?.id;
+	let activeProject = projectStore.current?.id;
 
 	// Canvas dimensions
 	const width = 400;
@@ -310,9 +310,7 @@
 	// ============================================================================
 
 	$effect(() => {
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const _project = activeProject; // declared here to make the effect reactive
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const _size = items.length; // declared here to make the effect reactive
 
 		if (imgLoaded && world) {

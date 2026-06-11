@@ -1,13 +1,16 @@
 <script lang="ts">
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import { exportStore } from '$lib/stores/dialog';
-	import { createProjectColumnsStore } from '$lib/stores/projectColumnsStore';
+	import { projectColumnsStore } from '$lib/stores/projectColumnsStore.svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { exportBackup } from '$lib/actions/backupActions';
 	import { notify } from '$lib/stores/notificationStore';
 	import { failure } from '$lib/types';
+	import { onMount } from 'svelte';
+	import type { BackupDocType } from '$lib/db/schemas';
 
-	const projectsWithColumns = createProjectColumnsStore();
+	// FIX 1: Keep it reactive using $derived
+	let projectsWithColumns = $derived(projectColumnsStore.data);
 
 	async function onExport(payload: { projectIds: string[]; columnIds: string[] }) {
 		const { result, backup } = await exportBackup(payload);
@@ -16,90 +19,88 @@
 			return;
 		}
 
+		if (!backup) {
+			notify(failure('Export failed: No backup data received'));
+			return;
+		}
 		downloadObjectAsJson(backup, `DoneJar_Export_${new Date().toISOString()}`);
-
 		exportStore.close();
 	}
 
-	// Source - https://stackoverflow.com/a/30800715
-	// Posted by mlimper, modified by community. See post 'Timeline' for change history
-	// Retrieved 2026-05-18, License - CC BY-SA 4.0
-	function downloadObjectAsJson(exportObj: unknown, exportName: string) {
-		var dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportObj));
-		var downloadAnchorNode = document.createElement('a');
+	function downloadObjectAsJson(exportObj: BackupDocType, exportName: string) {
+		const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportObj));
+		const downloadAnchorNode = document.createElement('a');
 		downloadAnchorNode.setAttribute('href', dataStr);
 		downloadAnchorNode.setAttribute('download', exportName + '.json');
-		document.body.appendChild(downloadAnchorNode); // required for firefox
+		document.body.appendChild(downloadAnchorNode);
 		downloadAnchorNode.click();
 		downloadAnchorNode.remove();
 	}
 
 	// ============================================================
-	// UI STATE — no backend dependency below this line
+	// UI STATE — completely reactive mutations
 	// ============================================================
+	const expandedProjects = new SvelteSet<string>();
+	const selectedCols = new SvelteMap<string, SvelteSet<string>>();
 
-	let expandedProjects = $state(<SvelteSet<string>>new SvelteSet());
-	let selectedCols = $state(
-		<SvelteMap<string, SvelteSet<string>>>(
-			new SvelteMap(
-				$projectsWithColumns.map((p) => [p.id, new SvelteSet(p.columns.map((c) => c.id))])
-			)
-		)
-	);
-
-	// Reset selections whenever the projects list changes
+	// FIX 2: Reset tracking safely using an effect only for synchronization
 	$effect(() => {
-		selectedCols = new SvelteMap(
-			$projectsWithColumns.map((p) => [p.id, new SvelteSet(p.columns.map((c) => c.id))])
-		);
-		expandedProjects = new SvelteSet();
+		// This runs whenever projectsWithColumns array reference changes
+		selectedCols.clear();
+		expandedProjects.clear();
+		for (const p of projectsWithColumns) {
+			selectedCols.set(p.id, new SvelteSet(p.columns.map((c) => c.id)));
+		}
+	});
+
+	onMount(() => {
+		return () => projectColumnsStore.destroy();
 	});
 
 	function getProjectState(pid: string): 'all' | 'some' | 'none' {
 		const cols = selectedCols.get(pid);
-		const project = $projectsWithColumns.find((p) => p.id === pid);
-		if (!cols || !project) return 'none';
-		if (cols.size === 0) return 'none';
+		const project = projectsWithColumns.find((p) => p.id === pid);
+		if (!cols || !project || cols.size === 0) return 'none';
 		if (cols.size === project.columns.length) return 'all';
 		return 'some';
 	}
 
+	// FIX 3: Leverage native SvelteSet / SvelteMap reactive mutations instead of cloning copies
 	function toggleProject(pid: string) {
 		const current = getProjectState(pid);
-		const project = $projectsWithColumns.find((p) => p.id === pid);
+		const project = projectsWithColumns.find((p) => p.id === pid);
 		if (!project) return;
-		const next = new SvelteMap(selectedCols);
-		next.set(
-			pid,
-			current === 'all' ? new SvelteSet() : new SvelteSet(project.columns.map((c) => c.id))
-		);
-		selectedCols = next;
+
+		if (current === 'all') {
+			selectedCols.get(pid)?.clear();
+		} else {
+			selectedCols.set(pid, new SvelteSet(project.columns.map((c) => c.id)));
+		}
 	}
 
 	function toggleColumn(pid: string, cid: string) {
-		const next = new SvelteMap(selectedCols);
-		const cols = new SvelteSet(next.get(pid) ?? []);
+		if (!selectedCols.has(pid)) {
+			selectedCols.set(pid, new SvelteSet());
+		}
+		const cols = selectedCols.get(pid)!;
 		if (cols.has(cid)) {
 			cols.delete(cid);
 		} else {
 			cols.add(cid);
 		}
-		next.set(pid, cols);
-		selectedCols = next;
 	}
 
 	function toggleExpand(pid: string) {
-		const next = new SvelteSet(expandedProjects);
-		if (next.has(pid)) {
-			next.delete(pid);
+		if (expandedProjects.has(pid)) {
+			expandedProjects.delete(pid);
 		} else {
-			next.add(pid);
+			expandedProjects.add(pid);
 		}
-		expandedProjects = next;
 	}
 
 	function selectAllState(): 'all' | 'some' | 'none' {
-		const states = $projectsWithColumns.map((p) => getProjectState(p.id));
+		if (projectsWithColumns.length === 0) return 'none';
+		const states = projectsWithColumns.map((p) => getProjectState(p.id));
 		if (states.every((s) => s === 'all')) return 'all';
 		if (states.every((s) => s === 'none')) return 'none';
 		return 'some';
@@ -107,16 +108,16 @@
 
 	function toggleSelectAll() {
 		const current = selectAllState();
-		const next = new SvelteMap<string, SvelteSet<string>>();
-		$projectsWithColumns.forEach((p) => {
-			next.set(
-				p.id,
-				current === 'all' ? new SvelteSet() : new SvelteSet(p.columns.map((c) => c.id))
-			);
-		});
-		selectedCols = next;
+		for (const p of projectsWithColumns) {
+			if (current === 'all') {
+				selectedCols.get(p.id)?.clear();
+			} else {
+				selectedCols.set(p.id, new SvelteSet(p.columns.map((c) => c.id)));
+			}
+		}
 	}
 
+	// Modern Svelte 5 standard for action signatures
 	function bindIndeterminate(node: HTMLInputElement, indeterminate: boolean) {
 		node.indeterminate = indeterminate;
 		return {
@@ -126,11 +127,12 @@
 		};
 	}
 
+	// Derived states stay perfectly in sync
 	let totalSelectedCols = $derived([...selectedCols.values()].reduce((acc, s) => acc + s.size, 0));
 	let totalSelectedProjects = $derived(
-		$projectsWithColumns.filter((p) => (selectedCols.get(p.id)?.size ?? 0) > 0).length
+		projectsWithColumns.filter((p) => (selectedCols.get(p.id)?.size ?? 0) > 0).length
 	);
-	let totalCols = $derived($projectsWithColumns.reduce((acc, p) => acc + p.columns.length, 0));
+	let totalCols = $derived(projectsWithColumns.reduce((acc, p) => acc + p.columns.length, 0));
 	let canExport = $derived(totalSelectedCols > 0);
 	let loading = $state(false);
 
@@ -138,14 +140,13 @@
 		if (!canExport) return;
 		loading = true;
 
-		const selectedProjectIds = $projectsWithColumns
+		const selectedProjectIds = projectsWithColumns
 			.filter((p) => (selectedCols.get(p.id)?.size ?? 0) > 0)
 			.map((p) => p.id);
 
 		const selectedColumnIds = [...selectedCols.entries()].flatMap(([, cols]) => [...cols]);
 
 		await onExport({ projectIds: selectedProjectIds, columnIds: selectedColumnIds });
-
 		loading = false;
 	}
 </script>
@@ -175,7 +176,7 @@
 				Select all
 			</label>
 			<span class="font-patrick-hand text-sm text-gray-400">
-				{totalSelectedProjects} of {$projectsWithColumns.length} projects · {totalSelectedCols} of {totalCols}
+				{totalSelectedProjects} of {projectsWithColumns.length} projects · {totalSelectedCols} of {totalCols}
 				columns
 			</span>
 		</div>
@@ -183,7 +184,7 @@
 		<div class="max-h-96 overflow-y-auto">
 			<!-- Project list -->
 			<div class="flex flex-col gap-2 pr-1">
-				{#each $projectsWithColumns as project (project.id)}
+				{#each projectsWithColumns as project (project.id)}
 					{@const projState = getProjectState(project.id)}
 					{@const isExpanded = expandedProjects.has(project.id)}
 					{@const selectedCount = selectedCols.get(project.id)?.size ?? 0}

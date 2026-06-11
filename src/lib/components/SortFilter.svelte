@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Note } from '$lib/types';
+	import type { NoteDocType } from '$lib/db/schemas';
 	import FunnelSimpleIcon from 'phosphor-svelte/lib/FunnelSimpleIcon';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { sortOptions } from '$lib/sort';
@@ -11,16 +11,16 @@
 		notes,
 		onSort,
 		onFiltersChange,
-		activeSortKey = null,
+		activeSortKey = undefined,
 		activeFilters = {},
 		onActiveSortKeyChange
 	}: {
-		notes: Note[];
-		onSort: (compareFn: (a: Note, b: Note) => number) => void;
+		notes: NoteDocType[];
+		onSort: (compareFn: (a: NoteDocType, b: NoteDocType) => number) => void;
 		onFiltersChange?: (filters: Record<string, string[]>) => void;
-		activeSortKey?: string | null;
+		activeSortKey?: string | undefined;
 		activeFilters?: Record<string, string[]>;
-		onActiveSortKeyChange?: (key: string | null) => void;
+		onActiveSortKeyChange?: (key: string | undefined) => void;
 	} = $props();
 
 	// ═══ State ═══
@@ -46,7 +46,7 @@
 
 	// Whether any sort or filter is active
 	let hasActive = $derived(
-		activeSortKey !== null || filters.some((f) => (activeFilters[f.key] ?? []).length > 0)
+		activeSortKey !== undefined || filters.some((f) => (activeFilters[f.key] ?? []).length > 0)
 	);
 
 	// ═══ Handlers ═══
@@ -64,7 +64,7 @@
 	}
 
 	function clearAll() {
-		onActiveSortKeyChange?.(null);
+		onActiveSortKeyChange?.(undefined);
 		onFiltersChange?.({});
 	}
 

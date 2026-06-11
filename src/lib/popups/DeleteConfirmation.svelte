@@ -3,7 +3,7 @@
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import { notify } from '$lib/stores/notificationStore';
 	import { deleteConfirmStore, closeDelete } from '$lib/stores/dialog';
-	import { projects } from '$lib/stores/projects';
+	import { projectStore } from '$lib/stores/projects.svelte';
 	import { setActiveProject } from '$lib/actions';
 
 	let target = $derived($deleteConfirmStore.data);
@@ -13,24 +13,32 @@
 		e.preventDefault();
 		if (!target) return;
 
-		const result =
-			target.type === 'projects' ? await deleteProject(target.id) : await deleteNote(target.id);
+		let result;
 
-		if (result.type === 'error') {
-			notify(result);
-			return;
-		}
-
-		if (target.type === 'projects') {
-			const all = $projects;
+		if (target.type === 'projects' && projectStore.projects) {
+			const all = projectStore.projects;
 			const deletedIndex = all.findIndex((p) => p.id === target.id); // save deleted index before deletion
 
-			// navigate smartly after deletion.
-			const remaining = $projects;
-			const nextIndex = Math.min(deletedIndex, remaining.length - 1);
-			if (nextIndex >= 0) setActiveProject(remaining[nextIndex].id);
-			else setActiveProject('');
+			const nextIndex = Math.min(deletedIndex, all.length - 2);
+			const nextProjectId =
+				nextIndex >= 0 ? all[nextIndex === deletedIndex ? nextIndex + 1 : nextIndex].id : '';
+
+			result = await deleteProject(target.id);
+
+			if (result.type === 'error') {
+				notify(result);
+				return;
+			}
+
+			setActiveProject(nextProjectId);
+		} else {
+			result = await deleteNote(target.id);
+			if (result.type === 'error') {
+				notify(result);
+				return;
+			}
 		}
+
 		closeDelete();
 	}
 </script>

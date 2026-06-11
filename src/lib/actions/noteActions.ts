@@ -2,45 +2,35 @@ import { nanoid } from 'nanoid';
 import Delta from 'quill-delta';
 import { noteRepository, columnRepository } from '$lib/db/dal';
 
-import { failure, success, type ActionResult, type Note, NoteSchema } from '$lib/types';
-import { softDelete } from '$lib/actions';
+import { failure, success, type ActionResult } from '$lib/types';
+import type { NoteDocType } from '$lib/db/schemas/note';
 
 /**
  * Creates a new note in the inbox column of a project.
  * @param note the note payload (title, color, projectId, etc.)
  */
-export async function createNote(note: Note): Promise<ActionResult> {
-	const validationResult = NoteSchema.safeParse(note);
-	if (!validationResult.success) {
-		console.error('Note validation failed:', validationResult.error);
-		return failure('Invalid note data');
-	}
-
-	const validNote = validationResult.data;
-
+export async function createNote(note: NoteDocType): Promise<ActionResult> {
 	try {
-		const col = await columnRepository.findInboxColumn(validNote.projectId);
+		const col = await columnRepository.findInboxColumn(note.projectId);
 
 		if (!col) {
 			return failure('Inbox column not found for the specified project');
 		}
 
-		const newNote: Note = {
-			id: validNote.id || nanoid(),
+		const newNote: NoteDocType = {
+			id: note.id || nanoid(),
 			columnId: col.id,
-			projectId: validNote.projectId,
-			title: validNote.title,
-			tags: validNote.tags,
-			description: new Delta(validNote.description),
-			color: validNote.color,
-			dueDate: validNote.dueDate,
-			priority: validNote.priority,
-			position: validNote.position,
+			projectId: note.projectId,
+			title: note.title,
+			tags: note.tags,
+			description: new Delta(note.description),
+			color: note.color,
+			dueDate: note.dueDate,
+			priority: note.priority,
+			position: note.position,
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
-			pinned: validNote.pinned,
-			synced: 0,
-			version: null
+			pinned: note.pinned
 		};
 
 		await noteRepository.add(newNote);
@@ -55,49 +45,36 @@ export async function createNote(note: Note): Promise<ActionResult> {
  * @param note the full note object with updated fields; must include id and projectId
  * @returns ActionResult indicating success or failure of the operation
  */
-export async function editNote(note: Note): Promise<ActionResult> {
-	const validationResult = NoteSchema.safeParse(note);
-	if (!validationResult.success) {
-		console.error('Note validation failed:', validationResult.error);
-		return failure('Invalid note data');
-	}
-
-	const validNote = validationResult.data;
-
-	let col = await columnRepository.get(validNote.columnId);
+export async function editNote(note: NoteDocType): Promise<ActionResult> {
+	let col = await columnRepository.get(note.columnId);
 	if (!col) {
 		return failure('Inbox column not found for the specified project');
 	}
 
 	try {
 		// Change columnId to inbox if note is moved to new project.
-		if (col?.projectId != validNote.projectId) {
-			col = await columnRepository.findInboxColumn(validNote.projectId);
+		if (col?.projectId != note.projectId) {
+			col = await columnRepository.findInboxColumn(note.projectId);
 			if (!col) {
 				return failure('System error: Target project is missing an Inbox');
 			}
 		}
 
-		const updateResult = await noteRepository.update({
-			id: validNote.id,
+		await noteRepository.update({
+			id: note.id,
 			columnId: col.id,
-			projectId: validNote.projectId,
-			title: validNote.title,
-			tags: validNote.tags,
-			description: new Delta(validNote.description),
-			color: validNote.color,
-			dueDate: validNote.dueDate,
-			priority: validNote.priority,
-			position: validNote.position,
-			createdAt: validNote.createdAt || Date.now(),
+			projectId: note.projectId,
+			title: note.title,
+			tags: note.tags,
+			description: new Delta(note.description),
+			color: note.color,
+			dueDate: note.dueDate,
+			priority: note.priority,
+			position: note.position,
+			createdAt: note.createdAt || Date.now(),
 			updatedAt: Date.now(),
-			pinned: validNote.pinned,
-			synced: 0,
-			version: validNote.version || null
-		} as Note);
-		if (updateResult === 0) {
-			return failure('Note not found or no changes made');
-		}
+			pinned: note.pinned
+		} as NoteDocType);
 	} catch (error) {
 		return failure(`Error editing note: ${error}`);
 	}
@@ -112,7 +89,7 @@ export async function editNote(note: Note): Promise<ActionResult> {
  */
 export async function deleteNote(noteId: string): Promise<ActionResult> {
 	try {
-		await softDelete(noteId, 'notes');
+		await noteRepository.deleteFullNote(noteId);
 	} catch (error) {
 		return failure(`Error deleting note: ${error}`);
 	}
@@ -125,19 +102,23 @@ export async function deleteNote(noteId: string): Promise<ActionResult> {
  * @param newColumnId the ID of the column to move the note to
  * @returns ActionResult indicating success or failure of the operation
  */
-export async function moveNote(noteId: string, newColumnId: string): Promise<ActionResult> {
+export async function moveNote(
+	noteId: string,
+	newColumnId: string,
+	position?: number
+): Promise<ActionResult> {
 	try {
 		const note = await noteRepository.get(noteId);
 		if (!note) {
 			return failure('Note not found');
 		}
 
-		note.columnId = newColumnId;
-		note.updatedAt = Date.now();
-		note.synced = 0;
-
-		const result = await noteRepository.update(note);
-		if (result === 0) return failure('Note not found or no changes made');
+		await noteRepository.update({
+			id: noteId,
+			columnId: newColumnId,
+			updatedAt: Date.now(),
+			position: position !== undefined ? position : note.position
+		});
 	} catch (error) {
 		return failure(`Error moving note: ${error}`);
 	}
@@ -164,11 +145,7 @@ export async function togglePinNote(noteId: string): Promise<ActionResult> {
 			return failure('Note not found');
 		}
 
-		note.pinned = !note.pinned;
-		note.updatedAt = Date.now();
-
-		const result = await noteRepository.update(note);
-		if (result === 0) return failure('Note not found or no changes made');
+		await noteRepository.update({ id: noteId, pinned: !note.pinned, updatedAt: Date.now() });
 	} catch (error) {
 		return failure(`Error toggling pin on note: ${error}`);
 	}

@@ -1,8 +1,7 @@
 // import { nanoid } from 'nanoid';
-import { type Attachment } from '$lib/types';
 import { attachmentRepository } from '$lib/db/dal';
-import { softDelete } from '.';
 import { failure, success, type ActionResult } from '$lib/types';
+import type { AttachmentDocType } from '$lib/db/schemas/attachment';
 
 /**
  *  Saves attachments for a note, handling both new attachments and deletions.
@@ -13,22 +12,37 @@ import { failure, success, type ActionResult } from '$lib/types';
  */
 export async function saveNoteAttachments(
 	noteId: string,
-	attachments: Attachment[],
-	deletedIds: string[]
+	attachments: AttachmentDocType[],
+	deletedIds: string[],
+	blobs: Map<string, Blob>
 ): Promise<ActionResult> {
 	try {
 		for (const id of deletedIds) {
-			await softDelete(id, 'attachments');
+			await attachmentRepository.delete(id);
 		}
+
+		const failedFiles: string[] = [];
 		for (const attachment of attachments) {
-			await attachmentRepository.add({
-				...attachment,
-				noteId,
-				url: null,
-				synced: 0,
-				createdAt: Date.now(),
-				updatedAt: Date.now()
-			});
+			const blob = blobs.get(attachment.id);
+			if (!blob) {
+				failedFiles.push(attachment.filename || attachment.id);
+				continue;
+			}
+			await attachmentRepository.add(
+				{
+					...attachment,
+					noteId,
+					url: undefined,
+					createdAt: Date.now(),
+					updatedAt: Date.now()
+				},
+				blob
+			);
+		}
+
+		if (failedFiles.length > 0) {
+			// Tell the user some files worked, but some failed
+			return success(`Saved attachments, but failed to upload: ${failedFiles.join(', ')}`);
 		}
 	} catch (error) {
 		return failure(`Error saving attachments: ${error}`);

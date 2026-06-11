@@ -1,13 +1,13 @@
 import { nanoid } from 'nanoid';
-import type { ActionResult, Column } from '$lib/types';
+import type { ActionResult } from '$lib/types';
 import { createColumn } from '$lib/types';
-import { failure, success, type Project } from '$lib/types';
-import { validateProjectCreation, validateProjectEdit } from '$lib/validators/projectValidators';
+import { failure, success } from '$lib/types';
+import { validateProjectCreation } from '$lib/validators/projectValidators';
 import { goto } from '$app/navigation';
 import { ROUTES } from '$lib/constants';
 import { resolve } from '$app/paths';
 import { projectRepository, projectService } from '$lib/db/dal';
-import { softDelete } from '$lib/actions';
+import type { ColumnDocType, ProjectDocType } from '$lib/db/schemas/index';
 
 /**
  * Creates a new project and adds it to the projects store.
@@ -21,18 +21,18 @@ export async function createProject(
 	name: string,
 	type: 'default' | 'blank' | 'custom',
 	color: string,
-	customColumns?: Column[]
+	customColumns?: ColumnDocType[]
 ): Promise<ActionResult> {
-	const validationResult = validateProjectCreation(name, type, color, customColumns);
+	const validationResult = validateProjectCreation(type, customColumns);
 	if (validationResult.type === 'error') return validationResult;
 
 	const projectId = nanoid();
 
-	let newColumns: Column[] = [];
+	let newColumns: ColumnDocType[] = [];
 	if (type === 'default') {
 		newColumns = [
 			createColumn({ id: nanoid(), projectId, name: 'TODO', position: 0, specialType: 'inbox' }),
-			createColumn({ id: nanoid(), projectId, name: 'DOING', position: 1, specialType: null }),
+			createColumn({ id: nanoid(), projectId, name: 'DOING', position: 1 }),
 			createColumn({ id: nanoid(), projectId, name: 'DONE', position: 2, specialType: 'jar' })
 		];
 	} else if (type === 'blank') {
@@ -50,15 +50,13 @@ export async function createProject(
 
 	try {
 		// Create project with columns
-		const newProject: Project = {
+		const newProject: ProjectDocType = {
 			id: projectId,
 			name,
 			type,
 			color,
 			createdAt: Date.now(),
-			updatedAt: Date.now(),
-			synced: 0,
-			version: null
+			updatedAt: Date.now()
 		};
 
 		await projectService.createProjectWithColumns(newProject, newColumns);
@@ -94,16 +92,11 @@ export async function editProject(projectInfo: {
 	color: string;
 	id: string;
 }): Promise<ActionResult> {
-	const validationResult = validateProjectEdit(projectInfo);
-	if (validationResult.type === 'error') return validationResult;
-
 	try {
-		const result = await projectRepository.update({
+		await projectRepository.update({
 			...projectInfo,
-			updatedAt: Date.now(),
-			synced: 0
+			updatedAt: Date.now()
 		});
-		if (result === 0) return failure('Project not found or no changes made');
 	} catch (error) {
 		return failure(`Error editing project: ${error}`);
 	}
@@ -117,7 +110,7 @@ export async function editProject(projectInfo: {
  */
 export async function deleteProject(projectId: string): Promise<ActionResult> {
 	try {
-		await softDelete(projectId, 'projects');
+		await projectRepository.deleteFullProject(projectId);
 	} catch (error) {
 		return failure(`Error deleting project: ${error}`);
 	}

@@ -21,10 +21,10 @@
 	const FRICTION = 0.7;
 
 	// Boundary positions (relative to canvas dimensions)
-	const FLOOR_Y_RATIO = 0.88;
+	const FLOOR_Y_RATIO = 0.93;
 	const FLOOR_WIDTH_RATIO = 1;
-	const LEFT_WALL_X_RATIO = 0.2;
-	const RIGHT_WALL_X_RATIO = 0.87;
+	const LEFT_WALL_X_RATIO = 0.22;
+	const RIGHT_WALL_X_RATIO = 0.78;
 	const WALL_THICKNESS = 10;
 
 	// Particle properties
@@ -361,5 +361,5 @@
 	bind:this={canvas}
 	width="400"
 	height="500"
-	class="pointer-events-none absolute inset-0 z-20 h-full w-full"
+	class="pointer-events-none absolute inset-0 h-full w-full"
 ></canvas>

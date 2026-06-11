@@ -1,4 +1,4 @@
-import type { Note } from '$lib/types';
+import type { NoteDocType } from '$lib/db/schemas';
 import { type SortOption } from '$lib/types';
 
 // ═══ Sort options ═══
@@ -20,7 +20,7 @@ export const sortOptions: SortOption[] = [
 		key: 'priority',
 		label: 'Priority',
 		compare: (a, b) => {
-			const priorityValue = (note: Note) => {
+			const priorityValue = (note: NoteDocType) => {
 				if (note.priority === 'high') return 3;
 				if (note.priority === 'medium') return 2;
 				if (note.priority === 'low') return 1;
@@ -33,6 +33,6 @@ export const sortOptions: SortOption[] = [
 	{ key: 'title-za', label: 'Title Z → A', compare: (a, b) => b.title.localeCompare(a.title) }
 ];
 
-export function getSortComparator(key: string): (a: Note, b: Note) => number {
+export function getSortComparator(key: string): (a: NoteDocType, b: NoteDocType) => number {
 	return sortOptions.find((o) => o.key === key)?.compare ?? (() => 0);
 }

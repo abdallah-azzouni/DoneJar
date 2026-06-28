@@ -25,7 +25,6 @@
 	} from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 
 	import { getSortComparator } from '$lib/sort';
-	import { Op } from 'quill-delta';
 
 	let showCreateNote = $state(false);
 
@@ -105,6 +104,8 @@
 
 	function buildColumnItems(cols: ColumnWithNotes[]) {
 		return cols.map((col) => {
+			const parsedFilters = JSON.parse(col.filters || '{}');
+
 			// get custom sort key.
 			const cmp = col.sortKey ? getSortComparator(col.sortKey) : null;
 
@@ -118,7 +119,7 @@
 
 			// show pinned notes first.
 			notes.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
-			return { ...col, notes };
+			return { ...col, filters: parsedFilters, notes };
 		});
 	}
 
@@ -173,17 +174,7 @@
 		}
 		// 2. Extract plain text from description
 
-		let plainText = '';
-		if (note.description && typeof note.description === 'object' && 'ops' in note.description) {
-			const ops = note.description.ops as Op[];
-
-			plainText = ops.reduce((text, op) => {
-				if (typeof op.insert === 'string') return text + op.insert;
-				return text;
-			}, '');
-		} else if (typeof note.description === 'string') {
-			plainText = note.description;
-		}
+		let plainText = note.description ?? '';
 
 		const search = $searchQuery.trim().toLowerCase();
 		if (!search) return true;
@@ -202,9 +193,10 @@
 			else textTokens.push(token);
 		}
 
+		let tags = JSON.parse(note.tags || '[]') as string[];
 		if (colorFilter && note.color?.toLowerCase() !== colorFilter) return false;
 		if (priorityFilter && (note.priority ?? '').toLowerCase() !== priorityFilter) return false;
-		if (tagFilter && !(note.tags ?? []).some((t) => t.toLowerCase() === tagFilter)) return false;
+		if (tagFilter && !tags.some((t: string) => t.toLowerCase() === tagFilter)) return false;
 
 		if (textTokens.length > 0) {
 			const matchesSearch = textTokens.every(
@@ -276,7 +268,10 @@
 							onFiltersChange={async (filters) => {
 								activeFilters[columnIdx] = filters;
 								const plain = $state.snapshot(filters);
-								await columnRepository.update({ id: columnItems[columnIdx].id, filters: plain });
+								await columnRepository.update({
+									id: columnItems[columnIdx].id,
+									filters: JSON.stringify(plain)
+								});
 							}}
 							activeSortKey={activeSortKeys[columnIdx]}
 							activeFilters={activeFilters[columnIdx]}

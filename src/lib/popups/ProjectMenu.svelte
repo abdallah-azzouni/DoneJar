@@ -28,8 +28,8 @@
 						name: '',
 						type: 'default',
 						color: DEFAULT_PROJECT_COLOR,
-						createdAt: 0,
-						updatedAt: 0
+						createdAt: '',
+						updatedAt: ''
 					};
 			customColumns = [];
 			inboxIndex = null;

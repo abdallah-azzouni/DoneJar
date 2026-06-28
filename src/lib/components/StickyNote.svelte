@@ -28,7 +28,9 @@
 					: '#ffffff'
 	);
 
-	let isPast = $derived(note.dueDate ? isDueDatePast(note.dueDate, $now) : false);
+	let isPast = $derived(
+		note.dueDateTimestamp ? isDueDatePast(note.dueDateTimestamp, note.dueDateHasTime, $now) : false
+	);
 
 	async function handlePinNote() {
 		const result = await togglePinNote(note.id);
@@ -139,7 +141,7 @@
 						>{note.title}</span
 					>
 				</foreignObject>
-				{#if note.dueDate}
+				{#if note.dueDateTimestamp}
 					<foreignObject x="20" y="20" width="170" height="190">
 						<div class="flex h-full items-end justify-start" xmlns="http://www.w3.org/1999/xhtml">
 							<span
@@ -150,7 +152,7 @@
 									? 'line-through'
 									: 'none'}; text-decoration-color: {textColorFromHex(note.color)};"
 							>
-								{formatDueDate(note.dueDate)}
+								{formatDueDate(note.dueDateTimestamp, note.dueDateHasTime)}
 							</span>
 						</div>
 					</foreignObject>

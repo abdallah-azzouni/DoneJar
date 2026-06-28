@@ -17,7 +17,6 @@
 	import { textColorFromHex } from '$lib/UiHelper';
 	import { SvelteMap } from 'svelte/reactivity';
 	import { MAX_NOTE_ATTACHMENTS_SIZE } from '$lib/constants';
-	import Delta from 'quill-delta';
 
 	// ─── Props ───────────────────────────────────────
 	let { isOpen = $bindable(false), note }: { isOpen: boolean; note: NoteDocType | null } = $props();
@@ -43,6 +42,10 @@
 	async function handleSubmit() {
 		const action = workingNote.id === '' ? createNote : editNote;
 		workingNote.id = noteId;
+
+		if (Array.isArray(workingNote.tags)) {
+			workingNote.tags = workingNote.tags.length > 0 ? JSON.stringify(workingNote.tags) : '';
+		}
 		const plain = $state.snapshot(workingNote) as unknown as NoteDocType; // snapshot to unwarp any proxies made by $state
 		const result = await action(plain);
 
@@ -79,7 +82,7 @@
 	function addTag() {
 		const val = tagInputText.trim().toLowerCase();
 		if (val && !workingNote.tags?.includes(val)) {
-			workingNote.tags = [...(workingNote.tags || []), val];
+			workingNote.tags = JSON.stringify([...JSON.parse(workingNote.tags || '[]'), val]);
 			tagInputText = ''; // Clear input
 			showTags = true; // Ensure menu is open to show the new tag
 		}
@@ -151,8 +154,8 @@
 				mimeType: file.type,
 				size: file.size,
 				url: undefined,
-				createdAt: 0,
-				updatedAt: 0,
+				createdAt: '',
+				updatedAt: '',
 				pinned: false
 			};
 
@@ -212,9 +215,15 @@
 
 <DatePicker
 	bind:isOpen={showDatePicker}
-	initialDate={workingNote.dueDate}
+	initialDate={workingNote.dueDateTimestamp
+		? {
+				timestamp: workingNote.dueDateTimestamp,
+				hasTime: workingNote.dueDateHasTime ?? false
+			}
+		: undefined}
 	onSave={(date) => {
-		workingNote.dueDate = date;
+		workingNote.dueDateTimestamp = date?.timestamp;
+		workingNote.dueDateHasTime = date?.hasTime;
 	}}
 />
 <ThemedDialog bind:isOpen w="w-5/6" h="h-5/6">
@@ -231,7 +240,7 @@
 			<hr class=" border border-gray-500" />
 
 			<div class="overflow-y-auto">
-				<QEditor bind:description={workingNote.description as Delta} />
+				<QEditor bind:description={workingNote.description} />
 				<div class="mt-4 flex min-h-0 flex-1 flex-col">
 					<!-- Header Divider -->
 					<div class="flex w-full items-center gap-3 opacity-60">
@@ -426,9 +435,17 @@
 						class="doodle-border flex w-full items-center justify-center gap-2 py-2"
 						onclick={() => (showDatePicker = true)}
 					>
-						{#if workingNote.dueDate}
-							<span class={isDueDatePast(workingNote.dueDate, new Date()) ? 'text-red-500' : ''}>
-								{formatDueDate(workingNote.dueDate)}
+						{#if workingNote.dueDateTimestamp}
+							<span
+								class={isDueDatePast(
+									workingNote.dueDateTimestamp,
+									workingNote.dueDateHasTime,
+									new Date()
+								)
+									? 'text-red-500'
+									: ''}
+							>
+								{formatDueDate(workingNote.dueDateTimestamp, workingNote.dueDateHasTime)}
 							</span>
 						{:else}
 							<span class="text-gray-400">Set Date...</span>
@@ -471,7 +488,7 @@
 							<span
 								class="rounded-full bg-black px-1.5 py-1 text-xs leading-none font-bold text-white"
 							>
-								{workingNote.tags.length}
+								{JSON.parse(workingNote.tags || '[]').length}
 							</span>
 						{/if}
 						<button
@@ -530,7 +547,7 @@
 								<span class="text-center text-sm text-gray-400 italic">No tags yet...</span>
 							{:else}
 								<div class="flex flex-wrap gap-2">
-									{#each workingNote.tags as tag (tag)}
+									{#each JSON.parse(workingNote.tags || '[]') as tag (tag)}
 										<span
 											class="flex items-center gap-1 rounded border border-black bg-gray-50 px-2 py-0.5 text-sm shadow-[1px_1px_0px_rgba(0,0,0,1)]"
 										>
@@ -539,7 +556,9 @@
 												type="button"
 												class="font-bold hover:text-red-500"
 												onclick={() =>
-													(workingNote.tags = (workingNote.tags || []).filter((t) => t !== tag))}
+													(workingNote.tags = JSON.stringify([
+														...JSON.parse(workingNote.tags || '[]').filter((t: string) => t !== tag)
+													]))}
 											>
 												×
 											</button>

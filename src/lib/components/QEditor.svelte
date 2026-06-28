@@ -1,11 +1,10 @@
 <script lang="ts">
-	import Delta from 'quill-delta';
 	import type QuillType from 'quill';
 	import { onMount } from 'svelte';
 	import { notify } from '$lib/stores/notificationStore';
 
 	let editor: HTMLElement;
-	let { description = $bindable() }: { description: Delta | string } = $props();
+	let { description = $bindable() }: { description: string | undefined } = $props();
 
 	let toolbarOptions = [
 		[{ header: 1 }, { header: 2 }, { align: [] }, 'blockquote', 'code', 'link'],
@@ -74,15 +73,11 @@
 			if (hasImage) notifyBlocked();
 		});
 
-		if (typeof description === 'string' && description.length > 0) {
-			quill.setText(description);
-			description = quill.getContents();
-		} else if (description && typeof description === 'object') {
-			quill.setContents(description);
-		}
+		quill.setContents(description ? JSON.parse(description) : { ops: [] });
+		description = JSON.stringify(quill.getContents());
 
 		quill.on('text-change', () => {
-			description = quill.getContents();
+			description = JSON.stringify(quill.getContents());
 		});
 	});
 </script>

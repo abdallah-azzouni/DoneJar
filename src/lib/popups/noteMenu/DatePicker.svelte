@@ -13,8 +13,8 @@
 		onSave
 	}: {
 		isOpen: boolean;
-		initialDate?: { timestamp: number; hasTime: boolean } | undefined;
-		onSave?: (value: { timestamp: number; hasTime: boolean } | undefined) => void;
+		initialDate?: { timestamp: string; hasTime: boolean } | undefined;
+		onSave?: (value: { timestamp: string; hasTime: boolean } | undefined) => void;
 	} = $props();
 
 	const tz = getLocalTimeZone();
@@ -79,13 +79,13 @@
 		return h === 12 ? 12 : h + 12;
 	}
 
-	function toTimestamp(): number {
+	function toTimestamp(): string {
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local computation, not reactive state
 		const d = new Date(value.timestamp.year, value.timestamp.month - 1, value.timestamp.day);
 		if (value.hasTime) {
 			d.setHours(to24h(hours, period), minutes, 0, 0);
 		}
-		return d.getTime();
+		return d.toISOString();
 	}
 
 	function handleSave() {

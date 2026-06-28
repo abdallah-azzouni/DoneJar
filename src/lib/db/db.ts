@@ -9,8 +9,16 @@ import { RxDBJsonDumpPlugin } from 'rxdb/plugins/json-dump';
 import { RxDBCleanupPlugin } from 'rxdb/plugins/cleanup';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 
+import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode';
+import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+
+if (dev) {
+	addRxPlugin(RxDBDevModePlugin);
+}
+
 // Wrappers
 import { wrappedKeyCompressionStorage } from 'rxdb/plugins/key-compression';
+import { startReplication } from '$lib/sb/replication';
 
 // plugins
 addRxPlugin(RxDBJsonDumpPlugin);
@@ -20,22 +28,16 @@ addRxPlugin(RxDBLeaderElectionPlugin);
 let dbPromise: Promise<RxDatabase> | null = null;
 
 const _create = async () => {
-	if (dev) {
-		const { RxDBDevModePlugin } = await import('rxdb/plugins/dev-mode');
-		addRxPlugin(RxDBDevModePlugin);
-	}
 	const dexieStorage = getRxStorageDexie();
 	const compressedStorage = wrappedKeyCompressionStorage({ storage: dexieStorage });
-	let finalStorage = compressedStorage;
-	if (dev) {
-		const { wrappedValidateAjvStorage } = await import('rxdb/plugins/validate-ajv');
-		finalStorage = wrappedValidateAjvStorage({ storage: compressedStorage });
-	}
 
-	const db = await createRxDatabase({
+	const finalStorage = dev
+		? wrappedValidateAjvStorage({ storage: compressedStorage })
+		: compressedStorage;
+
+	const database = await createRxDatabase({
 		name: DB_NAME,
 		storage: finalStorage,
-		closeDuplicates: true,
 		cleanupPolicy: {
 			minimumDeletedTime: 1000 * 60 * 60 * 24 * 31, // 31 days
 			minimumCollectionAge: 1000 * 60, // 1 minute
@@ -43,17 +45,37 @@ const _create = async () => {
 		}
 	});
 	// Collections
-	await db.addCollections({
+	await database.addCollections({
 		projects: { schema: projectSchema },
 		columns: { schema: columnSchema },
 		notes: { schema: noteSchema },
 		attachments: { schema: attachmentSchema }
 	});
 
-	return db;
+	return database;
 };
 
-export const db = (): Promise<RxDatabase> => {
-	if (!dbPromise) dbPromise = _create();
-	return dbPromise;
+export const isDbReady = () => dbPromise !== null;
+
+export const initDb = async (hasSession: boolean): Promise<void> => {
+	if (dbPromise) return;
+	dbPromise = _create().catch((err) => {
+		dbPromise = null;
+		throw err;
+	});
+
+	await dbPromise;
+	if (hasSession) {
+		await startReplication();
+	}
+};
+
+export const db = async (): Promise<RxDatabase> => {
+	if (!dbPromise) throw new Error('DB_NOT_INITIALIZED');
+
+	const existing = await dbPromise;
+	if (!existing.closed) return existing;
+	console.warn('Existing DB instance was closed. Creating a new one.');
+	dbPromise = null;
+	return dbPromise!;
 };

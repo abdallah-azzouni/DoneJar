@@ -2,7 +2,7 @@
 
 DoneJar is an offline-first, kanban-style task manager where your completed tasks literally drop into a physics-simulated jar. It solves the mundane feeling of crossing items off a to-do list by making task completion tactile and fun, while still functioning as a robust, capable productivity tool.
 
-**[Live →](https://donejar.pages.dev)**
+**[Live →](https://donejar.app)**
 
 ![Screenshot of DoneJar](src/lib/assets/landing/hero.png)
 
@@ -12,22 +12,27 @@ DoneJar is an offline-first, kanban-style task manager where your completed task
 
 ## Key Features
 
-- **Kanban board** with drag-and-drop (svelte-dnd-action)
+- **Kanban board** — drag-and-drop task management across fully customizable columns
 - **Physics jar** — completed tasks bounce and stack inside a Matter.js-powered beaker
-- **Offline-first** — absolutely no load screens; everything saves locally right away
-- **Attachments** — drag and drop files directly onto your notes
-- **Cross-device sync** — keeps your data updated across devices using PocketBase + R2
-- **Rich note styling** — Tags, priority flags, and a visual color picker for all notes
-- **Rich text editor** — Quill powers the task descriptions (headers, lists, links, code, video)
-- **Multi-project** — create multiple boards with custom names and flexible columns
+- **Offline-first** — zero load screens; everything saves locally and syncs when connected
+- **Cross-device sync** — real-time replication across all your devices via Supabase
+- **Auth** — account creation, login, and secure session management
+- **Rich text editor** — Quill powers task descriptions (headers, lists, links, code, video)
+- **Attachments** — drag and drop files directly onto notes, stored in Cloudflare R2
+- **Tags, dates & priorities** — rich metadata on every note with expiry timers
+- **Multi-project** — multiple boards with custom names, colors, and flexible columns
+- **Data export/import** — full JSON backup and restore
 
 ---
 
 ## Tech Stack
 
-- **Framework**: SvelteKit, TypeScript
+- **Framework**: SvelteKit + Svelte 5 runes, TypeScript
 - **Styling**: TailwindCSS 4.1, doodle.css
-- **Local Database**: Dexie (IndexedDB)
+- **Local Database**: RxDB (Dexie storage adapter)
+- **Sync**: Supabase (Postgres + Realtime + Auth)
+- **Attachments**: Cloudflare R2
+- **Hosting**: Cloudflare Pages
 - **Physics**: Matter.js
 - **Rich Text**: Quill
 - **Validation & IDs**: zod, nanoid
@@ -36,11 +41,14 @@ DoneJar is an offline-first, kanban-style task manager where your completed task
 
 ## Architecture
 
-DoneJar utilizes a **local-first** approach to guarantee incredible speed and offline availability.
+DoneJar is built on a **local-first** foundation — the local database is the source of truth, and sync is a background concern.
 
-- **Storage**: All data relies on an IndexedDB foundation powered by Dexie, with a structured Data Access Layer (DAL) handling queries and mutations.
-- **Sync Design**: It seamlessly replicates data back and forth from PocketBase using a `serverVersion` sequence alongside a `synced` flag to track local vs. remote state without overriding newer edits. Attachments are securely shuffled into Cloudflare R2.
-- **State**: The application layers UI state management (stores) safely above the DAL infrastructure.
+- **Local storage**: RxDB with Dexie as the storage adapter, wrapped in `wrappedKeyCompressionStorage` and `wrappedValidateAjvStorage`. All reads and writes go through a structured Data Access Layer (DAL) that follows DIP/OCP principles for clean separation between the app and the database layer.
+- **Sync**: RxDB's Supabase replication plugin handles bidirectional sync against a Postgres backend. RLS policies enforce access control at the database level; the DAL enforces role checks client-side before writes reach RxDB.
+- **Auth**: Supabase Auth with scoped local DB instances per user (`donejar-{userId}`). Replication starts and stops cleanly on auth state changes.
+- **Attachments**: Metadata lives in RxDB; blobs go to Cloudflare R2. The browser Cache API handles local caching keyed by `attachmentId`. Attachment records are immutable — upload or delete only.
+- **Collaboration**: A `project_members` junction table is the membership authority. RLS subqueries on all tables reference it. The creator is auto-inserted as `owner` via an `AFTER INSERT` trigger on `projects`.
+- **State**: UI state (stores) sits above the DAL. Reactive queries use RxDB observables composed with `from(db()).pipe(switchMap(...))`.
 
 ---
 
@@ -51,7 +59,7 @@ src/
 ├── lib/
 │   ├── actions/          # Domain actions (attachments, notes, projects)
 │   ├── components/       # Board, Physics Jar, Sticky notes, etc.
-│   ├── db/               # Dexie configuration & Data Access Layer (dal.ts)
+│   ├── db/               # RxDB setup, schema, DAL
 │   ├── popups/           # Menus, date pickers, delete confirmations
 │   ├── stores/           # App state (current info, UI states, timers)
 │   ├── validators/       # zod schemas for core data types
@@ -70,7 +78,7 @@ npm install
 npm run dev
 ```
 
-The app handles the rest and opens up at `http://localhost:5173`.
+The app opens at `http://localhost:5173`.
 
 ### Scripts
 
@@ -86,36 +94,44 @@ The app handles the rest and opens up at `http://localhost:5173`.
 
 ## Roadmap
 
-DoneJar is developed in clear, incremental phases.
+### ✅ Phase 1 — Local-first Kanban (Completed)
 
-### ✅ Phase 1 — Core Experience (Completed)
+The full single-player experience. Everything you need to manage tasks on one device.
 
-- Kanban workflow (TODO → DOING → DONE)
-- Multi-project support with colors
-- Physics-based satisfaction jar
+- Kanban workflow with customizable columns
+- Multi-project support with custom names and colors
+- Physics-based completion jar (Matter.js)
 - Drag-and-drop task management
+- Rich text task descriptions (Quill)
+- Task tags, dates, and priority flags
+- Attachments via Cloudflare R2
+- Data export/import (JSON)
 - Responsive, hand-drawn UI
-- Deployed production website
+- Deployed to production (donejar.app)
 
-### ✅ Phase 2 — Task & Project Management (Completed)
+### ✅ Phase 2 — Sync & Identity (Completed)
 
-- Edit and delete tasks
-- Edit and delete projects
-- Task descriptions with rich text
-- Task dates and tags
-- Improved menus for tasks and projects
-- Local Database (Dexie) integration
+The app gains a persistent identity and works seamlessly across devices.
 
-### 🚧 Phase 3 — Quality of Life & Sync (In Progress)
+- Account creation, login, and session management (Supabase Auth)
+- Migrated local storage from Dexie to RxDB
+- Real-time cross-device sync (RxDB ↔ Supabase replication)
+- Per-user scoped local databases
+- RLS-enforced access control on all collections
+- Collaboration infrastructure (project_members, roles, RLS policies)
+- Offline-first: full functionality without a connection, syncs on reconnect
 
-- **Cross-device sync** — actively building out seamless replication with PocketBase and Cloudflare R2
-- **Mobile layout** — improving the kanban board experience on smaller screens
-- **Column editing** — rename, reorder, add/remove columns on existing projects
-- **Jar browsing** — a way to view and retrieve notes from inside the physics jar
-- **Data export/import** — JSON backup and restore for local Dexie database
+### 🚧 Phase 3 — Collaboration & Mobile (Planned)
+
+The social and platform layer.
+
+- **Collaboration** — invite flow, role enforcement, free/Pro tier limits
+- **Mobile layout** — optimized kanban experience on small screens
+- **Mobile & desktop apps** — Tauri packaging for native distribution
+- **Jar browsing** — view and retrieve notes from inside the physics jar
+- **Column editing** — rename, reorder, add/remove columns
+- **Arabic language support**
 - **Accessibility** — keyboard navigation, ARIA roles, focus management
-
-See [open issues](https://github.com/abdallah-azzouni/DoneJar/issues) for what's actively being worked on.
 
 ---
 

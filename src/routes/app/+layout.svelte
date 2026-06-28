@@ -2,21 +2,49 @@
 	import ProjectMenu from '$lib/popups/ProjectMenu.svelte';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import ProjectItem from '$lib/components/ProjectItem.svelte';
-	import { appStore } from '$lib/stores/appState.svelte';
-	// isLocal
+	import { appStore, getAppState } from '$lib/stores/appState.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import { page } from '$app/state';
-	// import { goto } from '$app/navigation';
-	// import { resolve } from '$app/paths';
-	// import { isLoggedIn, logout } from '$lib/pb/auth';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import { signOut } from '$lib/sb/auth';
 	import { projectStore } from '$lib/stores/projects.svelte';
 	import { openProjectMenu } from '$lib/stores/dialog';
 	import DeleteConfirmation from '$lib/popups/DeleteConfirmation.svelte';
 	import { notify } from '$lib/stores/notificationStore';
+	import { sessionStore } from '$lib/stores/currentUser.svelte';
 
 	let { children } = $props();
 
+	import { onMount } from 'svelte';
+	import { initDb } from '$lib/db/db';
+
+	onMount(() => {
+		if (getAppState() === 'GUEST_LOCAL' || getAppState() === 'LOGGED_IN') {
+			initDb(sessionStore.current !== null)
+				.then(() => {
+					projectStore.init();
+				})
+				.catch((err) => {
+					console.error('Failed to initialize database:', err);
+					notify({
+						type: 'error',
+						message: 'Failed to initialize database. Please try again later.'
+					});
+				});
+		}
+	});
+
 	let currentProjectId: string | null = null;
+
+	$effect(() => {
+		const state = getAppState();
+		if (state == 'LOGGED_OUT') {
+			signOut().then(() => {
+				goto(resolve('/auth/login'));
+			});
+		}
+	});
 
 	$effect(() => {
 		currentProjectId = page.params.id ?? null;

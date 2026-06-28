@@ -2,7 +2,7 @@
 	import 'doodle.css/doodle.css';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	// import { isLoggedIn } from '$lib/pb/auth';
+	import { sessionStore } from '$lib/stores/currentUser.svelte';
 
 	import heroImage from '$lib/assets/landing/hero.png';
 	import howItWorksStep1 from '$lib/assets/landing/step1.png';
@@ -12,9 +12,8 @@
 	import featureBeaker from '$lib/assets/landing/beaker.png';
 	import featureProjects from '$lib/assets/landing/projects.gif';
 
-	let isLoggedIn = true;
 	function getStarted() {
-		goto(resolve(isLoggedIn ? '/app' : '/auth/login'));
+		goto(resolve(sessionStore.current ? '/app' : '/auth/login'));
 	}
 </script>
 

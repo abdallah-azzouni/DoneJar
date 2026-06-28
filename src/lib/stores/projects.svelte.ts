@@ -12,19 +12,6 @@ function createProjectStore() {
 		selectedId: null
 	});
 
-	projectService.observeAll().subscribe({
-		next: (data) => {
-			state.projects.length = 0;
-			state.projects.push(...data);
-			if (state.selectedId && !data.find((p) => p.id === state.selectedId)) {
-				state.selectedId = null;
-			}
-		},
-		error: (err) => {
-			notify(failure(`projectStore error: ${err.message}`));
-		}
-	});
-
 	return {
 		get projects() {
 			return state.projects;
@@ -34,6 +21,20 @@ function createProjectStore() {
 		},
 		select: (id: string | null) => {
 			state.selectedId = id;
+		},
+		init: () => {
+			projectService.observeAll().subscribe({
+				next: (data) => {
+					state.projects.length = 0;
+					state.projects.push(...data);
+					if (state.selectedId && !data.find((p) => p.id === state.selectedId)) {
+						state.selectedId = null;
+					}
+				},
+				error: (err) => {
+					notify(failure(`projectStore error: ${err.message}`));
+				}
+			});
 		}
 	};
 }

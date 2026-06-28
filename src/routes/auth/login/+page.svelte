@@ -1,58 +1,45 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	//import { login, register, isLoggedIn, resetPassword } from '$lib/pb/auth';
+	import { signIn, signUp, sendPasswordResetEmail } from '$lib/sb/auth';
 	import { clearDatabase } from '$lib/db/dal';
-	import { isLocal } from '$lib/stores/appState.svelte';
+	import { goLocalMode, getIsGuestLocal } from '$lib/stores/appState.svelte';
 	import { notify } from '$lib/stores/notificationStore';
 	import { failure } from '$lib/types';
-	import { onMount } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
-	import { projectStore } from '$lib/stores/projects.svelte';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
-
-	let hasElements = $state(false);
 
 	let isLogin = $state(true);
 	let email = $state('');
 	let password = $state('');
 	let name = $state('');
 
-	onMount(() => {
-		goto(resolve('/app'));
-	});
+	let hasExistingProjects = $state(false);
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
-		try {
-			if (isLogin) {
-				hasElements = projectStore.projects && projectStore.projects.length > 0 ? true : false;
-				if (hasElements) return; // let Dialog handle the flow
+
+		if (isLogin) {
+			hasExistingProjects = getIsGuestLocal();
+
+			if (!hasExistingProjects) {
 				await continueOnline();
+			}
+		} else {
+			const result = await signUp(email, name, password);
+			if (result.error) {
+				notify(failure(result.error.message));
+				return;
 			} else {
-				//await register(email, password, name);
+				if (!result.data?.user?.identities?.length) {
+					notify({ type: 'error', message: 'Email already exists. Please sign in.' });
+					return;
+				}
 				notify({ type: 'success', message: 'Account created! Please sign in.' });
-				password = '';
-				name = '';
-				isLogin = true;
 			}
-		} catch (error: unknown) {
-			const authError = error as {
-				status?: number;
-				data?: { data?: { email?: { code?: string } } };
-			};
-			if (isLogin) {
-				if (authError.status === 400) notify(failure('Invalid email or password.'));
-				else notify(failure('Something went wrong. Please try again.'));
-			} else {
-				if (authError.data?.data?.email?.code === 'validation_not_unique')
-					notify(failure('This email is already registered.'));
-				else if (authError.status === 400)
-					notify(failure('Please check your details and try again.'));
-				else if (authError.status === 429)
-					notify(failure('Too many attempts. Please wait and try again later.'));
-				else notify(failure('Something went wrong. Please try again.'));
-			}
+			password = '';
+			name = '';
+			isLogin = true;
 		}
 	}
 
@@ -62,7 +49,11 @@
 			return;
 		}
 		try {
-			//await resetPassword(email);
+			const result = await sendPasswordResetEmail(email);
+			if (result.error) {
+				notify(failure(result.error?.message ?? 'Failed to send reset email.'));
+				return;
+			}
 			notify({ type: 'success', message: 'Password reset email sent.' });
 		} catch {
 			notify(failure('Something went wrong. Please try again.'));
@@ -75,13 +66,18 @@
 	}
 
 	function continueLocal() {
-		isLocal.set(true);
+		goLocalMode();
 		goto(resolve('/app'));
 	}
 
 	async function continueOnline() {
 		try {
-			//await login(email, password);
+			const result = await signIn(email, password);
+			if (result?.error) {
+				notify(failure(result.error.message));
+				return;
+			}
+
 			goto(resolve('/app'));
 		} catch {
 			notify(failure('Something went wrong. Please try again.'));
@@ -98,7 +94,7 @@
 	}
 </script>
 
-<ThemedDialog bind:isOpen={hasElements} cls="dark:bg-zinc-900 justify-self-center">
+<ThemedDialog isOpen={hasExistingProjects} cls="dark:bg-zinc-900 justify-self-center">
 	<p class="text-sm text-zinc-600 dark:text-zinc-400">
 		You have existing projects. Do you want to import them to your new account or delete them and
 		start fresh?

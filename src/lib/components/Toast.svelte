@@ -35,6 +35,11 @@
 		color: white;
 	}
 
+	.info {
+		background: #3b82f6;
+		color: white;
+	}
+
 	button {
 		background: none;
 		border: none;

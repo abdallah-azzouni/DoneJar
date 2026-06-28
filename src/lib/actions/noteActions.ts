@@ -1,5 +1,4 @@
 import { nanoid } from 'nanoid';
-import Delta from 'quill-delta';
 import { noteRepository, columnRepository } from '$lib/db/dal';
 
 import { failure, success, type ActionResult } from '$lib/types';
@@ -23,13 +22,14 @@ export async function createNote(note: NoteDocType): Promise<ActionResult> {
 			projectId: note.projectId,
 			title: note.title,
 			tags: note.tags,
-			description: new Delta(note.description),
+			description: note.description,
 			color: note.color,
-			dueDate: note.dueDate,
+			dueDateHasTime: note.dueDateHasTime,
+			dueDateTimestamp: note.dueDateTimestamp,
 			priority: note.priority,
 			position: note.position,
-			createdAt: Date.now(),
-			updatedAt: Date.now(),
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString(),
 			pinned: note.pinned
 		};
 
@@ -66,13 +66,14 @@ export async function editNote(note: NoteDocType): Promise<ActionResult> {
 			projectId: note.projectId,
 			title: note.title,
 			tags: note.tags,
-			description: new Delta(note.description),
+			description: note.description,
 			color: note.color,
-			dueDate: note.dueDate,
+			dueDateHasTime: note.dueDateHasTime,
+			dueDateTimestamp: note.dueDateTimestamp,
 			priority: note.priority,
 			position: note.position,
-			createdAt: note.createdAt || Date.now(),
-			updatedAt: Date.now(),
+			createdAt: note.createdAt || new Date().toISOString(),
+			updatedAt: new Date().toISOString(),
 			pinned: note.pinned
 		} as NoteDocType);
 	} catch (error) {
@@ -116,7 +117,7 @@ export async function moveNote(
 		await noteRepository.update({
 			id: noteId,
 			columnId: newColumnId,
-			updatedAt: Date.now(),
+			updatedAt: new Date().toISOString(),
 			position: position !== undefined ? position : note.position
 		});
 	} catch (error) {
@@ -145,7 +146,11 @@ export async function togglePinNote(noteId: string): Promise<ActionResult> {
 			return failure('Note not found');
 		}
 
-		await noteRepository.update({ id: noteId, pinned: !note.pinned, updatedAt: Date.now() });
+		await noteRepository.update({
+			id: noteId,
+			pinned: !note.pinned,
+			updatedAt: new Date().toISOString()
+		});
 	} catch (error) {
 		return failure(`Error toggling pin on note: ${error}`);
 	}

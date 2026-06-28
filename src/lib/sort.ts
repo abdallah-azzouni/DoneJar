@@ -4,16 +4,24 @@ import { type SortOption } from '$lib/types';
 // ═══ Sort options ═══
 
 export const sortOptions: SortOption[] = [
-	{ key: 'newest', label: 'Newest first', compare: (a, b) => b.createdAt - a.createdAt },
-	{ key: 'oldest', label: 'Oldest first', compare: (a, b) => a.createdAt - b.createdAt },
+	{
+		key: 'newest',
+		label: 'Newest first',
+		compare: (a, b) => b.createdAt.localeCompare(a.createdAt)
+	},
+	{
+		key: 'oldest',
+		label: 'Oldest first',
+		compare: (a, b) => a.createdAt.localeCompare(b.createdAt)
+	},
 	{
 		key: 'due-date',
 		label: 'Due date',
 		compare: (a, b) => {
-			if (!a.dueDate && !b.dueDate) return 0;
-			if (!a.dueDate) return 1;
-			if (!b.dueDate) return -1;
-			return a.dueDate.timestamp - b.dueDate.timestamp;
+			if (!a.dueDateTimestamp && !b.dueDateTimestamp) return 0;
+			if (!a.dueDateTimestamp) return 1;
+			if (!b.dueDateTimestamp) return -1;
+			return a.dueDateTimestamp.localeCompare(b.dueDateTimestamp);
 		}
 	},
 	{

@@ -55,8 +55,8 @@ export async function createProject(
 			name,
 			type,
 			color,
-			createdAt: Date.now(),
-			updatedAt: Date.now()
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString()
 		};
 
 		await projectService.createProjectWithColumns(newProject, newColumns);
@@ -95,7 +95,7 @@ export async function editProject(projectInfo: {
 	try {
 		await projectRepository.update({
 			...projectInfo,
-			updatedAt: Date.now()
+			updatedAt: new Date().toISOString()
 		});
 	} catch (error) {
 		return failure(`Error editing project: ${error}`);

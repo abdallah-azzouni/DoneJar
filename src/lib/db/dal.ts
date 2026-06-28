@@ -2,6 +2,9 @@
 import { db } from '$lib/db/db';
 import { switchMap, map } from 'rxjs/operators';
 import { combineLatest, of, from } from 'rxjs';
+import { removeRxDatabase } from 'rxdb';
+import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
+import { DB_NAME } from '$lib/constants';
 
 import type {
 	ProjectDocType,
@@ -13,9 +16,7 @@ import type {
 import { nanoid } from 'nanoid';
 
 export async function clearDatabase() {
-	const db$ = await db();
-	await db$.remove();
-	await db$.close();
+	await removeRxDatabase(DB_NAME, getRxStorageDexie());
 }
 
 export const noteRepository = {

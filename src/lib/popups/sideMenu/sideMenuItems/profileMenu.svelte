@@ -1,28 +1,19 @@
 <script lang="ts">
 	import { profileMenuStore } from '$lib/stores/dialog';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
-	// import { currentUser } from '$lib/stores/currentUser';
+	import { sessionStore } from '$lib/stores/currentUser.svelte';
 	import { exportStore } from '$lib/stores/dialog';
-	import { writable } from 'svelte/store';
+	import { signOut, sendPasswordResetEmail } from '$lib/sb/auth';
+	import { notify } from '$lib/stores/notificationStore';
+	import { failure } from '$lib/types';
 
 	// --- Types ---
 	type Tab = 'profile' | 'account' | 'danger';
 
-	const currentUser = writable({
-		id: '12345',
-		name: 'John Doe',
-		email: 'john.doe@example.com',
-		emailVisibility: true,
-		verified: false,
-		created: '2023-01-01T00:00:00Z',
-		updated: '2023-06-01T12:00:00Z',
-		avatar: null
-	});
-
 	// --- State ---
 	let activeTab = $state<Tab>('profile');
 	let editingName = $state(false);
-	let nameValue = $state('Lorem ipsum');
+	let nameValue = $state('');
 	let savingName = $state(false);
 	let nameError = $state('');
 
@@ -35,9 +26,12 @@
 	let avatarUploading = $state(false);
 	let avatarFileInput: HTMLInputElement;
 
+	let currentUser = sessionStore.current?.user;
+
 	// Sync nameValue when currentUser changes
 	$effect(() => {
-		if ($currentUser?.name) nameValue = $currentUser.name;
+		if (currentUser?.user_metadata?.display_name)
+			nameValue = currentUser.user_metadata.display_name;
 	});
 
 	// --- Helpers ---
@@ -77,20 +71,20 @@
 		try {
 			// await updateUserInfo({ name: nameValue.trim() });
 			editingName = false;
-		} catch (e: any) {
-			nameError = e?.message ?? 'Failed to save name.';
+		} catch (e) {
+			nameError = e instanceof Error ? e?.message : 'Failed to save name.';
 		} finally {
 			savingName = false;
 		}
 	}
 
 	async function sendVerificationEmail() {
-		if (!$currentUser?.email) return;
+		if (!currentUser?.email) return;
 		sendingVerification = true;
 		try {
-			// await pb.collection('users').requestVerification($currentUser.email);
+			// await pb.collection('users').requestVerification(currentUser.email);
 			verificationSent = true;
-		} catch (e) {
+		} catch {
 			// silently fail — user sees nothing changed
 		} finally {
 			sendingVerification = false;
@@ -98,12 +92,15 @@
 	}
 
 	async function sendPasswordReset() {
-		if (!$currentUser?.email) return;
+		if (!currentUser?.email) return;
 		sendingReset = true;
 		try {
-			// await pb.collection('users').requestPasswordReset($currentUser.email);
-			resetSent = true;
-		} catch (e) {
+			const result = await sendPasswordResetEmail(currentUser.email);
+			notify(failure(result?.error?.message ?? 'Failed to send reset email.'));
+			if (!result?.error) {
+				resetSent = true;
+			}
+		} catch {
 			// silently fail
 		} finally {
 			sendingReset = false;
@@ -118,7 +115,7 @@
 			const form = new FormData();
 			form.append('avatar', file);
 			// await updateUserInfo(form);
-		} catch (e) {
+		} catch {
 			// silently fail
 		} finally {
 			avatarUploading = false;
@@ -131,7 +128,7 @@
 	}
 
 	async function HandleLogout() {
-		// logout();
+		await signOut();
 		close();
 	}
 
@@ -162,10 +159,10 @@
 				title="Change avatar"
 				disabled={avatarUploading}
 			>
-				<!--  $currentUser?.avatar && getURLfromObject($currentUser, $currentUser.avatar)} -->
+				<!--  currentUser?.avatar && getURLfromObject(currentUser, currentUser.avatar)} -->
 				{#if false}
 					<img
-						//src={getURLfromObject($currentUser, $currentUser.avatar)}
+						//src={getURLfromObject(currentUser, currentUser.avatar)}
 						alt="Avatar"
 						class="h-full w-full object-cover"
 					/>
@@ -173,7 +170,7 @@
 					<span
 						class="w-full text-center font-patrick-hand text-2xl leading-none font-bold text-black"
 					>
-						{getInitials($currentUser?.name ?? '?')}
+						{getInitials(currentUser?.user_metadata?.display_name ?? '?')}
 					</span>
 				{/if}
 				{#if avatarUploading}
@@ -208,7 +205,7 @@
 							if (e.key === 'Enter') saveName();
 							if (e.key === 'Escape') {
 								editingName = false;
-								nameValue = $currentUser?.name ?? '';
+								nameValue = currentUser?.user_metadata?.display_name ?? '';
 							}
 						}}
 					/>
@@ -223,7 +220,7 @@
 						class="shrink-0 rounded-md border-2 border-black bg-white px-2 py-1 text-xs font-bold hover:bg-gray-100"
 						onclick={() => {
 							editingName = false;
-							nameValue = $currentUser?.name ?? '';
+							nameValue = currentUser?.user_metadata?.display_name ?? '';
 							nameError = '';
 						}}>✕</button
 					>
@@ -236,15 +233,15 @@
 					}}
 					title="Edit name"
 				>
-					{$currentUser?.name ?? 'User'}
+					{currentUser?.user_metadata?.display_name ?? 'User'}
 					<span class="text-sm opacity-60">✏️</span>
 				</button>
 			{/if}
 			{#if nameError}
 				<p class="mb-1 text-xs font-bold text-red-700">{nameError}</p>
 			{/if}
-			<p class="mb-1.5 truncate text-sm text-[#4a2e00]">{$currentUser?.email ?? ''}</p>
-			{#if $currentUser?.verified}
+			<p class="mb-1.5 truncate text-sm text-[#4a2e00]">{currentUser?.email ?? ''}</p>
+			{#if currentUser?.user_metadata?.email_verified}
 				<span
 					class="inline-flex items-center gap-1 rounded-full border border-green-800 bg-green-100 px-2 py-0.5 text-[11px] font-bold text-green-800"
 				>
@@ -287,7 +284,9 @@
 					class="doodle-border flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3"
 				>
 					<span class="w-28 shrink-0 text-xs font-bold text-gray-500">Display name</span>
-					<span class="text-right text-sm font-bold text-black">{$currentUser?.name ?? '—'}</span>
+					<span class="text-right text-sm font-bold text-black"
+						>{currentUser?.user_metadata?.display_name ?? '—'}</span
+					>
 				</div>
 
 				<div
@@ -295,16 +294,7 @@
 				>
 					<span class="w-28 shrink-0 text-xs font-bold text-gray-500">Email</span>
 					<span class="max-w-50 truncate text-right text-sm font-bold text-black"
-						>{$currentUser?.email ?? '—'}</span
-					>
-				</div>
-
-				<div
-					class="doodle-border flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3"
-				>
-					<span class="w-28 shrink-0 text-xs font-bold text-gray-500">Email visibility</span>
-					<span class="text-sm font-bold text-black"
-						>{$currentUser?.emailVisibility ? 'Public' : 'Private'}</span
+						>{currentUser?.email ?? '—'}</span
 					>
 				</div>
 
@@ -312,7 +302,7 @@
 					class="doodle-border flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3"
 				>
 					<span class="w-28 shrink-0 text-xs font-bold text-gray-500">Verification</span>
-					{#if $currentUser?.verified}
+					{#if currentUser?.user_metadata?.email_verified}
 						<span class="text-sm font-bold text-green-700">Verified ✓</span>
 					{:else}
 						<div class="flex items-center gap-2">
@@ -338,14 +328,14 @@
 					class="doodle-border flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3"
 				>
 					<span class="w-28 shrink-0 text-xs font-bold text-gray-500">Member since</span>
-					<span class="text-sm font-bold text-black">{formatDate($currentUser?.created)}</span>
+					<span class="text-sm font-bold text-black">{formatDate(currentUser?.created_at)}</span>
 				</div>
 
 				<div
 					class="doodle-border flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3"
 				>
 					<span class="w-28 shrink-0 text-xs font-bold text-gray-500">Last updated</span>
-					<span class="text-sm font-bold text-black">{formatDate($currentUser?.updated)}</span>
+					<span class="text-sm font-bold text-black">{formatDate(currentUser?.updated_at)}</span>
 				</div>
 			</div>
 
@@ -357,8 +347,7 @@
 				<div class="doodle-border rounded-lg bg-gray-50 px-4 py-4">
 					<p class="mb-1 text-sm font-bold text-black">Change password</p>
 					<p class="mb-3 text-xs text-gray-500">
-						We'll send a reset link to <span class="font-bold text-black"
-							>{$currentUser?.email}</span
+						We'll send a reset link to <span class="font-bold text-black">{currentUser?.email}</span
 						>.
 					</p>
 					{#if resetSent}
@@ -447,7 +436,7 @@
 		class="flex shrink-0 items-center justify-between border-t-2 border-dashed border-gray-300 bg-white px-6 py-3"
 	>
 		<span class="font-mono text-[11px] text-gray-300 select-all" title="Your user ID"
-			>{$currentUser?.id ?? ''}</span
+			>{currentUser?.id ?? ''}</span
 		>
 		<button
 			class="text-xs font-bold text-gray-400 transition-colors hover:text-black"

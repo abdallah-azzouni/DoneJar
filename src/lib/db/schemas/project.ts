@@ -19,8 +19,8 @@ export const projectSchemaLiteral = {
 		name: { type: 'string', maxLength: MAX_PROJECT_NAME_LENGTH },
 		type: { type: 'string', enum: ['default', 'blank', 'custom'] },
 		color: { type: 'string', pattern: HEX_COLOR_REGEX.source },
-		createdAt: { type: 'number' },
-		updatedAt: { type: 'number' }
+		createdAt: { type: 'string', format: 'date-time' },
+		updatedAt: { type: 'string', format: 'date-time' }
 	},
 	required: ['id', 'name', 'type', 'color', 'createdAt', 'updatedAt'],
 	indexes: [] // to be add when i have queries that need it

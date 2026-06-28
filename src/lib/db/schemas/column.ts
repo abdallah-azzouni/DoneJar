@@ -16,13 +16,7 @@ export const columnSchemaLiteral = {
 		projectId: { type: 'string', maxLength: 21 },
 		name: { type: 'string' },
 		sortKey: { type: 'string' },
-		filters: {
-			type: 'object',
-			additionalProperties: {
-				type: 'array',
-				items: { type: 'string' }
-			}
-		},
+		filters: { type: 'string' },
 		position: { type: 'number' },
 		specialType: { type: 'string', enum: ['jar', 'inbox'] }
 	},

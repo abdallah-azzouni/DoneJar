@@ -19,8 +19,8 @@ export const attachmentSchemaLiteral = {
 		size: { type: 'number' },
 		url: { type: 'string' },
 		pinned: { type: 'boolean' },
-		createdAt: { type: 'number' },
-		updatedAt: { type: 'number' }
+		createdAt: { type: 'string', format: 'date-time' },
+		updatedAt: { type: 'string', format: 'date-time' }
 	},
 	required: ['id', 'noteId', 'filename', 'mimeType', 'size', 'pinned', 'createdAt', 'updatedAt'],
 	indexes: [] // to be add when i have queries that need it

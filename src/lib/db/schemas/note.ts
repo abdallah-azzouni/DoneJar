@@ -19,31 +19,16 @@ export const noteSchemaLiteral = {
 		columnId: { type: 'string', maxLength: 21 },
 		projectId: { type: 'string', maxLength: 21 },
 		title: { type: 'string', maxLength: MAX_NOTE_TITLE_LENGTH },
-		tags: { type: 'array', items: { type: 'string' } },
-		description: {
-			type: 'object',
-			properties: {
-				ops: {
-					type: 'array',
-					items: { type: 'object', additionalProperties: true }
-				}
-			},
-			required: ['ops']
-		},
+		tags: { type: 'string' },
+		description: { type: 'string' },
 		color: { type: 'string', pattern: HEX_COLOR_REGEX.source },
-		dueDate: {
-			type: 'object',
-			properties: {
-				timestamp: { type: 'number' },
-				hasTime: { type: 'boolean' }
-			},
-			required: ['timestamp', 'hasTime']
-		},
+		dueDateHasTime: { type: 'boolean', default: false },
+		dueDateTimestamp: { type: 'string', format: 'date-time' },
 		priority: { type: 'string', enum: ['low', 'medium', 'high'] },
 		position: { type: 'number' },
 		pinned: { type: 'boolean', default: false },
-		createdAt: { type: 'number' },
-		updatedAt: { type: 'number' }
+		createdAt: { type: 'string', format: 'date-time' },
+		updatedAt: { type: 'string', format: 'date-time' }
 	},
 	required: ['id', 'columnId', 'projectId', 'title', 'color', 'position', 'createdAt', 'updatedAt'],
 	indexes: [] // to be add when i have queries that need it

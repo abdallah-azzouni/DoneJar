@@ -8,18 +8,21 @@ export function createProjectColumnsStore() {
 
 	let sub: { unsubscribe: () => void } | null = null;
 
-	const observable = projectService.observeProjectsWithColumns();
-
-	sub = observable.subscribe({
-		next: (res) => {
-			data = res;
-		},
-		error: (err) => notify(failure(`projectColumnsStore error: ${err.message}`))
-	});
-
 	return {
 		get data() {
 			return data;
+		},
+
+		init: () => {
+			if (sub) return;
+			const observable = projectService.observeProjectsWithColumns();
+
+			sub = observable.subscribe({
+				next: (res) => {
+					data = res;
+				},
+				error: (err) => notify(failure(`projectColumnsStore error: ${err.message}`))
+			});
 		},
 		destroy: () => sub?.unsubscribe()
 	};

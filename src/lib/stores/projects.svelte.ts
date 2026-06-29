@@ -11,6 +11,7 @@ function createProjectStore() {
 		projects: [],
 		selectedId: null
 	});
+	let sub: { unsubscribe: () => void } | null = null;
 
 	return {
 		get projects() {
@@ -23,7 +24,8 @@ function createProjectStore() {
 			state.selectedId = id;
 		},
 		init: () => {
-			projectService.observeAll().subscribe({
+			if (sub) return;
+			sub = projectService.observeAll().subscribe({
 				next: (data) => {
 					state.projects.length = 0;
 					state.projects.push(...data);

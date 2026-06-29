@@ -4,6 +4,8 @@ import { clearDatabase } from '$lib/db/dal';
 import { initDb, isDbReady, resetDb } from '$lib/db/db.svelte';
 import { projectStore } from './stores/projects.svelte';
 import { projectColumnsStore } from './stores/projectColumnsStore.svelte';
+import { dev } from '$app/environment';
+import { untrack } from 'svelte';
 
 export function initLifecycle() {
 	$effect(() => {
@@ -11,7 +13,18 @@ export function initLifecycle() {
 		const dbReady = isDbReady();
 		const replicating = isReplicating();
 
-		console.log('[lifecycle] state:', state, 'dbReady:', dbReady, 'isReplicating:', replicating);
+		if (dev) {
+			untrack(() => {
+				console.log(
+					'[lifecycle] state:',
+					state,
+					'dbReady:',
+					dbReady,
+					'isReplicating:',
+					replicating
+				);
+			});
+		}
 
 		if (state === 'LOGGED_OUT') {
 			if (replicating)

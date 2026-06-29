@@ -12,28 +12,8 @@
 	import { openProjectMenu } from '$lib/stores/dialog';
 	import DeleteConfirmation from '$lib/popups/DeleteConfirmation.svelte';
 	import { notify } from '$lib/stores/notificationStore';
-	import { sessionStore } from '$lib/stores/currentUser.svelte';
 
 	let { children } = $props();
-
-	import { onMount } from 'svelte';
-	import { initDb } from '$lib/db/db';
-
-	onMount(() => {
-		if (getAppState() === 'GUEST_LOCAL' || getAppState() === 'LOGGED_IN') {
-			initDb(sessionStore.current !== null)
-				.then(() => {
-					projectStore.init();
-				})
-				.catch((err) => {
-					console.error('Failed to initialize database:', err);
-					notify({
-						type: 'error',
-						message: 'Failed to initialize database. Please try again later.'
-					});
-				});
-		}
-	});
 
 	let currentProjectId: string | null = null;
 

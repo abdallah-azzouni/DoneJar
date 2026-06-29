@@ -3,14 +3,15 @@ import {
 	type RxSupabaseReplicationState
 } from 'rxdb/plugins/replication-supabase';
 import { supabase } from '$lib/sb/sb';
-import { db } from '$lib/db/db';
+import { db } from '$lib/db/db.svelte';
+import { SvelteMap } from 'svelte/reactivity';
 
 type CollectionName = 'projects' | 'columns' | 'notes' | 'attachments';
 
 // disable any linting because the replication code is generic.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-const replicationStates = new Map<CollectionName, RxSupabaseReplicationState<any>>();
+const replicationStates = new SvelteMap<CollectionName, RxSupabaseReplicationState<any>>();
 
 function stripNullsAndModified(doc: any) {
 	const { _modified, ...rest } = doc;
@@ -57,9 +58,12 @@ const COLLECTION_CONFIGS: Record<CollectionName, CollectionConfig> = {
 	}
 };
 
+const replicationState = $state({ active: false });
+export const isReplicating = () => replicationState.active;
+
 export async function startReplication() {
-	await stopReplication(); // stop any existing replication before starting new ones
-	if (replicationStates.size > 0) return; // already running
+	if (isReplicating()) return;
+	replicationState.active = true;
 
 	const database = await db();
 
@@ -115,7 +119,9 @@ export async function startReplication() {
 }
 
 export async function stopReplication() {
-	if (replicationStates.size === 0) return;
+	if (!isReplicating()) return;
+	replicationState.active = false;
+
 	await Promise.all([...replicationStates.values()].map((s) => s.cancel()));
 	replicationStates.clear();
 }

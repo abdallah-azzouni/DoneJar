@@ -1,5 +1,4 @@
 import { supabase } from '$lib/sb/sb';
-import { clearDatabase } from '$lib/db/dal';
 
 export async function signIn(email: string, password: string) {
 	const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -21,7 +20,6 @@ export async function signUp(email: string, display_name: string, password: stri
  */
 export async function signOut() {
 	const { error } = await supabase.auth.signOut({ scope: 'local' });
-	await clearDatabase();
 	return { error };
 }
 

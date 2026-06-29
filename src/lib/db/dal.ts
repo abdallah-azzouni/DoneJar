@@ -1,9 +1,11 @@
 // data access layer
-import { db } from '$lib/db/db';
+import { db } from '$lib/db/db.svelte';
 import { switchMap, map } from 'rxjs/operators';
 import { combineLatest, of, from } from 'rxjs';
 import { removeRxDatabase } from 'rxdb';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
+import { wrappedKeyCompressionStorage } from 'rxdb/plugins/key-compression';
+
 import { DB_NAME } from '$lib/constants';
 
 import type {
@@ -16,7 +18,10 @@ import type {
 import { nanoid } from 'nanoid';
 
 export async function clearDatabase() {
-	await removeRxDatabase(DB_NAME, getRxStorageDexie());
+	const rawDexie = getRxStorageDexie();
+	const compressedDexie = wrappedKeyCompressionStorage({ storage: rawDexie });
+
+	await removeRxDatabase(DB_NAME, compressedDexie);
 }
 
 export const noteRepository = {

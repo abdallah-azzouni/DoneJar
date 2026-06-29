@@ -18,7 +18,6 @@ if (dev) {
 
 // Wrappers
 import { wrappedKeyCompressionStorage } from 'rxdb/plugins/key-compression';
-import { startReplication } from '$lib/sb/replication';
 
 // plugins
 addRxPlugin(RxDBJsonDumpPlugin);
@@ -55,9 +54,15 @@ const _create = async () => {
 	return database;
 };
 
-export const isDbReady = () => dbPromise !== null;
+const dbState = $state({ ready: false });
+export const isDbReady = () => dbState.ready;
 
-export const initDb = async (hasSession: boolean): Promise<void> => {
+// make the dbPrmoise null.
+export const resetDb = () => {
+	dbPromise = null;
+};
+
+export const initDb = async (): Promise<void> => {
 	if (dbPromise) return;
 	dbPromise = _create().catch((err) => {
 		dbPromise = null;
@@ -65,9 +70,7 @@ export const initDb = async (hasSession: boolean): Promise<void> => {
 	});
 
 	await dbPromise;
-	if (hasSession) {
-		await startReplication();
-	}
+	dbState.ready = true;
 };
 
 export const db = async (): Promise<RxDatabase> => {
@@ -77,5 +80,6 @@ export const db = async (): Promise<RxDatabase> => {
 	if (!existing.closed) return existing;
 	console.warn('Existing DB instance was closed. Creating a new one.');
 	dbPromise = null;
+	dbState.ready = false;
 	return dbPromise!;
 };

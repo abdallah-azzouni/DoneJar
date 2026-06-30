@@ -32,7 +32,7 @@
 	}
 </script>
 
-<ThemedDialog isOpen={$importStore.isOpen} closeOnBackdrop={true} w="w-1/2" h="h-fit">
+<ThemedDialog isOpen={importStore.isOpen} closeOnBackdrop={true} w="w-1/2" h="h-fit">
 	<h2 class="mb-6 font-patrick-hand text-2xl font-bold">Import 📥</h2>
 
 	<!-- Drop zone -->

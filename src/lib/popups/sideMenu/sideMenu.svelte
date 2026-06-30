@@ -12,7 +12,8 @@
 	w="w-1/3"
 	h="h-3/4"
 	cls="ml-auto mr-12 "
-	isOpen={$sideMenuStore.isOpen}
+	isOpen={sideMenuStore.isOpen}
+	onClose={() => sideMenuStore.close()}
 	closeOnBackdrop={true}
 >
 	{#each sideMenuItems as item (item.index)}

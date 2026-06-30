@@ -1,14 +1,13 @@
-import { createDialogStore } from './dialogFactory';
+import { createDialogStore } from './dialogFactory.svelte.ts';
 import { type DeleteTarget } from '$lib/types';
 import type { ProjectDocType } from '$lib/db/schemas';
 
-export * from './dialogFactory';
+export * from './dialogFactory.svelte.ts';
 
 // --- SIDE MENU & SUBMENUS ---
 // note: side menu items placed in AppHeader.svelte
 
 export const sideMenuStore = createDialogStore();
-sideMenuStore.close(); // there is bug that make side menu open on load, this is a workaround to fix it, will investigate later.
 
 export const sideMenuItems = [
 	{ index: 0, label: 'Import 📥', action: () => importStore.open() },
@@ -32,3 +31,5 @@ export const closeProjectMenu = () => projectMenuStore.close();
 export const deleteConfirmStore = createDialogStore<DeleteTarget | null>(false, null);
 export const confirmDelete = (target: NonNullable<DeleteTarget>) => deleteConfirmStore.open(target);
 export const closeDelete = () => deleteConfirmStore.close();
+
+export const projectSideBarStore = createDialogStore(true);

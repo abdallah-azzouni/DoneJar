@@ -145,7 +145,7 @@
 	w="w-[480px]"
 	h="h-auto"
 	cls="mx-auto max-h-[85vh] overflow-hidden"
-	isOpen={$profileMenuStore.isOpen}
+	isOpen={profileMenuStore.isOpen}
 	onClose={close}
 	closeOnBackdrop={true}
 >

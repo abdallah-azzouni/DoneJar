@@ -154,7 +154,7 @@
 <ThemedDialog
 	w="w-1/2"
 	h="h-fit"
-	isOpen={$exportStore.isOpen}
+	isOpen={exportStore.isOpen}
 	closeOnBackdrop={true}
 	onClose={exportStore.close}
 >

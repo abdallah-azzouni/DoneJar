@@ -8,8 +8,8 @@
 	import { confirmDelete } from '$lib/stores/dialog';
 	import { projectMenuStore, closeProjectMenu } from '$lib/stores/dialog';
 
-	let project = $derived($projectMenuStore.data);
-	let isOpen = $derived($projectMenuStore.isOpen);
+	let project = $derived(projectMenuStore.data);
+	let isOpen = $derived(projectMenuStore.isOpen);
 
 	let newProject = $state({} as ProjectDocType);
 	let customColumns: ColumnDocType[] = $state([]);

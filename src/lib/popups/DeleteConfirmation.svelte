@@ -6,8 +6,8 @@
 	import { projectStore } from '$lib/stores/projects.svelte';
 	import { setActiveProject } from '$lib/actions';
 
-	let target = $derived($deleteConfirmStore.data);
-	let isOpen = $derived($deleteConfirmStore.isOpen);
+	let target = $derived(deleteConfirmStore.data);
+	let isOpen = $derived(deleteConfirmStore.isOpen);
 
 	async function handleDelete(e: Event) {
 		e.preventDefault();

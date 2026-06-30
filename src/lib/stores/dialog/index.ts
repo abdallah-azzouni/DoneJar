@@ -32,4 +32,4 @@ export const deleteConfirmStore = createDialogStore<DeleteTarget | null>(false, 
 export const confirmDelete = (target: NonNullable<DeleteTarget>) => deleteConfirmStore.open(target);
 export const closeDelete = () => deleteConfirmStore.close();
 
-export const projectSideBarStore = createDialogStore(true);
+export const projectSideBarStore = createDialogStore();

@@ -1,15 +1,16 @@
 <script lang="ts">
 	import ProjectMenu from '$lib/popups/ProjectMenu.svelte';
 	import AppHeader from '$lib/components/AppHeader.svelte';
-	import ProjectItem from '$lib/components/ProjectItem.svelte';
 	import { appStore, getAppState } from '$lib/stores/appState.svelte';
 	import Loading from '$lib/components/Loading.svelte';
+	import ProjectSidebarContent from '$lib/components/ProjectSidebarContent.svelte';
+	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { signOut } from '$lib/sb/auth';
 	import { projectStore } from '$lib/stores/projects.svelte';
-	import { openProjectMenu } from '$lib/stores/dialog';
+	import { openProjectMenu, projectSideBarStore } from '$lib/stores/dialog';
 	import DeleteConfirmation from '$lib/popups/DeleteConfirmation.svelte';
 	import { notify } from '$lib/stores/notificationStore';
 
@@ -79,25 +80,26 @@
 	<div class="flex h-screen flex-col overflow-hidden">
 		<AppHeader />
 		<div class="flex flex-1 flex-row overflow-hidden">
-			<!-- Project Sidebar -->
-			<aside class="hand-drawn-border doodle-border m-2 hidden w-40 xl:block">
-				<div class="flex max-h-full flex-col items-center gap-2 text-sm">
-					<div>
-						<button
-							class="doodle-border bg-[repeating-linear-gradient(45deg,#05df72_0,#05df72_2px,transparent_0,transparent_50%)] bg-size-[10px_10px] bg-fixed"
-							onclick={() => openProjectMenu()}
-						>
-							<span class="font-patrick-hand text-xl font-bold">Create ➕</span>
-						</button>
-					</div>
-					<div class="w-full border-t-2 border-dashed border-gray-500"></div>
-					<div class="overflow-x-clip overflow-y-scroll">
-						{#each projectStore.projects as project (project.id)}
-							<ProjectItem {project} />
-						{/each}
-					</div>
-				</div>
+			<!-- Desktop permanent sidebar -->
+			<aside class="hand-drawn-border doodle-border m-2 hidden w-40 lg:flex lg:flex-col">
+				<ProjectSidebarContent />
 			</aside>
+
+			<!-- Mobile overlay sidebar -->
+			<div class="lg:hidden">
+				<ThemedDialog
+					isOpen={projectSideBarStore.isOpen}
+					onClose={() => projectSideBarStore.close()}
+					closeOnBackdrop={true}
+					w="w-40"
+					h="h-[86%]"
+					mt="mt-25"
+					cls="justify-self-start ml-2 border-2 border-dashed border-gray-500"
+				>
+					<ProjectSidebarContent />
+				</ThemedDialog>
+			</div>
+
 			{@render children()}
 		</div>
 	</div>

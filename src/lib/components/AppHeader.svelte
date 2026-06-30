@@ -3,10 +3,12 @@
 	import { textColorFromHex } from '$lib/UiHelper';
 	import { projectStore } from '$lib/stores/projects.svelte';
 	import { sideMenuStore } from '$lib/stores/dialog';
+	import { projectSideBarStore } from '$lib/stores/dialog';
 	import SideMenu from '$lib/popups/sideMenu/sideMenu.svelte';
 	import ImportMenu from '$lib/popups/sideMenu/sideMenuItems/importMenu.svelte';
 	import ExportMenu from '$lib/popups/sideMenu/sideMenuItems/exportMenu.svelte';
 	import ProfileMenu from '$lib/popups/sideMenu/sideMenuItems/profileMenu.svelte';
+
 	import { searchQuery } from '$lib/stores/search';
 
 	let searchOpen = $state(false);
@@ -31,9 +33,12 @@
 	<div class="flex h-16 items-center justify-between">
 		<div class="flex items-center gap-4">
 			{#if projectStore.current}
-				<div
+				<button
 					style="background-color: {projectStore.current.color};"
 					class="flex size-14 items-center justify-center rounded-full border border-black"
+					onclick={() => {
+						projectSideBarStore.open();
+					}}
 				>
 					<span
 						class="text-3xl font-bold"
@@ -41,7 +46,7 @@
 					>
 						{projectStore.current.name[0].toUpperCase()}
 					</span>
-				</div>
+				</button>
 				<h1 class="line-clamp-1 w-[25vw] text-3xl font-bold" style="overflow-wrap: break-word;">
 					{projectStore.current.name}
 				</h1>

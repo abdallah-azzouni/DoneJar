@@ -60,7 +60,19 @@ export const isDbReady = () => dbState.ready;
 // make the dbPrmoise null.
 export const resetDb = () => {
 	dbPromise = null;
+	dbState.ready = false;
 };
+
+export const closeDb = async (): Promise<void> => {
+    if (!dbPromise) return;
+    try {
+        const existing = await dbPromise;
+        if (!existing.closed) await existing.close();
+    } catch {
+        // nothing live to close
+    }
+};
+
 
 export const initDb = async (): Promise<void> => {
 	if (dbPromise) return;

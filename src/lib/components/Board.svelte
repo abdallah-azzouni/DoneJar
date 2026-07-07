@@ -123,7 +123,7 @@
 		});
 	}
 
-	let columnItems = $derived(buildColumnItems(columns));
+	const columnItems = $derived(buildColumnItems(columns));
 
 	// Dynamic Svelte action mapping column registration to its inline ID context
 	function dndColumn(node: HTMLElement, columnId: string) {
@@ -156,7 +156,6 @@
 		if (!projectStore.current) return;
 		activeSortComparators[columnIdx] = compareFn;
 		const sorted = [...columnItems[columnIdx].notes].sort(compareFn);
-		columnItems[columnIdx].notes = sorted;
 		const result = await reorderNotes(sorted.map((n: NoteDocType) => n.id));
 		if (result.type === 'error') notify(result);
 	}
@@ -214,11 +213,11 @@
 		specialType: 'jar' | 'inbox' | null | undefined
 	): string {
 		if (projectType === 'default' && specialType === 'inbox') {
-			return 'w-6/9';
+			return 'w-2/3';
 		} else if (projectType !== 'default') {
 			return 'w-full';
 		} else {
-			return 'w-3/9';
+			return 'w-1/3';
 		}
 	}
 </script>

@@ -1,7 +1,7 @@
 import { supabase } from '$lib/sb/sb';
 import type { Session } from '@supabase/supabase-js';
 
-export const sessionStore = $state<{ current: Session | null | undefined  }>({
+export const sessionStore = $state<{ current: Session | null | undefined }>({
 	current: undefined
 });
 

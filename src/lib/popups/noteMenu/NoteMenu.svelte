@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createNote, editNote, saveNoteAttachments } from '$lib/actions';
-	import { attachmentRepository, columnRepository, noteRepository } from '$lib/db/dal';
+	import { attachmentRepository, columnRepository } from '$lib/db/dal';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import DatePicker from './DatePicker.svelte';
 	import QEditor from '$lib/components/QEditor.svelte';

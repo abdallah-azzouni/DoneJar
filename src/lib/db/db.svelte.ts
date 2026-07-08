@@ -64,15 +64,14 @@ export const resetDb = () => {
 };
 
 export const closeDb = async (): Promise<void> => {
-    if (!dbPromise) return;
-    try {
-        const existing = await dbPromise;
-        if (!existing.closed) await existing.close();
-    } catch {
-        // nothing live to close
-    }
+	if (!dbPromise) return;
+	try {
+		const existing = await dbPromise;
+		if (!existing.closed) await existing.close();
+	} catch {
+		// nothing live to close
+	}
 };
-
 
 export const initDb = async (): Promise<void> => {
 	if (dbPromise) return;

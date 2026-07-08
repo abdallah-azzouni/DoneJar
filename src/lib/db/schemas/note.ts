@@ -17,7 +17,6 @@ export const noteSchemaLiteral = {
 	properties: {
 		id: { type: 'string', maxLength: 21 },
 		columnId: { type: 'string', maxLength: 21 },
-		projectId: { type: 'string', maxLength: 21 },
 		title: { type: 'string', maxLength: MAX_NOTE_TITLE_LENGTH },
 		tags: { type: 'string' },
 		description: { type: 'string' },
@@ -30,7 +29,7 @@ export const noteSchemaLiteral = {
 		createdAt: { type: 'string', format: 'date-time' },
 		updatedAt: { type: 'string', format: 'date-time' }
 	},
-	required: ['id', 'columnId', 'projectId', 'title', 'color', 'position', 'createdAt', 'updatedAt'],
+	required: ['id', 'columnId', 'title', 'color', 'position', 'createdAt', 'updatedAt'],
 	indexes: [] // to be add when i have queries that need it
 } as const;
 

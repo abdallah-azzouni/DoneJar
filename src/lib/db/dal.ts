@@ -35,6 +35,15 @@ export const noteRepository = {
 		const db$ = await db();
 		return await db$.notes.find({ selector: { columnId } }).exec();
 	},
+	getProjectId: async (noteId: string): Promise<string | null> => {
+		const db$ = await db();
+		const note = await db$.notes.findOne(noteId).exec();
+
+		if (!note || !note.columnId) return null;
+
+		const column = await db$.columns.findOne(note.columnId).exec();
+		return column ? column.projectId : null;
+	},
 	add: async (note: NoteDocType) => {
 		const db$ = await db();
 		await db$.notes.insert(note);
@@ -179,14 +188,8 @@ export const projectRepository = {
 
 	deleteFullProject: async (projectId: string): Promise<void> => {
 		const db$ = await db();
-		const notes = await db$.notes.find({ selector: { projectId } }).exec();
-		for (const note of notes) {
-			const attachments = await db$.attachments.find({ selector: { noteId: note.id } }).exec();
-			await Promise.all(attachments.map((a) => a.incrementalRemove()));
-			await note.incrementalRemove();
-		}
 		const columns = await db$.columns.find({ selector: { projectId } }).exec();
-		await Promise.all(columns.map((c) => c.incrementalRemove()));
+		await Promise.all(columns.map((c) => columnRepository.deleteFullColumn(c.id)));
 		const project = await db$.projects.findOne(projectId).exec();
 		if (project) await project.incrementalRemove();
 	}
@@ -222,6 +225,13 @@ export const attachmentRepository = {
 				return { doc, blob };
 			})
 		);
+	},
+	getProjectId: async (attachmentId: string): Promise<string | null> => {
+		const db$ = await db();
+		const attachment = await db$.attachments.findOne(attachmentId).exec();
+		if (!attachment) return null;
+
+		return await noteRepository.getProjectId(attachment.noteId);
 	},
 	add: async (attachment: AttachmentDocType, blob: Blob) => {
 		const db$ = await db();
@@ -348,8 +358,7 @@ export const backupService = {
 			return {
 				...note,
 				id: newId,
-				columnId: columnIdMap[note.columnId],
-				projectId: projectIdMap[note.projectId]
+				columnId: columnIdMap[note.columnId]
 			};
 		});
 		if (notesToInsert.length) await noteRepository.bulkUpsert(notesToInsert);

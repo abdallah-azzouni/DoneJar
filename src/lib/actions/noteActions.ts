@@ -1,25 +1,18 @@
 import { nanoid } from 'nanoid';
-import { noteRepository, columnRepository } from '$lib/db/dal';
+import { noteRepository } from '$lib/db/dal';
 
 import { failure, success, type ActionResult } from '$lib/types';
 import type { NoteDocType } from '$lib/db/schemas/note';
 
 /**
  * Creates a new note in the inbox column of a project.
- * @param note the note payload (title, color, projectId, etc.)
+ * @param note the note payload (title, color, etc.)
  */
 export async function createNote(note: NoteDocType): Promise<ActionResult> {
 	try {
-		const col = await columnRepository.findInboxColumn(note.projectId);
-
-		if (!col) {
-			return failure('Inbox column not found for the specified project');
-		}
-
 		const newNote: NoteDocType = {
 			id: note.id || nanoid(),
-			columnId: col.id,
-			projectId: note.projectId,
+			columnId: note.columnId,
 			title: note.title,
 			tags: note.tags,
 			description: note.description,
@@ -42,28 +35,14 @@ export async function createNote(note: NoteDocType): Promise<ActionResult> {
 
 /**
  * Updates an existing note.
- * @param note the full note object with updated fields; must include id and projectId
+ * @param note the full note object with updated fields; must include id
  * @returns ActionResult indicating success or failure of the operation
  */
 export async function editNote(note: NoteDocType): Promise<ActionResult> {
-	let col = await columnRepository.get(note.columnId);
-	if (!col) {
-		return failure('Inbox column not found for the specified project');
-	}
-
 	try {
-		// Change columnId to inbox if note is moved to new project.
-		if (col?.projectId != note.projectId) {
-			col = await columnRepository.findInboxColumn(note.projectId);
-			if (!col) {
-				return failure('System error: Target project is missing an Inbox');
-			}
-		}
-
 		await noteRepository.update({
 			id: note.id,
-			columnId: col.id,
-			projectId: note.projectId,
+			columnId: note.columnId,
 			title: note.title,
 			tags: note.tags,
 			description: note.description,
@@ -85,7 +64,6 @@ export async function editNote(note: NoteDocType): Promise<ActionResult> {
 /**
  * Removes a note from a project column.
  * @param noteId the ID of the note to delete
- * @param projectId the ID of the project containing the note
  * @returns ActionResult indicating success or failure of the operation
  */
 export async function deleteNote(noteId: string): Promise<ActionResult> {

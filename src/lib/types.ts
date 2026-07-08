@@ -18,7 +18,6 @@ export function createColumn(
 export const emptyNote: NoteDocType = {
 	id: '',
 	columnId: '',
-	projectId: '',
 	title: '',
 	tags: '',
 	pinned: false,
@@ -34,12 +33,11 @@ export type ColumnWithNotes = ColumnDocType & { notes: NoteDocType[] };
 export type ProjectWithColumns = ProjectDocType & { columns: ColumnDocType[] };
 
 export type NoteInsertTarget =
-	| { type: 'index'; value: number }
-	| { type: 'specialType'; value: 'inbox' | 'jar' };
+	{ type: 'index'; value: number } | { type: 'specialType'; value: 'inbox' | 'jar' };
 
 export type DeleteTarget =
 	| { type: 'projects'; id: string; name: string }
-	| { type: 'notes'; id: string; projectId: string; name: string }
+	| { type: 'notes'; id: string; name: string }
 	| { type: 'columns'; id: string; projectId: string; name: string }
 	| { type: 'attachments'; id: string; noteId: string; name: string }
 	| null;

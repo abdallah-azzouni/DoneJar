@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createNote, editNote, saveNoteAttachments } from '$lib/actions';
-	import { attachmentRepository } from '$lib/db/dal';
+	import { attachmentRepository, columnRepository, noteRepository } from '$lib/db/dal';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import DatePicker from './DatePicker.svelte';
 	import QEditor from '$lib/components/QEditor.svelte';
@@ -26,7 +26,6 @@
 		untrack(() => {
 			if (note) return { ...note };
 			let newNote: NoteDocType = emptyNote;
-			newNote.projectId = projectStore.current?.id || '';
 			newNote.color = DEFAULT_NOTE_COLOR;
 
 			return newNote;
@@ -42,6 +41,12 @@
 	async function handleSubmit() {
 		const action = workingNote.id === '' ? createNote : editNote;
 		workingNote.id = noteId;
+
+		let col = workingNote.columnId ? await columnRepository.get(workingNote.columnId) : undefined;
+		if (workingNote.columnId === '' || col?.projectId !== noteProjectId) {
+			col = await columnRepository.findInboxColumn(noteProjectId);
+			workingNote.columnId = col?.id || '';
+		}
 
 		if (Array.isArray(workingNote.tags)) {
 			workingNote.tags = workingNote.tags.length > 0 ? JSON.stringify(workingNote.tags) : '';
@@ -92,6 +97,7 @@
 	let blobs = $state(new Map<string, Blob>());
 	const deletedAttachmentIds = [] as string[];
 
+	let noteProjectId: string = $state('');
 	onMount(async () => {
 		const items = await attachmentRepository.getManyByNoteId(workingNote.id);
 
@@ -105,6 +111,8 @@
 				blobUrlCache.set(item.doc.id, URL.createObjectURL(item.blob));
 			} // if no local blob, getPreviewUrl will fallback to the server URL.
 		}
+
+		noteProjectId = projectStore.current?.id || '';
 	});
 
 	let fileInput: HTMLInputElement;
@@ -388,7 +396,7 @@
 					<div class="relative">
 						<span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2">📁</span>
 						<select
-							bind:value={workingNote.projectId}
+							bind:value={noteProjectId}
 							class="doodle-border w-full cursor-pointer bg-transparent py-2 pr-4 pl-10"
 						>
 							{#each projectStore.projects as project (project.id)}
@@ -586,7 +594,6 @@
 						confirmDelete({
 							type: 'notes',
 							id: workingNote.id,
-							projectId: workingNote.projectId,
 							name: workingNote.title
 						});
 					}}>Delete</button

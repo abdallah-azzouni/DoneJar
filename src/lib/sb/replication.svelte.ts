@@ -5,6 +5,8 @@ import {
 import { supabase } from '$lib/sb/sb';
 import { db } from '$lib/db/db.svelte';
 import { SvelteMap } from 'svelte/reactivity';
+import { projectMembersStore } from '$lib/stores/projectMembers.svelte';
+import { noteRepository, attachmentRepository } from '$lib/db/dal';
 
 type CollectionName = 'projects' | 'columns' | 'notes' | 'attachments';
 
@@ -31,7 +33,7 @@ const COLLECTION_CONFIGS: Record<CollectionName, CollectionConfig> = {
 	projects: {
 		tableName: 'projects',
 		pullModifier: (doc) => {
-			const { _modified, userId: _userId, ...rest } = doc;
+			const { _modified, ...rest } = doc;
 			return stripNullsAndModified(rest);
 		}
 	},
@@ -40,6 +42,15 @@ const COLLECTION_CONFIGS: Record<CollectionName, CollectionConfig> = {
 		pullModifier: (doc) => {
 			const { _modified, ...rest } = doc;
 			return stripNullsAndModified(rest);
+		},
+		pushModifier: (doc) => {
+			const members = projectMembersStore.getMembersForProject(doc.projectId);
+			if (members.length == 0)
+				// to avoid unnecessary RLS checks.
+				throw Object.assign(new Error('AWAITING_PROJECT_MEMBERS'), {
+					code: 'AWAITING_PROJECT_MEMBERS'
+				});
+			return doc;
 		}
 	},
 	notes: {
@@ -47,6 +58,18 @@ const COLLECTION_CONFIGS: Record<CollectionName, CollectionConfig> = {
 		pullModifier: (doc) => {
 			const { _modified, ...rest } = doc;
 			return stripNullsAndModified(rest);
+		},
+		pushModifier: async (doc) => {
+			const projectId = await noteRepository.getProjectId(doc.id);
+
+			const members = projectMembersStore.getMembersForProject(projectId || '');
+			if (members.length == 0)
+				// to avoid unnecessary RLS checks.
+				throw Object.assign(new Error('AWAITING_PROJECT_MEMBERS'), {
+					code: 'AWAITING_PROJECT_MEMBERS'
+				});
+
+			return doc;
 		}
 	},
 	attachments: {
@@ -54,12 +77,39 @@ const COLLECTION_CONFIGS: Record<CollectionName, CollectionConfig> = {
 		pullModifier: (doc) => {
 			const { _modified, ...rest } = doc;
 			return stripNullsAndModified(rest);
+		},
+		pushModifier: async (doc) => {
+			const projectId = await attachmentRepository.getProjectId(doc.id);
+
+			const members = projectMembersStore.getMembersForProject(projectId || '');
+			if (members.length == 0)
+				// to avoid unnecessary RLS checks.
+				throw Object.assign(new Error('AWAITING_PROJECT_MEMBERS'), {
+					code: 'AWAITING_PROJECT_MEMBERS'
+				});
+
+			return doc;
 		}
 	}
 };
 
 const replicationState = $state({ active: false });
 export const isReplicating = () => replicationState.active;
+
+export function reSyncAll() {
+	if (!isReplicating()) return; // nothing to resync if replication isn't running
+
+	const targets: CollectionName[] = ['columns', 'notes', 'attachments'];
+
+	for (const name of targets) {
+		const state = replicationStates.get(name);
+		if (state) {
+			state.reSync();
+		} else {
+			console.warn(`[replication] Cannot reSync "${name}" — no active replication state.`);
+		}
+	}
+}
 
 export async function startReplication() {
 	if (isReplicating()) return;
@@ -103,9 +153,12 @@ export async function startReplication() {
 					console.warn(
 						`[replication:${name}] Permission denied error (42501) during replication..`
 					);
-				} else {
-					console.error(`[replication:${name}]`, err);
+					return; // expected, self-heals via RxDB retry mechanism
+				} else if (String((err as any)?.code) === 'AWAITING_PROJECT_MEMBERS') {
+					console.warn(`[replication:${name}] Push rejected. Retrying membership sync...`);
+					return; // expected, self-heals via reSyncAll() on membership sync
 				}
+				console.error(`[replication:${name}]`, err);
 			});
 
 			replicationStates.set(name, state);

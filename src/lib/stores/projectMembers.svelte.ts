@@ -1,5 +1,6 @@
 import { supabase } from '$lib/sb/sb';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { reSyncAll } from '$lib/sb/replication.svelte';
 
 export type ProjectMember = {
 	projectId: string;
@@ -55,6 +56,23 @@ async function initialize(userId: string) {
 
 				if (eventType === 'INSERT') {
 					members = [...members, newRow as ProjectMember];
+					// IMPORTANT: this manual reSyncAll() call is load-bearing, not a redundant safety net.
+					// Empirically verified (July 2026): when pushModifier throws to reject a doc
+					// (e.g. project-membership push guard), RxDB does NOT automatically retry
+					// that push once conditions change. Tested explicitly:
+					//   - pushModifier returning null: doc is silently dropped from sync, never retried.
+					//   - pushModifier throwing, WITH manual reSyncAll() on membership insert: doc
+					//     correctly re-offered to pushModifier and syncs.
+					//   - pushModifier throwing, WITHOUT calling reSyncAll(): doc never syncs, indefinitely.
+					// This may relate to known pushModifier bugs in RxDB's Supabase replication plugin
+					// (see https://github.com/pubkey/rxdb/issues/7513 — push.modifier was at one point
+					// not applied at all). Did not find documentation describing intended retry behavior
+					// for pushModifier-thrown rejections specifically — this comment IS the documentation.
+					// Do not remove this call assuming RxDB will self-heal; it won't, at least not on the
+					// RxDB version tested against.
+					if ((newRow as ProjectMember).userId === currentUserId) {
+						reSyncAll();
+					}
 				} else if (eventType === 'UPDATE') {
 					members = members.map((m) =>
 						m.userId === (newRow as ProjectMember).userId ? (newRow as ProjectMember) : m

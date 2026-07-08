@@ -26,6 +26,8 @@ export function initLifecycle() {
 					dbReady,
 					'isReplicating:',
 					replicating,
+					'projectMembersLoading:',
+					projectMembersStore.loading,
 					'userId:',
 					userId,
 					'cleaning:',
@@ -44,7 +46,7 @@ export function initLifecycle() {
 						await clearDatabase();
 						resetDb();
 					} else {
-						await clearDatabase()
+						await clearDatabase();
 						resetDb();
 					}
 				} catch (error) {
@@ -65,7 +67,8 @@ export function initLifecycle() {
 				}
 			}
 
-			if (dbReady && state === 'LOGGED_IN' && !replicating) startReplication();
+			if (dbReady && state === 'LOGGED_IN' && !replicating && !projectMembersStore.loading)
+				startReplication();
 		}
 	});
 }

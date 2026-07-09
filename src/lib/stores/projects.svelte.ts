@@ -7,9 +7,11 @@ function createProjectStore() {
 	const state = $state<{
 		projects: ProjectDocType[];
 		selectedId: string | null;
+		isReady: boolean;
 	}>({
 		projects: [],
-		selectedId: null
+		selectedId: null,
+		isReady: false
 	});
 	let sub: { unsubscribe: () => void } | null = null;
 
@@ -20,6 +22,9 @@ function createProjectStore() {
 		get current() {
 			return state.projects.find((p) => p.id === state.selectedId) ?? null;
 		},
+		get isReady() {
+			return state.isReady;
+		},
 		select: (id: string | null) => {
 			state.selectedId = id;
 		},
@@ -29,6 +34,7 @@ function createProjectStore() {
 				next: (data) => {
 					state.projects.length = 0;
 					state.projects.push(...data);
+					state.isReady = true;
 					if (state.selectedId && !data.find((p) => p.id === state.selectedId)) {
 						state.selectedId = null;
 					}
@@ -37,6 +43,13 @@ function createProjectStore() {
 					notify(failure(`projectStore error: ${err.message}`));
 				}
 			});
+		},
+		reset: () => {
+			sub?.unsubscribe();
+			sub = null;
+			state.projects.length = 0;
+			state.selectedId = null;
+			state.isReady = false;
 		}
 	};
 }

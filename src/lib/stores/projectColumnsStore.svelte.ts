@@ -5,12 +5,16 @@ import { failure } from '$lib/types';
 
 export function createProjectColumnsStore() {
 	let data = $state<ProjectWithColumns[]>([]);
+	let isReady: false = $state(false);
 
 	let sub: { unsubscribe: () => void } | null = null;
 
 	return {
 		get data() {
 			return data;
+		},
+		get isReady() {
+			return isReady;
 		},
 
 		init: () => {
@@ -24,7 +28,13 @@ export function createProjectColumnsStore() {
 				error: (err) => notify(failure(`projectColumnsStore error: ${err.message}`))
 			});
 		},
-		destroy: () => sub?.unsubscribe()
+		destroy: () => sub?.unsubscribe(),
+		reset: () => {
+			sub?.unsubscribe();
+			sub = null;
+			data = [];
+			isReady = false;
+		}
 	};
 }
 

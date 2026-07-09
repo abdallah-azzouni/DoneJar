@@ -39,16 +39,15 @@ export function initLifecycle() {
 		if (state === 'LOGGED_OUT' && !cleaning) {
 			cleaning = true;
 			projectMembersStore.reset();
+			projectStore.reset();
+			projectColumnsStore.reset();
 			(async () => {
 				try {
 					if (replicating) {
 						await stopReplication();
-						await clearDatabase();
-						resetDb();
-					} else {
-						await clearDatabase();
-						resetDb();
 					}
+					await clearDatabase();
+					resetDb();
 				} catch (error) {
 					console.error('Error during cleanup:', error);
 				} finally {

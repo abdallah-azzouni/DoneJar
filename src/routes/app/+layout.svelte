@@ -13,6 +13,7 @@
 	import { openProjectMenu, projectSideBarStore } from '$lib/stores/dialog';
 	import DeleteConfirmation from '$lib/popups/DeleteConfirmation.svelte';
 	import { notify } from '$lib/stores/notificationStore';
+	import { projectColumnsStore } from '$lib/stores/projectColumnsStore.svelte';
 
 	let { children } = $props();
 
@@ -29,9 +30,8 @@
 
 	$effect(() => {
 		currentProjectId = page.params.id ?? null;
-		const projects = projectStore.projects;
-		if (currentProjectId && projects) {
-			const found = projects.find((p) => p.id === currentProjectId);
+		if (currentProjectId && projectStore.isReady) {
+			const found = projectStore.projects.find((p) => p.id === currentProjectId);
 			if (!found) {
 				currentProjectId = null;
 				notify({ type: 'error', message: 'The project you are looking for does not exist.' });
@@ -53,7 +53,7 @@
 <ProjectMenu />
 <DeleteConfirmation />
 
-{#if !appStore.isLoaded}
+{#if !appStore.isLoaded || !projectStore.isReady || !projectColumnsStore.isReady}
 	<Loading />
 {:else if projectStore.projects.length == 0}
 	<div

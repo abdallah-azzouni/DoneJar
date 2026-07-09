@@ -19,23 +19,18 @@ export function initLifecycle() {
 
 		if (dev) {
 			untrack(() => {
-				console.log(
-					'[lifecycle] state:',
-					state,
-					'dbReady:',
-					dbReady,
-					'isReplicating:',
-					replicating,
-					'projectMembersLoading:',
-					projectMembersStore.loading,
-					'userId:',
-					userId,
-					'cleaning:',
-					cleaning
-				);
+				console.table({
+					'Lifecycle State': state,
+					'DB Ready': dbReady,
+					'Is Replicating': replicating,
+					'Project Members Loading': projectMembersStore.loading,
+					'Project Store Ready': projectStore.isReady,
+					'Project Columns Store Ready': projectColumnsStore.isReady,
+					'User ID': userId ? userId.substring(0, 3) + '...' + userId.slice(-3) : null,
+					Cleaning: cleaning
+				});
 			});
 		}
-
 		if (state === 'LOGGED_OUT' && !cleaning) {
 			cleaning = true;
 			projectMembersStore.reset();

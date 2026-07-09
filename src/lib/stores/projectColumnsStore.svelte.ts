@@ -5,7 +5,7 @@ import { failure } from '$lib/types';
 
 export function createProjectColumnsStore() {
 	let data = $state<ProjectWithColumns[]>([]);
-	let isReady: false = $state(false);
+	let isReady: boolean = $state(false);
 
 	let sub: { unsubscribe: () => void } | null = null;
 
@@ -24,8 +24,12 @@ export function createProjectColumnsStore() {
 			sub = observable.subscribe({
 				next: (res) => {
 					data = res;
+					isReady = true;
 				},
-				error: (err) => notify(failure(`projectColumnsStore error: ${err.message}`))
+				error: (err) => {
+					notify(failure(`projectColumnsStore error: ${err.message}`));
+					isReady = true;
+				}
 			});
 		},
 		destroy: () => sub?.unsubscribe(),

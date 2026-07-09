@@ -41,6 +41,7 @@ function createProjectStore() {
 				},
 				error: (err) => {
 					notify(failure(`projectStore error: ${err.message}`));
+					state.isReady = true;
 				}
 			});
 		},

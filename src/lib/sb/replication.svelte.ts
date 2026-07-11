@@ -7,6 +7,7 @@ import { db } from '$lib/db/db.svelte';
 import { SvelteMap } from 'svelte/reactivity';
 import { projectMembersStore } from '$lib/stores/projectMembers.svelte';
 import { noteRepository, attachmentRepository } from '$lib/db/dal';
+import { sessionStore } from '$lib/stores/currentUser.svelte';
 
 type CollectionName = 'projects' | 'columns' | 'notes' | 'attachments';
 
@@ -35,6 +36,13 @@ const COLLECTION_CONFIGS: Record<CollectionName, CollectionConfig> = {
 		pullModifier: (doc) => {
 			const { _modified, ...rest } = doc;
 			return stripNullsAndModified(rest);
+		},
+		pushModifier: (doc) => {
+			const role = projectMembersStore.getMemberRole(doc.id, sessionStore.current?.user?.id || '');
+			if (role != 'owner' && doc._deleted === true) {
+				return null; // if user not owner, delete project only locally.
+			}
+			return doc;
 		}
 	},
 	columns: {
@@ -45,6 +53,10 @@ const COLLECTION_CONFIGS: Record<CollectionName, CollectionConfig> = {
 		},
 		pushModifier: (doc) => {
 			const members = projectMembersStore.getMembersForProject(doc.projectId);
+			const role = projectMembersStore.getMemberRole(doc.id, sessionStore.current?.user?.id || '');
+			if (role != 'owner' && doc._deleted === true) {
+				return null; // if user not owner, delete column only locally.
+			}
 			if (members.length == 0)
 				// to avoid unnecessary RLS checks.
 				throw Object.assign(new Error('AWAITING_PROJECT_MEMBERS'), {

@@ -1,11 +1,12 @@
 import { supabase } from '$lib/sb/sb';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { reSyncAll } from '$lib/sb/replication.svelte';
+import { projectRepository } from '$lib/db/dal';
 
 export type ProjectMember = {
 	projectId: string;
 	userId: string;
-	role: 'owner' | 'editor' | 'viewer';
+	role: 'owner' | 'editor' | 'viewer' | 'deleted';
 	createdAt: string;
 	updatedAt: string;
 };
@@ -36,6 +37,10 @@ async function initialize(userId: string) {
 	}
 	if (data) {
 		members = data as ProjectMember[];
+		const deleted_rows = members.filter((m) => m.role === 'deleted');
+		for (const deleted of deleted_rows) {
+			purgeDeletedMembership(deleted.projectId, deleted.userId);
+		}
 	}
 	loading = false;
 
@@ -53,6 +58,33 @@ async function initialize(userId: string) {
 			},
 			(payload) => {
 				const { eventType, new: newRow, old: oldRow } = payload;
+
+				if (eventType != 'DELETE' && !newRow) {
+					console.error('Received null newRow for non-DELETE event:', payload);
+					return;
+				}
+
+				if (
+					eventType != 'DELETE' &&
+					(newRow as ProjectMember).userId === currentUserId &&
+					(newRow as ProjectMember).role === 'deleted'
+				) {
+					const targetProject = newRow as ProjectMember;
+					purgeDeletedMembership(targetProject.projectId, targetProject.userId)
+						.then((result) => {
+							if (result.success) {
+								console.log(`Successfully purged project: ${targetProject.projectId}`);
+								// Optional: Trigger a UI state refresh or notification here
+							} else {
+								console.error(`Purge failed: ${result.error}`);
+								// Optional: Show an error toast to the user
+							}
+						})
+						.catch((criticalErr) => {
+							// Catch any catastrophic unhandled rejections
+							console.error('Critical failure in purge chain:', criticalErr);
+						});
+				}
 
 				if (eventType === 'INSERT') {
 					members = [...members, newRow as ProjectMember];
@@ -74,11 +106,15 @@ async function initialize(userId: string) {
 						reSyncAll();
 					}
 				} else if (eventType === 'UPDATE') {
+					const updatedRow = newRow as ProjectMember;
 					members = members.map((m) =>
-						m.userId === (newRow as ProjectMember).userId ? (newRow as ProjectMember) : m
+						m.userId === updatedRow.userId && m.projectId === updatedRow.projectId ? updatedRow : m
 					);
 				} else if (eventType === 'DELETE') {
-					members = members.filter((m) => m.userId !== (oldRow as ProjectMember).userId);
+					const deletedRow = oldRow as ProjectMember;
+					members = members.filter(
+						(m) => !(m.userId === deletedRow.userId && m.projectId === deletedRow.projectId)
+					);
 				}
 			}
 		)
@@ -87,6 +123,51 @@ async function initialize(userId: string) {
 
 function getMembersForProject(projectId: string) {
 	return members.filter((m) => m.projectId === projectId);
+}
+
+function getMemberRole(projectId: string, userId: string) {
+	const member = members.find((m) => m.projectId === projectId && m.userId === userId);
+	return member ? member.role : null;
+}
+
+const activePurges = new Set<string>();
+async function purgeDeletedMembership(
+	projectId: string,
+	userId: string
+): Promise<{ success: boolean; error?: string }> {
+	if (!projectId || !userId) {
+		console.error('Purge aborted: Missing projectId or userId');
+		return { success: false, error: 'Invalid inputs provided.' };
+	}
+
+	const lockKey = `${projectId}-${userId}`;
+	if (activePurges.has(lockKey)) {
+		console.warn(`Purge already in progress for key: ${lockKey}. Ignoring duplicate request.`);
+		return { success: false, error: 'Operation already in progress.' };
+	}
+	activePurges.add(lockKey);
+
+	try {
+		await projectRepository.deleteFullProject(projectId);
+
+		const { error: deleteError } = await supabase
+			.from('project_members')
+			.delete()
+			.eq('projectId', projectId)
+			.eq('userId', userId);
+
+		if (deleteError) {
+			console.error('Failed to delete member row from Supabase:', deleteError.message);
+			return { success: false, error: deleteError.message };
+		}
+
+		return { success: true };
+	} catch (err: any) {
+		console.error('Unexpected failure during purge:', err);
+		return { success: false, error: err.message || 'Failed to purge local project data.' };
+	} finally {
+		activePurges.delete(lockKey);
+	}
 }
 
 function reset() {
@@ -112,5 +193,6 @@ export const projectMembersStore = {
 	},
 	initialize,
 	getMembersForProject,
+	getMemberRole,
 	reset
 };

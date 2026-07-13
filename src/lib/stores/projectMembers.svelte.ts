@@ -150,17 +150,6 @@ async function purgeDeletedMembership(
 	try {
 		await projectRepository.deleteFullProject(projectId);
 
-		const { error: deleteError } = await supabase
-			.from('project_members')
-			.delete()
-			.eq('projectId', projectId)
-			.eq('userId', userId);
-
-		if (deleteError) {
-			console.error('Failed to delete member row from Supabase:', deleteError.message);
-			return { success: false, error: deleteError.message };
-		}
-
 		return { success: true };
 	} catch (err: any) {
 		console.error('Unexpected failure during purge:', err);

@@ -2,6 +2,7 @@ import { supabase } from '$lib/sb/sb';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { reSyncAll } from '$lib/sb/replication.svelte';
 import { projectRepository } from '$lib/db/dal';
+import { SvelteSet } from 'svelte/reactivity';
 
 export type ProjectMember = {
 	projectId: string;
@@ -73,7 +74,6 @@ async function initialize(userId: string) {
 					purgeDeletedMembership(targetProject.projectId, targetProject.userId)
 						.then((result) => {
 							if (result.success) {
-								console.log(`Successfully purged project: ${targetProject.projectId}`);
 								// Optional: Trigger a UI state refresh or notification here
 							} else {
 								console.error(`Purge failed: ${result.error}`);
@@ -130,7 +130,7 @@ function getMemberRole(projectId: string, userId: string) {
 	return member ? member.role : null;
 }
 
-const activePurges = new Set<string>();
+const activePurges = new SvelteSet<string>();
 async function purgeDeletedMembership(
 	projectId: string,
 	userId: string
@@ -151,9 +151,10 @@ async function purgeDeletedMembership(
 		await projectRepository.deleteFullProject(projectId);
 
 		return { success: true };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Unexpected failure during purge:', err);
-		return { success: false, error: err.message || 'Failed to purge local project data.' };
+		const errorMessage = err instanceof Error ? err.message : 'Failed to purge local project data.';
+		return { success: false, error: errorMessage };
 	} finally {
 		activePurges.delete(lockKey);
 	}

@@ -11,7 +11,7 @@ import { sessionStore } from '$lib/stores/currentUser.svelte';
 
 type CollectionName = 'projects' | 'columns' | 'notes' | 'attachments';
 
-// disable any linting because the replication code is generic.
+// disable "any" linting because the replication code is generic.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 const replicationStates = new SvelteMap<CollectionName, RxSupabaseReplicationState<any>>();

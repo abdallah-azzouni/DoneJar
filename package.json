@@ -47,6 +47,7 @@
 		"@internationalized/date": "^3.11.0",
 		"@supabase/supabase-js": "^2.107.0",
 		"bits-ui": "^2.16.2",
+		"bowser": "^2.14.1",
 		"doodle.css": "^0.0.2",
 		"lodash.throttle": "^4.1.1",
 		"matter-js": "^0.20.0",

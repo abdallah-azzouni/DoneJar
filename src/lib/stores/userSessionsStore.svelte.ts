@@ -9,7 +9,7 @@ export type UserSession = {
 	user_id: string;
 	created_at: string;
 	updated_at: string;
-	ip_address: string;
+	country_code: string | null;
 	user_agent: string;
 	isKicking?: boolean;
 };

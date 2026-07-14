@@ -7,6 +7,7 @@
 	import { notify } from '$lib/stores/notificationStore';
 	import { failure } from '$lib/types';
 	import { userSessionsStore } from '$lib/stores/userSessionsStore.svelte';
+	import Bowser from 'bowser';
 
 	// --- Types ---
 	type Tab = 'profile' | 'account' | 'danger';
@@ -28,6 +29,8 @@
 	let avatarFileInput: HTMLInputElement;
 
 	let currentUser = sessionStore.current?.user;
+
+	const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
 
 	// Sync nameValue when currentUser changes
 	$effect(() => {
@@ -61,24 +64,26 @@
 		nameError = '';
 	}
 
-	function parseUserAgent(ua: string | undefined): string {
-		if (!ua) return 'Unknown Device';
+	function parseUserAgent(uaFromSupabase: string | undefined): string {
+		if (!uaFromSupabase) return '❓ Unknown Device';
 
-		let browser = 'Unknown Browser';
-		let os = 'Unknown OS';
+		const parser = Bowser.getParser(uaFromSupabase);
 
-		if (ua.includes('Firefox')) browser = 'Firefox';
-		else if (ua.includes('Edg')) browser = 'Edge';
-		else if (ua.includes('Chrome')) browser = 'Chrome';
-		else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
+		const platform = parser.getPlatformType() || 'desktop';
+		let emoji = '💻';
+		if (platform === 'mobile') {
+			emoji = '📱';
+		} else if (platform === 'tablet') {
+			emoji = '📟';
+		} else if (platform === 'tv') {
+			emoji = '📺';
+		}
 
-		if (ua.includes('Win')) os = 'Windows';
-		else if (ua.includes('Mac')) os = 'macOS';
-		else if (ua.includes('Linux')) os = 'Linux';
-		else if (ua.includes('Android')) os = 'Android';
-		else if (ua.includes('like Mac')) os = 'iOS';
+		const os = parser.getOSName() || 'Unknown OS';
+		const browser = parser.getBrowserName() || 'Unknown Browser';
 
-		return `${browser} on ${os}`;
+		// Format: "💻 macOS • Safari" or "📱 iOS • Chrome"
+		return `${emoji} ${os} • ${browser}`;
 	}
 
 	// --- Actions ---
@@ -405,10 +410,12 @@
 								>
 									<div class="min-w-0 pr-4">
 										<p class="flex items-center gap-2 text-sm font-bold text-black">
-											💻 {parseUserAgent(session.user_agent)}
+											{parseUserAgent(session.user_agent)}
 										</p>
 										<p class="truncate text-[11px] text-gray-500">
-											{session.ip_address} • Logged in {formatDate(session.created_at)}
+											{regionNames.of(session.country_code || 'ZZ') || 'Unknown'} • Logged in {formatDate(
+												session.created_at
+											)}
 										</p>
 									</div>
 									{#if session.session_id !== currentSessionId()}

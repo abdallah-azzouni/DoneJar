@@ -4,6 +4,7 @@ import { clearDatabase } from '$lib/db/dal';
 import { initDb, isDbReady, resetDb } from '$lib/db/db.svelte';
 import { projectStore } from './stores/projects.svelte';
 import { projectMembersStore } from './stores/projectMembers.svelte';
+import { userSessionsStore } from './stores/userSessionsStore.svelte';
 import { sessionStore } from '$lib/stores/currentUser.svelte';
 import { projectColumnsStore } from './stores/projectColumnsStore.svelte';
 import { dev } from '$app/environment';
@@ -16,6 +17,7 @@ export function initLifecycle() {
 		const dbReady = isDbReady();
 		const replicating = isReplicating();
 		const userId = sessionStore.current?.user?.id;
+		const validSession = userSessionsStore.isValid;
 
 		if (dev) {
 			untrack(() => {
@@ -24,6 +26,8 @@ export function initLifecycle() {
 					'DB Ready': dbReady,
 					'Is Replicating': replicating,
 					'Project Members Loading': projectMembersStore.loading,
+					'User Sessions Loading': userSessionsStore.loading,
+					'User Sessions Valid': validSession,
 					'Project Store Ready': projectStore.isReady,
 					'Project Columns Store Ready': projectColumnsStore.isReady,
 					'User ID': userId ? userId.substring(0, 3) + '...' + userId.slice(-3) : null,
@@ -33,6 +37,7 @@ export function initLifecycle() {
 		}
 		if (state === 'LOGGED_OUT' && !cleaning) {
 			cleaning = true;
+			userSessionsStore.reset();
 			projectMembersStore.reset();
 			projectStore.reset();
 			projectColumnsStore.reset();
@@ -57,7 +62,11 @@ export function initLifecycle() {
 				projectColumnsStore.init();
 
 				if (state === 'LOGGED_IN' && userId) {
+					userSessionsStore.initialize(userId);
 					projectMembersStore.initialize(userId);
+					if (!userSessionsStore.loading && !validSession) {
+						sessionStore.current = null;
+					}
 				}
 			}
 

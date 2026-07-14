@@ -12,3 +12,8 @@ supabase.auth.getSession().then(({ data }) => {
 supabase.auth.onAuthStateChange(async (_event, session) => {
 	sessionStore.current = session;
 });
+
+export const currentSessionId = () =>
+	sessionStore.current?.access_token
+		? JSON.parse(atob(sessionStore.current.access_token.split('.')[1])).session_id
+		: '';

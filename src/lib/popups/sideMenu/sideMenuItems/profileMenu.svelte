@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { profileMenuStore } from '$lib/stores/dialog';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
-	import { sessionStore } from '$lib/stores/currentUser.svelte';
+	import { sessionStore, currentSessionId } from '$lib/stores/currentUser.svelte';
 	import { exportStore } from '$lib/stores/dialog';
 	import { signOut, sendPasswordResetEmail } from '$lib/sb/auth';
 	import { notify } from '$lib/stores/notificationStore';
 	import { failure } from '$lib/types';
+	import { userSessionsStore } from '$lib/stores/userSessionsStore.svelte';
 
 	// --- Types ---
 	type Tab = 'profile' | 'account' | 'danger';
@@ -58,6 +59,26 @@
 		activeTab = 'profile';
 		editingName = false;
 		nameError = '';
+	}
+
+	function parseUserAgent(ua: string | undefined): string {
+		if (!ua) return 'Unknown Device';
+
+		let browser = 'Unknown Browser';
+		let os = 'Unknown OS';
+
+		if (ua.includes('Firefox')) browser = 'Firefox';
+		else if (ua.includes('Edg')) browser = 'Edge';
+		else if (ua.includes('Chrome')) browser = 'Chrome';
+		else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
+
+		if (ua.includes('Win')) os = 'Windows';
+		else if (ua.includes('Mac')) os = 'macOS';
+		else if (ua.includes('Linux')) os = 'Linux';
+		else if (ua.includes('Android')) os = 'Android';
+		else if (ua.includes('like Mac')) os = 'iOS';
+
+		return `${browser} on ${os}`;
 	}
 
 	// --- Actions ---
@@ -363,7 +384,56 @@
 					{/if}
 				</div>
 
-				<!-- <p class="text-xxs pt-2 font-bold tracking-widest text-gray-400 uppercase">Sync</p> -->
+				<p class="text-xxs font-bold tracking-widest text-gray-400 uppercase">Active Devices</p>
+
+				<div class="doodle-border rounded-lg bg-gray-50 px-4 py-4">
+					{#if userSessionsStore.loading}
+						<div class="flex justify-center py-2 text-xs font-bold text-gray-400">
+							Loading active devices...
+						</div>
+					{:else if userSessionsStore.error}
+						<div class="text-xs font-bold text-red-600">
+							Error: {userSessionsStore.error}
+						</div>
+					{:else if userSessionsStore.allSessions.length === 0}
+						<div class="text-xs font-bold text-gray-500">No other active devices found.</div>
+					{:else}
+						<ul class="space-y-3">
+							{#each userSessionsStore.allSessions as session (session.session_id)}
+								<li
+									class="flex items-center justify-between border-b-2 border-dashed border-gray-200 pb-3 last:border-0 last:pb-0"
+								>
+									<div class="min-w-0 pr-4">
+										<p class="flex items-center gap-2 text-sm font-bold text-black">
+											💻 {parseUserAgent(session.user_agent)}
+										</p>
+										<p class="truncate text-[11px] text-gray-500">
+											{session.ip_address} • Logged in {formatDate(session.created_at)}
+										</p>
+									</div>
+									{#if session.session_id !== currentSessionId()}
+										{#if session.isKicking}
+											<button
+												class="shrink-0 rounded-md border-2 border-gray-300 bg-white px-2 py-1 font-patrick-hand text-xs font-bold text-gray-400 transition-colors hover:border-gray-400 hover:bg-gray-50"
+												disabled
+											>
+												Kicking...
+											</button>
+										{:else}
+											<button
+												class="shrink-0 rounded-md border-2 border-gray-300 bg-white px-2 py-1 font-patrick-hand text-xs font-bold text-red-600 transition-colors hover:border-red-600 hover:bg-red-50"
+												onclick={() => userSessionsStore.kickDevice(session.session_id)}
+												title="Sign out this device"
+											>
+												Sign Out
+											</button>
+										{/if}
+									{/if}
+								</li>
+							{/each}
+						</ul>
+					{/if}
+				</div>
 
 				<p class="text-xxs pt-2 font-bold tracking-widest text-gray-400 uppercase">
 					Storage <span class="font-normal tracking-normal text-gray-300 normal-case"

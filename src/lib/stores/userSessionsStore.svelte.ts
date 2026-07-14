@@ -61,7 +61,6 @@ async function initialize(userId: string) {
 			},
 			(payload) => {
 				const { eventType, new: newRow, old: oldRow } = payload;
-				console.log('Realtime event:', eventType, newRow, oldRow);
 				if (eventType === 'INSERT') {
 					sessions = [newRow as UserSession, ...sessions];
 				} else if (eventType === 'DELETE') {

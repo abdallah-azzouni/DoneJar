@@ -10,14 +10,19 @@
 	import { resolve } from '$app/paths';
 	import { signOut } from '$lib/sb/auth';
 	import { projectStore } from '$lib/stores/projects.svelte';
-	import { openProjectMenu, projectSideBarStore } from '$lib/stores/dialog';
+	import { projectSideBarStore } from '$lib/stores/dialog';
 	import DeleteConfirmation from '$lib/popups/DeleteConfirmation.svelte';
 	import { notify } from '$lib/stores/notificationStore';
 	import { projectColumnsStore } from '$lib/stores/projectColumnsStore.svelte';
+	import { MediaQuery } from 'svelte/reactivity';
+	import { fly } from 'svelte/transition';
+	import { quintOut } from 'svelte/easing';
 
 	let { children } = $props();
 
 	let currentProjectId: string | null = null;
+
+	const isDesktop = new MediaQuery('(min-width: 1024px)');
 
 	$effect(() => {
 		const state = getAppState();
@@ -55,50 +60,37 @@
 
 {#if !appStore.isLoaded || !projectStore.isReady || !projectColumnsStore.isReady}
 	<Loading />
-{:else if projectStore.projects.length == 0}
-	<div
-		class="flex h-screen flex-col items-center justify-center bg-linear-to-b from-amber-50 to-white px-6"
-	>
-		<div class="doodle-border max-w-2xl bg-white p-12 text-center shadow-xl">
-			<h1 class="mb-4 font-patrick-hand text-6xl font-bold text-gray-900">Let's Get Started! 🎉</h1>
-			<p class="mb-8 text-xl text-gray-600">
-				Create your first project to start tracking tasks. Projects help you organize work, personal
-				life, or anything else separately.
-			</p>
-			<button
-				class="doodle-border bg-yellow-400 px-8 py-4 font-patrick-hand text-3xl font-bold text-gray-900 transition-all duration-300 hover:scale-105 hover:bg-yellow-500"
-				onclick={() => openProjectMenu()}
-			>
-				Create Your First Project
-			</button>
-			<p class="mt-6 text-sm text-gray-500">
-				Tip: Try naming it something like "Work" or "Personal"
-			</p>
-		</div>
-	</div>
 {:else}
 	<div class="flex h-screen flex-col overflow-hidden">
 		<AppHeader />
 		<div class="flex flex-1 flex-row overflow-hidden">
-			<!-- Desktop permanent sidebar -->
-			<aside class="hand-drawn-border doodle-border m-2 hidden w-40 lg:flex lg:flex-col">
-				<ProjectSidebarContent />
-			</aside>
+			{#if isDesktop.current}
+				<!-- Desktop permanent sidebar -->
 
-			<!-- Mobile overlay sidebar -->
-			<div class="lg:hidden">
-				<ThemedDialog
-					isOpen={projectSideBarStore.isOpen}
-					onClose={() => projectSideBarStore.close()}
-					closeOnBackdrop={true}
-					w="w-40"
-					h="h-[86%]"
-					mt="mt-25"
-					cls="justify-self-start ml-2 border-2 border-dashed border-gray-500"
-				>
-					<ProjectSidebarContent />
-				</ThemedDialog>
-			</div>
+				{#if projectSideBarStore.isOpen}
+					<aside
+						transition:fly={{ x: -100, duration: 200, easing: quintOut }}
+						class="hand-drawn-border doodle-border m-2 flex w-40 flex-col bg-[#E6DEC9]"
+					>
+						<ProjectSidebarContent />
+					</aside>
+				{/if}
+			{:else}
+				<!-- Mobile overlay sidebar -->
+				<div class="bg-[#E6DEC9]">
+					<ThemedDialog
+						isOpen={projectSideBarStore.isOpen}
+						onClose={() => projectSideBarStore.close()}
+						closeOnBackdrop={true}
+						w="w-40"
+						h="h-[calc(100vh-108px)]"
+						mt="mt-25"
+						cls="justify-self-start ml-2 border-2 border-dashed border-gray-500"
+					>
+						<ProjectSidebarContent />
+					</ThemedDialog>
+				</div>
+			{/if}
 
 			{@render children()}
 		</div>

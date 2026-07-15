@@ -1,6 +1,7 @@
 <script lang="ts">
 	import menu from '$lib/assets/icons/menu.svg';
-	import { textColorFromHex } from '$lib/UiHelper';
+	import sidebarRight from '$lib/assets/icons/sidebar-right-svgrepo-com.svg';
+	import sidebarLeft from '$lib/assets/icons/sidebar-left-svgrepo-com.svg';
 	import { projectStore } from '$lib/stores/projects.svelte';
 	import { sideMenuStore } from '$lib/stores/dialog';
 	import { projectSideBarStore } from '$lib/stores/dialog';
@@ -29,24 +30,29 @@
 <ImportMenu />
 <ExportMenu />
 <ProfileMenu />
-<header class="doodle-border m-2 px-4">
+<header class="doodle-border m-2 bg-white px-4">
 	<div class="flex h-16 items-center justify-between">
 		<div class="flex items-center gap-4">
+			<button
+				onclick={() => {
+					projectSideBarStore.toggle();
+				}}
+				aria-label={projectSideBarStore.isOpen ? 'Close project sidebar' : 'Open project sidebar'}
+			>
+				{#if projectSideBarStore.isOpen}
+					<img
+						src={sidebarLeft}
+						alt="sidebarLeft"
+						class="pointer-events-none size-10 select-none"
+					/>{:else}
+					<img
+						src={sidebarRight}
+						alt="sidebarRight"
+						class="pointer-events-none size-10 select-none"
+					/>
+				{/if}
+			</button>
 			{#if projectStore.current}
-				<button
-					style="background-color: {projectStore.current.color};"
-					class="flex size-14 items-center justify-center rounded-full border border-black"
-					onclick={() => {
-						projectSideBarStore.open();
-					}}
-				>
-					<span
-						class="text-3xl font-bold"
-						style="color: {textColorFromHex(projectStore.current.color)};"
-					>
-						{projectStore.current.name[0].toUpperCase()}
-					</span>
-				</button>
 				<h1 class="line-clamp-1 w-[25vw] text-3xl font-bold" style="overflow-wrap: break-word;">
 					{projectStore.current.name}
 				</h1>

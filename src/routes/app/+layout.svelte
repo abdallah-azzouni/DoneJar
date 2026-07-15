@@ -81,6 +81,7 @@
 					<ThemedDialog
 						isOpen={projectSideBarStore.isOpen}
 						onClose={() => projectSideBarStore.close()}
+						anim="slide-left"
 						closeOnBackdrop={true}
 						w="w-40"
 						h="h-[calc(100vh-108px)]"

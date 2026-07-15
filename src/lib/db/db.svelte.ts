@@ -8,6 +8,7 @@ import { DB_NAME } from '$lib/constants';
 import { RxDBJsonDumpPlugin } from 'rxdb/plugins/json-dump';
 import { RxDBCleanupPlugin } from 'rxdb/plugins/cleanup';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
+import { RxDBMigrationSchemaPlugin } from 'rxdb/plugins/migration-schema';
 
 import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
@@ -23,6 +24,7 @@ import { wrappedKeyCompressionStorage } from 'rxdb/plugins/key-compression';
 addRxPlugin(RxDBJsonDumpPlugin);
 addRxPlugin(RxDBCleanupPlugin);
 addRxPlugin(RxDBLeaderElectionPlugin);
+addRxPlugin(RxDBMigrationSchemaPlugin);
 
 let dbPromise: Promise<RxDatabase> | null = null;
 

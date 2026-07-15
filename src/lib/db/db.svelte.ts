@@ -47,7 +47,17 @@ const _create = async () => {
 	await database.addCollections({
 		projects: { schema: projectSchema },
 		columns: { schema: columnSchema },
-		notes: { schema: noteSchema },
+		notes: {
+			schema: noteSchema,
+			migrationStrategies: {
+				1: function (oldDocument) {
+					if (oldDocument.tags) {
+						delete oldDocument.tags;
+					}
+					return oldDocument;
+				}
+			}
+		},
 		attachments: { schema: attachmentSchema }
 	});
 

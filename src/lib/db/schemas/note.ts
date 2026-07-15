@@ -10,7 +10,7 @@ import { HEX_COLOR_REGEX } from '$lib/constants';
 export const noteSchemaLiteral = {
 	title: 'note schema',
 	description: 'describes a note in DoneJar',
-	version: 0,
+	version: 1,
 	keyCompression: true,
 	primaryKey: 'id',
 	type: 'object',

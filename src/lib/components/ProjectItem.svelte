@@ -12,45 +12,49 @@
 	let { project }: { project: ProjectDocType } = $props();
 </script>
 
-<a
-	class="doodle-border relative flex items-center gap-8 {projectStore.current?.id === project.id
-		? ''
-		: 'is-hidden'} cursor-pointer"
-	href={resolve(ROUTES.PROJECT(project.id))}
-	tabindex="0"
-	aria-label={`Select project ${project.name}`}
+<div
+	class="doodle-border {projectStore.current?.id === project.id ? 'bg-white' : 'is-hidden'} *:z-10"
 >
-	<img
-		src={grayBG}
-		alt=""
-		aria-hidden="true"
-		class="bg pointer-events-none absolute inset-0 -z-10 h-full w-full scale-[1.2] object-cover object-center"
-	/>
+	<a
+		class=" relative flex cursor-pointer items-center gap-8"
+		href={resolve(ROUTES.PROJECT(project.id))}
+		tabindex="0"
+		aria-label={`Select project ${project.name}`}
+	>
+		<img
+			src={grayBG}
+			alt=""
+			aria-hidden="true"
+			class="bg pointer-events-none absolute inset-0 -z-10 h-full w-full scale-[1.2] object-cover object-center"
+		/>
 
-	<!-- Project Avatar -->
-	<span
-		class="flex size-14 items-center justify-center rounded-full border border-black text-3xl font-bold"
-		style="
+		<!-- Project Avatar -->
+		<span
+			class="flex size-14 items-center justify-center rounded-full border border-black text-3xl font-bold"
+			style="
 			background-color: {project.color};
 			color: {textColorFromHex(project.color)};
 		"
-	>
-		{(project.name?.[0] ?? '?').toUpperCase()}
-	</span>
-
-	<!-- Project Menu -->
-	<div class="is-pa-hidden">
-		<button
-			class="project-actions"
-			onclick={() => {
-				openProjectMenu(project);
-			}}
-			aria-label={`Project Menu ${project.name}`}
 		>
-			<img src={kebabMenu} alt="Menu" class="pointer-events-none select-none" />
-		</button>
-	</div>
-</a>
+			{(project.name?.[0] ?? '?').toUpperCase()}
+		</span>
+
+		<!-- Project Menu -->
+		<div class="is-pa-hidden">
+			<button
+				class="project-actions"
+				onclick={(e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					openProjectMenu(project);
+				}}
+				aria-label={`Project Menu ${project.name}`}
+			>
+				<img src={kebabMenu} alt="Menu" class="pointer-events-none select-none" />
+			</button>
+		</div>
+	</a>
+</div>
 
 <style>
 	.is-hidden:not(:hover) {

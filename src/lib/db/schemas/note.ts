@@ -18,7 +18,6 @@ export const noteSchemaLiteral = {
 		id: { type: 'string', maxLength: 21 },
 		columnId: { type: 'string', maxLength: 21 },
 		title: { type: 'string', maxLength: MAX_NOTE_TITLE_LENGTH },
-		tags: { type: 'string' },
 		description: { type: 'string' },
 		color: { type: 'string', pattern: HEX_COLOR_REGEX.source },
 		dueDateHasTime: { type: 'boolean', default: false },

@@ -85,7 +85,7 @@
 						use:focus
 						type="text"
 						class="w-80 rounded-xl border border-black bg-white/20 p-3 backdrop-blur-md focus:ring-0 focus:outline-none md:w-105"
-						placeholder="Search or filter: color:red, priority:high, tag:someTag"
+						placeholder="Search or filter: color:red, priority:high"
 						bind:value={$searchQuery}
 					/>
 				</div>

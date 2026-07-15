@@ -19,7 +19,7 @@ DoneJar is an offline-first, kanban-style task manager where your completed task
 - **Auth** — account creation, login, and secure session management
 - **Rich text editor** — Quill powers task descriptions (headers, lists, links, code, video)
 - **Attachments** — drag and drop files directly onto notes, stored in Cloudflare R2
-- **Tags, dates & priorities** — rich metadata on every note with expiry timers
+- **Dates & priorities** — rich metadata on every note with expiry timers
 - **Multi-project** — multiple boards with custom names, colors, and flexible columns
 - **Data export/import** — full JSON backup and restore
 
@@ -103,7 +103,7 @@ The full single-player experience. Everything you need to manage tasks on one de
 - Physics-based completion jar (Matter.js)
 - Drag-and-drop task management
 - Rich text task descriptions (Quill)
-- Task tags, dates, and priority flags
+- Task dates, and priority flags
 - Attachments via Cloudflare R2
 - Data export/import (JSON)
 - Responsive, hand-drawn UI

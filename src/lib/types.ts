@@ -19,7 +19,6 @@ export const emptyNote: NoteDocType = {
 	id: '',
 	columnId: '',
 	title: '',
-	tags: '',
 	pinned: false,
 	description: '',
 	color: '',

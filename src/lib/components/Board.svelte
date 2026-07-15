@@ -183,19 +183,15 @@
 		const textTokens: string[] = [];
 		let colorFilter: string | null = null;
 		let priorityFilter: string | null = null;
-		let tagFilter: string | null = null;
 
 		for (const token of tokens) {
 			if (token.startsWith('color:')) colorFilter = token.slice(6);
 			else if (token.startsWith('priority:')) priorityFilter = token.slice(9);
-			else if (token.startsWith('tag:')) tagFilter = token.slice(4);
 			else textTokens.push(token);
 		}
 
-		let tags = JSON.parse(note.tags || '[]') as string[];
 		if (colorFilter && note.color?.toLowerCase() !== colorFilter) return false;
 		if (priorityFilter && (note.priority ?? '').toLowerCase() !== priorityFilter) return false;
-		if (tagFilter && !tags.some((t: string) => t.toLowerCase() === tagFilter)) return false;
 
 		if (textTokens.length > 0) {
 			const matchesSearch = textTokens.every(

@@ -48,9 +48,6 @@
 			workingNote.columnId = col?.id || '';
 		}
 
-		if (Array.isArray(workingNote.tags)) {
-			workingNote.tags = workingNote.tags.length > 0 ? JSON.stringify(workingNote.tags) : '';
-		}
 		const plain = $state.snapshot(workingNote) as unknown as NoteDocType; // snapshot to unwarp any proxies made by $state
 		const result = await action(plain);
 
@@ -78,19 +75,6 @@
 
 	function handleCancel() {
 		isOpen = false;
-	}
-
-	// ─── Tags ────────────────────────────────────────
-	let showTags = $state(false);
-	let tagInputText = $state(''); // Track the input value
-
-	function addTag() {
-		const val = tagInputText.trim().toLowerCase();
-		if (val && !workingNote.tags?.includes(val)) {
-			workingNote.tags = JSON.stringify([...JSON.parse(workingNote.tags || '[]'), val]);
-			tagInputText = ''; // Clear input
-			showTags = true; // Ensure menu is open to show the new tag
-		}
 	}
 
 	let attachments = $state([] as AttachmentDocType[]);
@@ -488,101 +472,6 @@
 							}}>High</button
 						>
 					</div>
-				</div>
-				<div class="relative">
-					<span class="mb-1 flex items-center gap-2">
-						Tags
-						{#if workingNote.tags != null && workingNote.tags.length > 0}
-							<span
-								class="rounded-full bg-black px-1.5 py-1 text-xs leading-none font-bold text-white"
-							>
-								{JSON.parse(workingNote.tags || '[]').length}
-							</span>
-						{/if}
-						<button
-							type="button"
-							class="ml-auto text-sm opacity-50 transition-transform hover:opacity-100"
-							class:rotate-180={showTags}
-							onclick={() => (showTags = !showTags)}
-						>
-							▼
-						</button>
-					</span>
-
-					<!-- Input Area -->
-					<div
-						class="doodle-border flex items-center bg-white/50 p-1 pl-2 transition-colors focus-within:bg-white"
-					>
-						<input
-							type="text"
-							placeholder="Add tag..."
-							class="w-full bg-transparent font-patrick-hand text-lg outline-none"
-							bind:value={tagInputText}
-							onfocus={() => (showTags = true)}
-							onkeydown={(e) => {
-								if (e.key === 'Enter') {
-									e.preventDefault();
-									addTag();
-								}
-								if (e.key === 'Escape') showTags = false;
-							}}
-						/>
-						<!-- The Plus Button -->
-						<button
-							type="button"
-							title="Add file or image"
-							class="flex size-7 items-center justify-center rounded-full border-2 border-black bg-amber-400 text-xl font-bold opacity-75 shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all hover:bg-amber-300 active:translate-y-px active:shadow-none"
-							onclick={addTag}
-						>
-							+
-						</button>
-					</div>
-
-					<!-- Dropdown Menu -->
-					{#if showTags}
-						<button
-							type="button"
-							aria-label="Close tags dropdown"
-							class="fixed inset-0 z-10 cursor-default"
-							onclick={() => (showTags = false)}
-						>
-						</button>
-
-						<div
-							class="doodle-border absolute right-0 bottom-[calc(100%+6px)] left-0 z-20 flex max-h-48 flex-col gap-2 overflow-y-auto bg-white p-3"
-						>
-							{#if (workingNote.tags || []).length === 0}
-								<span class="text-center text-sm text-gray-400 italic">No tags yet...</span>
-							{:else}
-								<div class="flex flex-wrap gap-2">
-									{#each JSON.parse(workingNote.tags || '[]') as tag (tag)}
-										<span
-											class="flex items-center gap-1 rounded border border-black bg-gray-50 px-2 py-0.5 text-sm shadow-[1px_1px_0px_rgba(0,0,0,1)]"
-										>
-											#{tag}
-											<button
-												type="button"
-												class="font-bold hover:text-red-500"
-												onclick={() =>
-													(workingNote.tags = JSON.stringify([
-														...JSON.parse(workingNote.tags || '[]').filter((t: string) => t !== tag)
-													]))}
-											>
-												×
-											</button>
-										</span>
-									{/each}
-								</div>
-							{/if}
-							<button
-								type="button"
-								class="mt-1 w-full border-t border-dashed border-gray-300 pt-2 text-center text-xs font-bold tracking-widest text-gray-500 uppercase hover:text-black"
-								onclick={() => (showTags = false)}
-							>
-								Close Menu
-							</button>
-						</div>
-					{/if}
 				</div>
 			</div>
 			<div class="mt-auto flex justify-end gap-3 border-t-2 border-gray-200 pt-2">

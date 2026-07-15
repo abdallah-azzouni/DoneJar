@@ -235,7 +235,7 @@
 				style="height: min(60vh, calc(100vh - 80px)); aspect-ratio: 818 / 1191; flex-shrink: 0;"
 			>
 				<div
-					class="relative flex items-center justify-center border-2 border-dashed border-gray-400 p-16"
+					class="relative mb-6 flex items-center justify-center border-2 border-dashed border-gray-400 p-16"
 				>
 					{#each column.notes as note (note.id)}
 						<div class="pointer-events-none absolute top-0 left-0 size-10 opacity-0"></div>
@@ -259,7 +259,7 @@
 				)}"
 			>
 				<span class="mb-2 font-patrick-hand text-7xl font-bold">{column.name}</span>
-				<div class="doodle-border w-full flex-1 overflow-y-auto">
+				<div class="doodle-border w-full flex-1 overflow-y-auto bg-white">
 					<div class="absolute top-22 right-4 z-10">
 						<SortFilter
 							notes={columnItems[columnIdx].notes}

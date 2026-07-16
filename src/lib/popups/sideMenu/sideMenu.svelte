@@ -7,7 +7,7 @@
 	import { sessionStore } from '$lib/stores/currentUser.svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 
-	const isDesktop = new MediaQuery('(min-width: 1024px)');
+	const isWide = new MediaQuery('(min-width: 640px)');
 </script>
 
 <ThemedDialog
@@ -19,7 +19,7 @@
 	isOpen={sideMenuStore.isOpen}
 	onClose={() => sideMenuStore.close()}
 	closeOnBackdrop={true}
-	dragToClose={!isDesktop.current}
+	dragToClose={!isWide.current}
 >
 	<div class="flex h-full flex-col [*&>button]:bg-white">
 		<hr class="mx-auto mb-6 w-1/3 rounded-3xl border-2 border-gray-500 sm:hidden" />

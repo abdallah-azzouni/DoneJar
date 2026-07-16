@@ -1,19 +1,15 @@
 <script lang="ts">
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import { exportStore } from '$lib/stores/dialog';
-	import { projectColumnsStore } from '$lib/stores/projectColumnsStore.svelte';
-	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+	import { projectStore } from '$lib/stores/projects.svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { exportBackup } from '$lib/actions/backupActions';
 	import { notify } from '$lib/stores/notificationStore';
 	import { failure } from '$lib/types';
-	import { onMount } from 'svelte';
 	import type { BackupDocType } from '$lib/db/schemas';
 
-	// FIX 1: Keep it reactive using $derived
-	let projectsWithColumns = $derived(projectColumnsStore.data);
-
-	async function onExport(payload: { projectIds: string[]; columnIds: string[] }) {
-		const { result, backup } = await exportBackup(payload);
+	async function onExport(projectIds: string[]) {
+		const { result, backup } = await exportBackup(projectIds);
 		if (result.type === 'error') {
 			notify(failure(`Export failed: ${result.message}`));
 			return;
@@ -40,79 +36,37 @@
 	// ============================================================
 	// UI STATE — completely reactive mutations
 	// ============================================================
-	const expandedProjects = new SvelteSet<string>();
-	const selectedCols = new SvelteMap<string, SvelteSet<string>>();
+	const selectedProjects = new SvelteSet<string>();
 
-	// FIX 2: Reset tracking safely using an effect only for synchronization
 	$effect(() => {
-		// This runs whenever projectsWithColumns array reference changes
-		selectedCols.clear();
-		expandedProjects.clear();
-		for (const p of projectsWithColumns) {
-			selectedCols.set(p.id, new SvelteSet(p.columns.map((c) => c.id)));
+		selectedProjects.clear();
+		for (const p of projectStore.projects) {
+			selectedProjects.add(p.id);
 		}
 	});
 
-	onMount(() => {
-		return () => projectColumnsStore.destroy();
-	});
-
-	function getProjectState(pid: string): 'all' | 'some' | 'none' {
-		const cols = selectedCols.get(pid);
-		const project = projectsWithColumns.find((p) => p.id === pid);
-		if (!cols || !project || cols.size === 0) return 'none';
-		if (cols.size === project.columns.length) return 'all';
-		return 'some';
-	}
-
-	// FIX 3: Leverage native SvelteSet / SvelteMap reactive mutations instead of cloning copies
 	function toggleProject(pid: string) {
-		const current = getProjectState(pid);
-		const project = projectsWithColumns.find((p) => p.id === pid);
-		if (!project) return;
-
-		if (current === 'all') {
-			selectedCols.get(pid)?.clear();
+		if (selectedProjects.has(pid)) {
+			selectedProjects.delete(pid);
 		} else {
-			selectedCols.set(pid, new SvelteSet(project.columns.map((c) => c.id)));
-		}
-	}
-
-	function toggleColumn(pid: string, cid: string) {
-		if (!selectedCols.has(pid)) {
-			selectedCols.set(pid, new SvelteSet());
-		}
-		const cols = selectedCols.get(pid)!;
-		if (cols.has(cid)) {
-			cols.delete(cid);
-		} else {
-			cols.add(cid);
-		}
-	}
-
-	function toggleExpand(pid: string) {
-		if (expandedProjects.has(pid)) {
-			expandedProjects.delete(pid);
-		} else {
-			expandedProjects.add(pid);
+			selectedProjects.add(pid);
 		}
 	}
 
 	function selectAllState(): 'all' | 'some' | 'none' {
-		if (projectsWithColumns.length === 0) return 'none';
-		const states = projectsWithColumns.map((p) => getProjectState(p.id));
-		if (states.every((s) => s === 'all')) return 'all';
-		if (states.every((s) => s === 'none')) return 'none';
+		if (projectStore.projects.length === 0) return 'none';
+		if (selectedProjects.size === projectStore.projects.length) return 'all';
+		if (selectedProjects.size === 0) return 'none';
 		return 'some';
 	}
 
 	function toggleSelectAll() {
 		const current = selectAllState();
-		for (const p of projectsWithColumns) {
-			if (current === 'all') {
-				selectedCols.get(p.id)?.clear();
-			} else {
-				selectedCols.set(p.id, new SvelteSet(p.columns.map((c) => c.id)));
+		if (current === 'all') {
+			selectedProjects.clear();
+		} else {
+			for (const p of projectStore.projects) {
+				selectedProjects.add(p.id);
 			}
 		}
 	}
@@ -128,25 +82,17 @@
 	}
 
 	// Derived states stay perfectly in sync
-	let totalSelectedCols = $derived([...selectedCols.values()].reduce((acc, s) => acc + s.size, 0));
-	let totalSelectedProjects = $derived(
-		projectsWithColumns.filter((p) => (selectedCols.get(p.id)?.size ?? 0) > 0).length
-	);
-	let totalCols = $derived(projectsWithColumns.reduce((acc, p) => acc + p.columns.length, 0));
-	let canExport = $derived(totalSelectedCols > 0);
+	let totalSelectedProjects = $derived(selectedProjects.size);
+	let canExport = $derived(totalSelectedProjects > 0);
 	let loading = $state(false);
 
 	async function handleExport() {
 		if (!canExport) return;
 		loading = true;
 
-		const selectedProjectIds = projectsWithColumns
-			.filter((p) => (selectedCols.get(p.id)?.size ?? 0) > 0)
-			.map((p) => p.id);
+		const selectedProjectIds = [...selectedProjects];
 
-		const selectedColumnIds = [...selectedCols.entries()].flatMap(([, cols]) => [...cols]);
-
-		await onExport({ projectIds: selectedProjectIds, columnIds: selectedColumnIds });
+		await onExport(selectedProjectIds);
 		loading = false;
 	}
 </script>
@@ -176,19 +122,14 @@
 				Select all
 			</label>
 			<span class="font-patrick-hand text-sm text-gray-400">
-				{totalSelectedProjects} of {projectsWithColumns.length} projects · {totalSelectedCols} of {totalCols}
-				columns
+				{totalSelectedProjects} of {projectStore.projects.length} projects
 			</span>
 		</div>
 
 		<div class="max-h-96 overflow-y-auto">
 			<!-- Project list -->
 			<div class="flex flex-col gap-2 pr-1">
-				{#each projectsWithColumns as project (project.id)}
-					{@const projState = getProjectState(project.id)}
-					{@const isExpanded = expandedProjects.has(project.id)}
-					{@const selectedCount = selectedCols.get(project.id)?.size ?? 0}
-
+				{#each projectStore.projects as project (project.id)}
 					<div class="doodle-border overflow-hidden rounded-xl">
 						<!-- Project header -->
 						<div
@@ -197,50 +138,13 @@
 							<input
 								type="checkbox"
 								class="h-4 w-4 shrink-0 cursor-pointer accent-yellow-400"
-								checked={projState === 'all'}
-								use:bindIndeterminate={projState === 'some'}
+								checked={selectedProjects.has(project.id)}
 								onchange={() => toggleProject(project.id)}
 							/>
-							<span
-								class="flex-1 cursor-pointer text-left font-patrick-hand text-lg"
-								onclick={() => toggleExpand(project.id)}
-								role="button"
-								tabindex="0"
-								onkeydown={(e) => e.key === 'Enter' && toggleExpand(project.id)}
-							>
+							<span class="flex-1 text-left font-patrick-hand text-lg">
 								{project.name}
 							</span>
-							<span class="font-patrick-hand text-sm text-gray-400">
-								{selectedCount}/{project.columns.length} cols
-							</span>
-							<button
-								class="cursor-pointer px-1 text-gray-400 transition-transform duration-150 {isExpanded
-									? 'rotate-180'
-									: ''}"
-								onclick={() => toggleExpand(project.id)}
-								aria-label="Toggle columns"
-							>
-								▾
-							</button>
 						</div>
-						<!-- Columns -->
-						{#if isExpanded}
-							<div
-								class="flex flex-col gap-2 border-t border-gray-100 bg-white px-3 pt-2 pb-3 pl-9"
-							>
-								{#each project.columns as col (col.id)}
-									<label class="flex cursor-pointer items-center gap-2 select-none">
-										<input
-											type="checkbox"
-											class="h-4 w-4 cursor-pointer accent-yellow-400"
-											checked={selectedCols.get(project.id)?.has(col.id) ?? false}
-											onchange={() => toggleColumn(project.id, col.id)}
-										/>
-										<span class="font-patrick-hand text-base">{col.name}</span>
-									</label>
-								{/each}
-							</div>
-						{/if}
 					</div>
 				{/each}
 			</div>

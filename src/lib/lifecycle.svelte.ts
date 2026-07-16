@@ -6,7 +6,6 @@ import { projectStore } from './stores/projects.svelte';
 import { projectMembersStore } from './stores/projectMembers.svelte';
 import { userSessionsStore } from './stores/userSessionsStore.svelte';
 import { sessionStore } from '$lib/stores/currentUser.svelte';
-import { projectColumnsStore } from './stores/projectColumnsStore.svelte';
 import { dev } from '$app/environment';
 import { untrack } from 'svelte';
 
@@ -29,7 +28,6 @@ export function initLifecycle() {
 					'User Sessions Loading': userSessionsStore.loading,
 					'User Sessions Valid': validSession,
 					'Project Store Ready': projectStore.isReady,
-					'Project Columns Store Ready': projectColumnsStore.isReady,
 					'User ID': userId ? userId.substring(0, 3) + '...' + userId.slice(-3) : null,
 					Cleaning: cleaning
 				});
@@ -40,7 +38,6 @@ export function initLifecycle() {
 			userSessionsStore.reset();
 			projectMembersStore.reset();
 			projectStore.reset();
-			projectColumnsStore.reset();
 			(async () => {
 				try {
 					if (replicating) {
@@ -59,7 +56,6 @@ export function initLifecycle() {
 
 			if (dbReady) {
 				projectStore.init();
-				projectColumnsStore.init();
 
 				if (state === 'LOGGED_IN' && userId) {
 					userSessionsStore.initialize(userId);

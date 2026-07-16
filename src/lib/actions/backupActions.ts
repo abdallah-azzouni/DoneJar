@@ -24,14 +24,13 @@ export async function importBackup(backup: unknown): Promise<ActionResult> {
 
 /**
  * Export a backup file, adding its data to existing data.
- * @param backup the backup payload
+ * @param projectIds the project ids to export
  */
-export async function exportBackup(payload: {
-	projectIds: string[];
-	columnIds: string[];
-}): Promise<{ result: ActionResult; backup: BackupDocType | null }> {
+export async function exportBackup(
+	projectIds: string[]
+): Promise<{ result: ActionResult; backup: BackupDocType | null }> {
 	try {
-		const backup = await backupService.export(payload);
+		const backup = await backupService.export(projectIds);
 
 		return { result: success('Backup exported successfully'), backup: backup };
 	} catch (error) {

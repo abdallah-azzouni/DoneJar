@@ -13,7 +13,6 @@
 	import { projectSideBarStore } from '$lib/stores/dialog';
 	import DeleteConfirmation from '$lib/popups/DeleteConfirmation.svelte';
 	import { notify } from '$lib/stores/notificationStore';
-	import { projectColumnsStore } from '$lib/stores/projectColumnsStore.svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { fly } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
@@ -58,7 +57,7 @@
 <ProjectMenu />
 <DeleteConfirmation />
 
-{#if !appStore.isLoaded || !projectStore.isReady || !projectColumnsStore.isReady}
+{#if !appStore.isLoaded || !projectStore.isReady}
 	<Loading />
 {:else}
 	<div class="flex h-screen flex-col overflow-hidden">

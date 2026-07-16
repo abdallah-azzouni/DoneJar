@@ -281,29 +281,6 @@ export const projectService = {
 					.find({ sort: [{ createdAt: 'asc' }] })
 					.$.pipe(map((docs) => docs.map((d) => d.toJSON())));
 			})
-		),
-
-	observeProjectsWithColumns: () =>
-		from(db()).pipe(
-			switchMap((database) =>
-				database.projects.find({ sort: [{ createdAt: 'asc' }] }).$.pipe(
-					switchMap((projects) => {
-						if (projects.length === 0) return of([]);
-						return combineLatest(
-							projects.map((proj) =>
-								database.columns
-									.find({ selector: { projectId: proj.id }, sort: [{ position: 'asc' }] })
-									.$.pipe(
-										map((cols) => ({
-											...proj.toJSON(),
-											columns: cols.map((c) => c.toJSON())
-										}))
-									)
-							)
-						);
-					})
-				)
-			)
 		)
 };
 
@@ -387,25 +364,18 @@ export const backupService = {
 		await Promise.all(attachmentPromises);
 	},
 
-	export: async (_payload: {
-		projectIds: string[];
-		columnIds: string[];
-	}): Promise<BackupDocType> => {
+	export: async (projectIds: string[]): Promise<BackupDocType> => {
 		const db$ = await db();
 
 		const projects = await db$.projects
-			.findByIds(_payload.projectIds)
+			.findByIds(projectIds)
 			.exec()
 			.then((map) => [...map.values()]);
 
-		const columns = await db$.columns
-			.findByIds(_payload.columnIds)
-			.exec()
-			.then((map) => [...map.values()]);
+		const columns = await db$.columns.find({ selector: { projectId: { $in: projectIds } } }).exec();
 
-		const notes = await db$.notes
-			.find({ selector: { columnId: { $in: _payload.columnIds } } })
-			.exec();
+		const columnIds = columns.map((c) => c.id);
+		const notes = await db$.notes.find({ selector: { columnId: { $in: columnIds } } }).exec();
 
 		const noteIds = notes.map((note) => note.id);
 		const attachments = await db$.attachments

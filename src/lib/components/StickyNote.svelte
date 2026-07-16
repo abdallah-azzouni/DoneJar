@@ -79,9 +79,6 @@
 		class=" group relative cursor-grab transition-all duration-200 ease-out select-none
                {isDragging ? ' pointer-events-none scale-95 opacity-30 grayscale' : ''}"
 	>
-		{#key showNoteMenu}
-			<NoteMenu bind:isOpen={showNoteMenu} {note} />
-		{/key}
 		<button
 			class="absolute top-3 right-3 z-50 hidden size-7 rounded-full border border-black group-hover:block {note.pinned
 				? 'block! bg-gray-300'
@@ -91,7 +88,15 @@
 				handlePinNote();
 			}}>📌</button
 		>
-		<button onclick={() => (showNoteMenu = true)}>
+		<button
+			onclick={(e) => {
+				e.stopPropagation();
+				showNoteMenu = true;
+			}}
+			onmousedown={(e) => e.stopPropagation()}
+			onpointerdown={(e) => e.stopPropagation()}
+			aria-label="Open {note.title} menu"
+		>
 			<svg
 				version="1.1"
 				xmlns="http://www.w3.org/2000/svg"
@@ -160,6 +165,9 @@
 			>
 		</button>
 	</div>
+	{#key showNoteMenu}
+		<NoteMenu bind:isOpen={showNoteMenu} {note} />
+	{/key}
 
 	{#if isTargeted}
 		<div

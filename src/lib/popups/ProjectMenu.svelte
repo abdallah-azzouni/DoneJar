@@ -28,6 +28,7 @@
 						name: '',
 						type: 'default',
 						color: DEFAULT_PROJECT_COLOR,
+						maxCapacity: 100,
 						createdAt: '',
 						updatedAt: ''
 					};
@@ -49,6 +50,8 @@
 		e.preventDefault();
 		let pass = true;
 
+		newProject.maxCapacity = Number(newProject.maxCapacity);
+
 		if (newProject.id === '') {
 			if (newProject.type === 'custom') {
 				const columns = buildColumnsWithSpecialTypes();
@@ -56,12 +59,18 @@
 					newProject.name,
 					newProject.type,
 					newProject.color,
+					newProject.maxCapacity,
 					columns
 				);
 				notify(result);
 				pass &&= result.type === 'success';
 			} else {
-				const result = await createProject(newProject.name, newProject.type, newProject.color);
+				const result = await createProject(
+					newProject.name,
+					newProject.type,
+					newProject.color,
+					newProject.maxCapacity
+				);
 				notify(result);
 				pass &&= result.type === 'success';
 			}
@@ -145,6 +154,17 @@
 				required
 				placeholder="Project Name..."
 				maxlength={MAX_PROJECT_NAME_LENGTH}
+			/>
+		</div>
+		<span><b>Max Capacity ({newProject.maxCapacity})</b></span>
+		<div>
+			<input
+				type="range"
+				bind:value={newProject.maxCapacity}
+				class="w-full rounded-md border border-gray-500 p-1.5 focus:outline-none"
+				required
+				min="1"
+				max="500"
 			/>
 		</div>
 		<span><b>Color</b></span>

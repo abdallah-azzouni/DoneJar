@@ -33,6 +33,7 @@
 
 	let hoveredColumnId = $state<string | null>(null);
 	let activeHoveredNoteId = $state<string | null>(null);
+	let maxCapacity = $derived(projectStore.current?.maxCapacity ?? 100);
 
 	// Load columns whenever current project changes.
 	$effect(() => {
@@ -217,19 +218,23 @@
 	}
 
 	function getJarStatus(count: number) {
-		const MAX_CAPACITY = 500;
+		const MAX_CAPACITY = maxCapacity;
 		const t = Math.min(count / MAX_CAPACITY, 1);
 
+		const nearFullThreshold = Math.floor(MAX_CAPACITY * 0.96);
+
 		const stops = [
-			{ at: 0.0, h: 200, s: 20, l: 96 }, // 0 notes — pale slate blue
-			{ at: 0.01, h: 260, s: 35, l: 90 }, // 5 notes — soft lavender
-			{ at: 0.03, h: 150, s: 40, l: 85 }, // 15 notes — sage green
-			{ at: 0.06, h: 90, s: 45, l: 80 }, // 30 notes — olive/yellow-green
-			{ at: 0.1, h: 40, s: 55, l: 75 }, // 50 notes — warm amber
-			{ at: 0.2, h: 20, s: 60, l: 65 }, // 100 notes — burnt orange
-			{ at: 0.5, h: 350, s: 55, l: 55 }, // 250 notes — deep rose
-			{ at: 1.0, h: 0, s: 65, l: 45 } // 500 notes — full red
+			{ at: 0.0, h: 200, s: 20, l: 96 }, // 0% — pale slate blue
+			{ at: Math.min(5 / MAX_CAPACITY, 1), h: 260, s: 35, l: 90 }, // ~5 notes — soft lavender
+			{ at: Math.min(15 / MAX_CAPACITY, 1), h: 150, s: 40, l: 85 }, // ~15 notes — sage green
+			{ at: Math.min(30 / MAX_CAPACITY, 1), h: 90, s: 45, l: 80 }, // ~30 notes — olive/yellow-green
+			{ at: Math.min(50 / MAX_CAPACITY, 1), h: 40, s: 55, l: 75 }, // ~50 notes — warm amber
+			{ at: Math.min(100 / MAX_CAPACITY, 1), h: 20, s: 60, l: 65 }, // ~100 notes — burnt orange
+			{ at: Math.min(250 / MAX_CAPACITY, 1), h: 350, s: 55, l: 55 }, // ~250 notes — deep rose
+			{ at: 1.0, h: 0, s: 65, l: 45 } // 100% — full red
 		];
+
+		stops.sort((a, b) => a.at - b.at);
 
 		let lower = stops[0];
 		let upper = stops[stops.length - 1];
@@ -255,11 +260,11 @@
 
 		let message = 'Drop notes here';
 		if (count >= MAX_CAPACITY) message = 'Jar is full, start a new one?';
-		else if (count >= 480) message = `${count}/${MAX_CAPACITY}, nearly full`;
+		else if (count >= nearFullThreshold) message = `${count}/${MAX_CAPACITY}, nearly full`;
 
 		return {
 			style: `background-color: ${bgColor}; border-color: ${borderColor}; color: ${textColor};`,
-			pulse: count >= 480,
+			pulse: count >= nearFullThreshold,
 			message
 		};
 	}
@@ -318,7 +323,7 @@
 								class="pointer-events-none absolute inset-0 z-0 h-full w-full object-contain"
 							/>
 							<div class="absolute top-[18%] right-[5%] bottom-[5%] left-[5%] z-5">
-								<BeakerPhysics items={column.notes} />
+								<BeakerPhysics items={column.notes} {maxCapacity} />
 							</div>
 
 							<img

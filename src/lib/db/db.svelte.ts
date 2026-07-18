@@ -47,7 +47,17 @@ const _create = async () => {
 	});
 	// Collections
 	await database.addCollections({
-		projects: { schema: projectSchema },
+		projects: {
+			schema: projectSchema,
+			migrationStrategies: {
+				1: function (oldDocument) {
+					if (!oldDocument.maxCapacity) {
+						oldDocument.maxCapacity = 100;
+					}
+					return oldDocument;
+				}
+			}
+		},
 		columns: { schema: columnSchema },
 		notes: {
 			schema: noteSchema,

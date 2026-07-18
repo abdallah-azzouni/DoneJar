@@ -2,23 +2,16 @@
 	import { onMount } from 'svelte';
 	import { type NoteDocType } from '$lib/db/schemas/index';
 
-	let { items = [] }: { items: NoteDocType[] } = $props();
+	let { items = [], maxCapacity = 500 }: { items: NoteDocType[]; maxCapacity: number } = $props();
 
 	const SIM_WIDTH = 605;
 	const SIM_HEIGHT = 750;
-	const CELL_SIZE = 50;
 	const GRAVITY = 1500;
 
 	const DXS = [1, -1, 0, 1];
 	const DYS = [0, 1, 1, 1];
 
-	// Calculate exact grid dimensions
-	const GRID_COLS = Math.ceil(SIM_WIDTH / CELL_SIZE);
-	const GRID_ROWS = Math.ceil(SIM_HEIGHT / CELL_SIZE);
-	const TOTAL_CELLS = GRID_COLS * GRID_ROWS;
-
 	const PHYS_CONFIG = {
-		DEFAULT_RADIUS: 16,
 		SUBSTEPS: 4,
 		CORNER_RADIUS: 100,
 		SHOULDER_RADIUS: 200,
@@ -30,6 +23,65 @@
 		LAUNCH_Y_OFFSET: 50,
 		MAX_FRAME_TIME: 0.1
 	};
+
+	let MAX_CAPACITY = $derived(Math.max(maxCapacity, items.length));
+	const PACK_DENSITY = 0.87;
+
+	const jarArea = (() => {
+		const rectArea = SIM_WIDTH * SIM_HEIGHT;
+		const cornerCut = (1 - Math.PI / 4) * PHYS_CONFIG.CORNER_RADIUS ** 2;
+		const shoulderCut = (1 - Math.PI / 4) * PHYS_CONFIG.SHOULDER_RADIUS ** 2;
+		return rectArea - 2 * cornerCut - 2 * shoulderCut;
+	})();
+
+	let DEFAULT_RADIUS = $derived(Math.sqrt((jarArea * PACK_DENSITY) / (MAX_CAPACITY * Math.PI)));
+	let CELL_SIZE = $derived(Math.ceil(DEFAULT_RADIUS * 2));
+	let GRID_COLS = $derived(Math.ceil(SIM_WIDTH / CELL_SIZE));
+	let GRID_ROWS = $derived(Math.ceil(SIM_HEIGHT / CELL_SIZE));
+	let TOTAL_CELLS = $derived(GRID_COLS * GRID_ROWS);
+
+	let entities: Entity[] = [];
+	let gridHead = $derived(new Int32Array(TOTAL_CELLS));
+	let entityNext = new Int32Array(0);
+
+	// Populate entities
+	$effect(() => {
+		const radius = DEFAULT_RADIUS;
+		const currentItems = items;
+
+		const entityMap = new Map(entities.map((e) => [e.id, e]));
+		let updatedEntities: Entity[] = [];
+
+		for (let i = 0; i < currentItems.length; i++) {
+			const item = currentItems[i];
+			const existing = entityMap.get(item.id);
+
+			if (existing) {
+				existing.color = item.color;
+				existing.radius = radius;
+				updatedEntities.push(existing);
+			} else {
+				const x = SIM_WIDTH / 2;
+				const y = PHYS_CONFIG.LAUNCH_Y_OFFSET;
+				const launchVelocityX = (Math.random() - 0.5) * 300;
+				const launchVelocityY = (Math.random() - 0.5) * 100;
+				const fixedDt = 0.016;
+
+				updatedEntities.push({
+					id: item.id,
+					x,
+					y,
+					oldX: x - launchVelocityX * fixedDt,
+					oldY: y - launchVelocityY * fixedDt,
+					radius: DEFAULT_RADIUS,
+					color: item.color
+				});
+			}
+		}
+
+		entities = updatedEntities;
+		entityNext = new Int32Array(entities.length);
+	});
 
 	let rafId: number;
 
@@ -43,15 +95,8 @@
 		color: string;
 	};
 
-	let entities: Entity[] = [];
 	let canvas: HTMLCanvasElement;
 	let ctx: CanvasRenderingContext2D | null = null;
-
-	// HIGH PERFORMANCE STATIC ALLOCATIONS
-	// head array stores the first entity index in that cell (-1 if empty)
-	const gridHead = new Int32Array(TOTAL_CELLS);
-	// next array links to the next entity in the chain
-	let entityNext = new Int32Array(entities.length);
 
 	function updatePhysics(dt: number) {
 		for (let i = 0; i < entities.length; i++) {
@@ -273,41 +318,6 @@
 			rafId = requestAnimationFrame(loop);
 		}
 	}
-
-	// Populate entities
-	$effect(() => {
-		const entityMap = new Map(entities.map((e) => [e.id, e]));
-		let updatedEntities: Entity[] = [];
-
-		for (let i = 0; i < items.length; i++) {
-			const item = items[i];
-			const existing = entityMap.get(item.id);
-
-			if (existing) {
-				existing.color = item.color;
-				updatedEntities.push(existing);
-			} else {
-				const x = SIM_WIDTH / 2;
-				const y = PHYS_CONFIG.LAUNCH_Y_OFFSET;
-				const launchVelocityX = (Math.random() - 0.5) * 300;
-				const launchVelocityY = (Math.random() - 0.5) * 100;
-				const fixedDt = 0.016;
-
-				updatedEntities.push({
-					id: item.id,
-					x,
-					y,
-					oldX: x - launchVelocityX * fixedDt,
-					oldY: y - launchVelocityY * fixedDt,
-					radius: PHYS_CONFIG.DEFAULT_RADIUS,
-					color: item.color
-				});
-			}
-		}
-
-		entities = updatedEntities;
-		entityNext = new Int32Array(entities.length);
-	});
 
 	onMount(() => {
 		ctx = canvas.getContext('2d');

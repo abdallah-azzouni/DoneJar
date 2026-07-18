@@ -21,6 +21,7 @@ export async function createProject(
 	name: string,
 	type: 'default' | 'blank' | 'custom',
 	color: string,
+	maxCapacity: number,
 	customColumns?: ColumnDocType[]
 ): Promise<ActionResult> {
 	const validationResult = validateProjectCreation(type, customColumns);
@@ -55,6 +56,7 @@ export async function createProject(
 			name,
 			type,
 			color,
+			maxCapacity,
 			createdAt: new Date().toISOString(),
 			updatedAt: new Date().toISOString()
 		};

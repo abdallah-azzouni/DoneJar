@@ -10,7 +10,7 @@ import { HEX_COLOR_REGEX } from '$lib/constants';
 export const projectSchemaLiteral = {
 	title: 'project schema',
 	description: 'describes a project in DoneJar',
-	version: 0,
+	version: 1,
 	keyCompression: true,
 	primaryKey: 'id',
 	type: 'object',
@@ -19,10 +19,11 @@ export const projectSchemaLiteral = {
 		name: { type: 'string', maxLength: MAX_PROJECT_NAME_LENGTH },
 		type: { type: 'string', enum: ['default', 'blank', 'custom'] },
 		color: { type: 'string', pattern: HEX_COLOR_REGEX.source },
+		maxCapacity: { type: 'number', minimum: 1, maximum: 500, default: 100 },
 		createdAt: { type: 'string', format: 'date-time' },
 		updatedAt: { type: 'string', format: 'date-time' }
 	},
-	required: ['id', 'name', 'type', 'color', 'createdAt', 'updatedAt'],
+	required: ['id', 'name', 'type', 'color', 'maxCapacity', 'createdAt', 'updatedAt'],
 	indexes: [] // to be add when i have queries that need it
 } as const;
 

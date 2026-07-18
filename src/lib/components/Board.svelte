@@ -6,7 +6,8 @@
 	// popups
 	import NoteMenu from '$lib/popups/noteMenu/NoteMenu.svelte';
 	// assets
-	import jar from '$lib/assets/elements/jar.svg';
+	import frontJar from '$lib/assets/elements/front-jar.png';
+	import backJar from '$lib/assets/elements/back-jar.png';
 	// stores
 	import { projectStore } from '$lib/stores/projects.svelte';
 	import { columnRepository } from '$lib/db/dal';
@@ -69,10 +70,8 @@
 						if (result && result.type === 'error') notify(result);
 					}
 					return;
-				}
-
-				// Case B: Dropped directly onto another card in the grid
-				if (targetNoteId) {
+				} else {
+					// Case B: Dropped directly onto another card in the grid
 					const targetColumn = columnItems.find((c) => c.id === targetColumnId);
 					if (!targetColumn) return;
 
@@ -216,6 +215,54 @@
 			return 'w-1/3';
 		}
 	}
+
+	function getJarStatus(count: number) {
+		const MAX_CAPACITY = 500;
+		const t = Math.min(count / MAX_CAPACITY, 1);
+
+		const stops = [
+			{ at: 0.0, h: 200, s: 20, l: 96 }, // 0 notes — pale slate blue
+			{ at: 0.01, h: 260, s: 35, l: 90 }, // 5 notes — soft lavender
+			{ at: 0.03, h: 150, s: 40, l: 85 }, // 15 notes — sage green
+			{ at: 0.06, h: 90, s: 45, l: 80 }, // 30 notes — olive/yellow-green
+			{ at: 0.1, h: 40, s: 55, l: 75 }, // 50 notes — warm amber
+			{ at: 0.2, h: 20, s: 60, l: 65 }, // 100 notes — burnt orange
+			{ at: 0.5, h: 350, s: 55, l: 55 }, // 250 notes — deep rose
+			{ at: 1.0, h: 0, s: 65, l: 45 } // 500 notes — full red
+		];
+
+		let lower = stops[0];
+		let upper = stops[stops.length - 1];
+		for (let i = 0; i < stops.length - 1; i++) {
+			if (t >= stops[i].at && t <= stops[i + 1].at) {
+				lower = stops[i];
+				upper = stops[i + 1];
+				break;
+			}
+		}
+		const span = upper.at - lower.at || 1;
+		const localT = (t - lower.at) / span;
+
+		const lerp = (a: number, b: number) => a + (b - a) * localT;
+		const hue = lerp(lower.h, upper.h);
+		const saturation = Math.min(lerp(lower.s, upper.s), 100);
+		const lightness = Math.max(0, Math.min(lerp(lower.l, upper.l), 100));
+
+		const bgColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+		const borderColor = `hsl(${hue}, ${Math.min(saturation + 10, 100)}%, ${Math.max(lightness - 15, 0)}%)`;
+		const textColor =
+			lightness < 60 ? `hsl(${hue}, ${saturation}%, 20%)` : `hsl(${hue}, ${saturation}%, 35%)`;
+
+		let message = 'Drop notes here';
+		if (count >= MAX_CAPACITY) message = 'Jar is full, start a new one?';
+		else if (count >= 480) message = `${count}/${MAX_CAPACITY}, nearly full`;
+
+		return {
+			style: `background-color: ${bgColor}; border-color: ${borderColor}; color: ${textColor};`,
+			pulse: count >= 480,
+			message
+		};
+	}
 </script>
 
 {#key showCreateNote}
@@ -225,25 +272,62 @@
 <div class="flex h-full w-full flex-row overflow-hidden">
 	{#each columnItems as column, columnIdx (column.id)}
 		{#if column.specialType === 'jar'}
+			{@const status = getJarStatus(column.notes.length)}
 			<div
 				use:dndColumn={column.id}
-				class="relative m-2 flex flex-col justify-end self-end"
-				style="height: min(60vh, calc(100vh - 80px)); aspect-ratio: 818 / 1191; flex-shrink: 0;"
+				class="relative m-2 flex max-h-full flex-col items-center {getColumnClass(
+					projectStore.current?.type,
+					column.specialType
+				)}"
 			>
-				<div
-					class="relative mb-6 flex items-center justify-center border-2 border-dashed border-gray-400 p-16"
-				>
-					{#each column.notes as note (note.id)}
-						<div class="pointer-events-none absolute top-0 left-0 size-10 opacity-0"></div>
-					{/each}
-					<span class="pointer-events-none absolute z-0 text-gray-400">Drop notes here!</span>
-				</div>
+				<!-- Jar Column Layout Wrapper -->
+				<div class="flex h-full w-full flex-col justify-between">
+					<!-- Jar drop area -->
 
-				<div class="relative min-h-0 w-full flex-1">
-					<button class="size-full">
-						<BeakerPhysics items={columnItems[columnIdx]?.notes ?? []} />
-						<img src={jar} alt="" class="pointer-events-none absolute inset-0 h-full w-full" />
-					</button>
+					<div
+						class="{status.pulse
+							? 'animate-pulse'
+							: ''} relative mt-20 flex w-full flex-1 items-center justify-center rounded-xl border-2 p-4 transition-all duration-300"
+						style={status.style}
+					>
+						{#each column.notes as note (note.id)}
+							<div class="pointer-events-none absolute top-0 left-0 size-10 opacity-0"></div>
+						{/each}
+						<div class="flex items-center gap-2">
+							<span class="font-patrick-hand text-xl font-bold tracking-wide transition-all">
+								{status.message}
+							</span>
+						</div>
+					</div>
+
+					<!-- Jar Interactive Container Box -->
+					<div class="relative mt-4 flex min-h-0 w-full flex-initial items-center justify-center">
+						<button
+							type="button"
+							class="group relative max-h-11/12 overflow-hidden rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+						>
+							<img
+								src={backJar}
+								alt=""
+								class="pointer-events-none block w-full object-contain opacity-0"
+							/>
+
+							<img
+								src={backJar}
+								alt="Jar container graphic background"
+								class="pointer-events-none absolute inset-0 z-0 h-full w-full object-contain"
+							/>
+							<div class="absolute top-[18%] right-[5%] bottom-[5%] left-[5%] z-5">
+								<BeakerPhysics items={column.notes} />
+							</div>
+
+							<img
+								src={frontJar}
+								alt="Jar container graphic foreground"
+								class="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain"
+							/>
+						</button>
+					</div>
 				</div>
 			</div>
 		{:else}

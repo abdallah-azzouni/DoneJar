@@ -1,365 +1,329 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
-	import Matter from 'matter-js';
-	import paperTexture from '$lib/assets/elements/paper.png';
-	import { SvelteMap } from 'svelte/reactivity';
-	import { projectStore } from '$lib/stores/projects.svelte';
+	import { onMount } from 'svelte';
+	import { type NoteDocType } from '$lib/db/schemas/index';
 
-	// ============================================================================
-	// PROPS & STATE
-	// ============================================================================
+	let { items = [] }: { items: NoteDocType[] } = $props();
 
-	let { items = [] } = $props();
-	let activeProject = projectStore.current?.id;
+	const SIM_WIDTH = 605;
+	const SIM_HEIGHT = 750;
+	const CELL_SIZE = 50;
+	const GRAVITY = 1500;
 
-	// Canvas dimensions
-	const width = 400;
-	const height = 500;
+	const DXS = [1, -1, 0, 1];
+	const DYS = [0, 1, 1, 1];
 
-	// Physics properties
-	const ELASTICITY = 0.5;
-	const FRICTION = 0.7;
+	// Calculate exact grid dimensions
+	const GRID_COLS = Math.ceil(SIM_WIDTH / CELL_SIZE);
+	const GRID_ROWS = Math.ceil(SIM_HEIGHT / CELL_SIZE);
+	const TOTAL_CELLS = GRID_COLS * GRID_ROWS;
 
-	// Boundary positions (relative to canvas dimensions)
-	const FLOOR_Y_RATIO = 0.93;
-	const FLOOR_WIDTH_RATIO = 1;
-	const LEFT_WALL_X_RATIO = 0.22;
-	const RIGHT_WALL_X_RATIO = 0.78;
-	const WALL_THICKNESS = 10;
+	const PHYS_CONFIG = {
+		DEFAULT_RADIUS: 16,
+		SUBSTEPS: 4,
+		CORNER_RADIUS: 100,
+		SHOULDER_RADIUS: 200,
+		COLLISION_RESPONSE: 0.85,
+		ROLLING_FRICTION: 0.02,
+		WALL_BOUNCE_DAMPING: 0.5,
+		FLOOR_BOUNCE_Y_DAMPING: 0.3,
+		FLOOR_BOUNCE_X_DAMPING: 0.98,
+		LAUNCH_Y_OFFSET: 50,
+		MAX_FRAME_TIME: 0.1
+	};
 
-	// Particle properties
-	const PARTICLE_SIZE_MULTIPLIER = 1.25;
-	const PARTICLE_RADIUS_RATIO = 0.08;
-	const PARTICLE_CHAMFER_RATIO = 0.1;
-	const PARTICLE_DENSITY = 0.001;
+	let rafId: number;
 
-	// Particle spawn properties
-	const SPAWN_Y = 100;
-	const SPAWN_VELOCITY_RANGE = 3;
-	const SPAWN_VELOCITY_Y = 2;
-	const SPAWN_ANGULAR_VELOCITY_RANGE = 0.05;
+	type Entity = {
+		id: string;
+		x: number;
+		y: number;
+		oldX: number;
+		oldY: number;
+		radius: number;
+		color: string;
+	};
 
-	// Rendering properties
-	const TEXTURE_OVERLAY_ALPHA = 0.3;
-	const SCRATCH_CANVAS_SIZE = 100;
-
-	// ============================================================================
-	// CANVAS & RENDERING
-	// ============================================================================
-
+	let entities: Entity[] = [];
 	let canvas: HTMLCanvasElement;
 	let ctx: CanvasRenderingContext2D | null = null;
-	let scratchCanvas: HTMLCanvasElement;
-	let scratchCtx: CanvasRenderingContext2D | null = null;
 
-	let paperImg = new Image();
-	let imgLoaded = false;
+	// HIGH PERFORMANCE STATIC ALLOCATIONS
+	// head array stores the first entity index in that cell (-1 if empty)
+	const gridHead = new Int32Array(TOTAL_CELLS);
+	// next array links to the next entity in the chain
+	let entityNext = new Int32Array(entities.length);
 
-	// ============================================================================
-	// PHYSICS ENGINE
-	// ============================================================================
+	function updatePhysics(dt: number) {
+		for (let i = 0; i < entities.length; i++) {
+			const entity = entities[i];
+			const vx = (entity.x - entity.oldX) * 1;
+			const vy = (entity.y - entity.oldY) * 1;
 
-	let engine: Matter.Engine;
-	let world: Matter.World;
-	let runner: Matter.Runner;
-	let walls: Matter.Body[] = [];
+			entity.oldX = entity.x;
+			entity.oldY = entity.y;
+			entity.x += vx;
+			entity.y += vy + GRAVITY * dt * dt;
 
-	// Store particle metadata (color, size) linked to Matter.js bodies
-	const particleData = new SvelteMap<Matter.Body, { color: string; size: number }>();
+			// Boundaries
+			if (entity.x - entity.radius < 0) {
+				entity.x = entity.radius;
+				entity.oldX = entity.x + (entity.x - entity.oldX) * PHYS_CONFIG.WALL_BOUNCE_DAMPING;
+			} else if (entity.x + entity.radius > SIM_WIDTH) {
+				entity.x = SIM_WIDTH - entity.radius;
+				entity.oldX = entity.x - (entity.x - entity.oldX) * PHYS_CONFIG.WALL_BOUNCE_DAMPING;
+			}
+			if (entity.y - entity.radius < 0) entity.y = entity.radius;
+			else if (entity.y + entity.radius > SIM_HEIGHT) {
+				entity.y = SIM_HEIGHT - entity.radius;
+				const current_vy = entity.y - entity.oldY;
+				entity.oldY = entity.y + current_vy * PHYS_CONFIG.FLOOR_BOUNCE_Y_DAMPING;
+				const current_vx = entity.x - entity.oldX;
+				entity.oldX = entity.x - current_vx * PHYS_CONFIG.FLOOR_BOUNCE_X_DAMPING;
+			}
 
-	// Track project changes
-	let lastActiveProject = activeProject;
+			const cornerRadius = PHYS_CONFIG.CORNER_RADIUS;
 
-	// Track animation frame for cleanup
-	let animationFrameId: number | null = null;
+			// --- BOTTOM LEFT CORNER CURVE ---
+			if (entity.x < cornerRadius && entity.y > SIM_HEIGHT - cornerRadius) {
+				const cx = cornerRadius;
+				const cy = SIM_HEIGHT - cornerRadius;
+				const dx = entity.x - cx;
+				const dy = entity.y - cy;
+				const dist = Math.sqrt(dx * dx + dy * dy);
+				const maxDist = cornerRadius - entity.radius;
+				if (dist > maxDist && dist > 0) {
+					entity.x = cx + (dx / dist) * maxDist;
+					entity.y = cy + (dy / dist) * maxDist;
+				}
+			}
 
-	// Debug mode for visualizing walls
-	let showWalls = false; // Set to true to see wall boundaries
+			// --- BOTTOM RIGHT CORNER CURVE ---
+			if (entity.x > SIM_WIDTH - cornerRadius && entity.y > SIM_HEIGHT - cornerRadius) {
+				const cx = SIM_WIDTH - cornerRadius;
+				const cy = SIM_HEIGHT - cornerRadius;
+				const dx = entity.x - cx;
+				const dy = entity.y - cy;
+				const dist = Math.sqrt(dx * dx + dy * dy);
+				const maxDist = cornerRadius - entity.radius;
+				if (dist > maxDist && dist > 0) {
+					entity.x = cx + (dx / dist) * maxDist;
+					entity.y = cy + (dy / dist) * maxDist;
+				}
+			}
 
-	// ============================================================================
-	// PHYSICS INITIALIZATION
-	// ============================================================================
-
-	function initPhysics() {
-		engine = Matter.Engine.create({
-			gravity: { x: 0, y: 0.8 },
-			constraintIterations: 3,
-			positionIterations: 6,
-			velocityIterations: 4
-		});
-		world = engine.world;
-		createBoundaries();
-		runner = Matter.Runner.create();
-	}
-
-	function createBoundaries() {
-		const boundaryOptions = {
-			isStatic: true,
-			restitution: ELASTICITY,
-			friction: FRICTION,
-			render: { visible: false }
-		};
-
-		const floor = Matter.Bodies.rectangle(
-			width / 2,
-			height * FLOOR_Y_RATIO + WALL_THICKNESS / 2,
-			width * FLOOR_WIDTH_RATIO,
-			WALL_THICKNESS,
-			boundaryOptions
-		);
-
-		const leftWall = Matter.Bodies.rectangle(
-			width * LEFT_WALL_X_RATIO - WALL_THICKNESS / 2,
-			height / 2,
-			WALL_THICKNESS,
-			height,
-			boundaryOptions
-		);
-
-		const rightWall = Matter.Bodies.rectangle(
-			width * RIGHT_WALL_X_RATIO + WALL_THICKNESS / 2,
-			height / 2,
-			WALL_THICKNESS,
-			height,
-			boundaryOptions
-		);
-
-		walls = [floor, leftWall, rightWall];
-		Matter.World.add(world, walls);
-	}
-
-	// ============================================================================
-	// PARTICLE MANAGEMENT
-	// ============================================================================
-
-	function createPaperBody(color: string, size: number): Matter.Body {
-		const paperSize = size * PARTICLE_SIZE_MULTIPLIER;
-
-		const body = Matter.Bodies.rectangle(width / 2, SPAWN_Y, paperSize, paperSize, {
-			restitution: ELASTICITY,
-			friction: FRICTION,
-			density: PARTICLE_DENSITY,
-			render: { visible: false },
-			angle: Math.random() * Math.PI * 2,
-			chamfer: { radius: size * PARTICLE_CHAMFER_RATIO }
-		});
-
-		Matter.Body.setVelocity(body, {
-			x: (Math.random() - 0.5) * SPAWN_VELOCITY_RANGE,
-			y: SPAWN_VELOCITY_Y
-		});
-
-		Matter.Body.setAngularVelocity(body, (Math.random() - 0.5) * SPAWN_ANGULAR_VELOCITY_RANGE);
-
-		particleData.set(body, { color, size });
-
-		return body;
-	}
-
-	function syncParticles() {
-		if (!world) return;
-
-		// Detect project change - reinitialize everything
-		if (activeProject !== lastActiveProject) {
-			lastActiveProject = activeProject;
-			reinitializePhysics();
-			return;
+			// --- TOP SHOULDER CURVES (Narrowing into the neck) ---
+			const shoulderRadius = PHYS_CONFIG.SHOULDER_RADIUS;
+			// Top Left Shoulder
+			if (entity.x < shoulderRadius && entity.y < shoulderRadius) {
+				const cx = shoulderRadius;
+				const cy = shoulderRadius;
+				const dx = entity.x - cx;
+				const dy = entity.y - cy;
+				const dist = Math.sqrt(dx * dx + dy * dy);
+				const maxDist = shoulderRadius - entity.radius;
+				if (dist > maxDist && dist > 0) {
+					entity.x = cx + (dx / dist) * maxDist;
+					entity.y = cy + (dy / dist) * maxDist;
+				}
+			}
+			// Top Right Shoulder
+			if (entity.x > SIM_WIDTH - shoulderRadius && entity.y < shoulderRadius) {
+				const cx = SIM_WIDTH - shoulderRadius;
+				const cy = shoulderRadius;
+				const dx = entity.x - cx;
+				const dy = entity.y - cy;
+				const dist = Math.sqrt(dx * dx + dy * dy);
+				const maxDist = shoulderRadius - entity.radius;
+				if (dist > maxDist && dist > 0) {
+					entity.x = cx + (dx / dist) * maxDist;
+					entity.y = cy + (dy / dist) * maxDist;
+				}
+			}
 		}
 
-		// Same project - adjust particle count
-		const currentBodies = Array.from(particleData.keys());
-		const targetCount = items.length;
+		// 2. Clear and Rebuild Flat Spatial Grid
+		gridHead.fill(-1);
+		entityNext.fill(-1);
 
-		if (targetCount < currentBodies.length) {
-			removeExcessParticles(currentBodies, targetCount);
-		} else if (targetCount > currentBodies.length) {
-			addNewParticles(currentBodies.length, targetCount);
+		for (let i = 0; i < entities.length; i++) {
+			const ent = entities[i];
+			// Clamp indexes safety check
+			const cx = Math.max(0, Math.min(GRID_COLS - 1, Math.floor(ent.x / CELL_SIZE)));
+			const cy = Math.max(0, Math.min(GRID_ROWS - 1, Math.floor(ent.y / CELL_SIZE)));
+			const cellIdx = cx + cy * GRID_COLS;
+
+			// Link list insertion
+			entityNext[i] = gridHead[cellIdx];
+			gridHead[cellIdx] = i;
 		}
-	}
 
-	function removeExcessParticles(currentBodies: Matter.Body[], targetCount: number) {
-		const bodiesToRemove = currentBodies.slice(targetCount);
-		bodiesToRemove.forEach((body) => {
-			Matter.World.remove(world, body);
-			particleData.delete(body);
-		});
-	}
+		// 3. Unidirectional Collision Pass
+		for (let y = 0; y < GRID_ROWS; y++) {
+			for (let x = 0; x < GRID_COLS; x++) {
+				const cellIdx = x + y * GRID_COLS;
+				const head1 = gridHead[cellIdx];
+				if (head1 === -1) continue;
 
-	function addNewParticles(startIndex: number, targetCount: number) {
-		for (let i = startIndex; i < targetCount; i++) {
-			const newNote = items[i];
-			if (newNote) {
-				const responsiveRadius = width * PARTICLE_RADIUS_RATIO;
-				const body = createPaperBody(newNote.color, responsiveRadius);
-				Matter.World.add(world, body);
+				// Self cell collisions
+				let i = head1;
+				while (i !== -1) {
+					let j = entityNext[i];
+					while (j !== -1) {
+						solveCollision(entities[i], entities[j]);
+						j = entityNext[j];
+					}
+					i = entityNext[i];
+				}
+
+				for (let n = 0; n < 4; n++) {
+					const nx = x + DXS[n];
+					const ny = y + DYS[n];
+
+					if (nx >= 0 && nx < GRID_COLS && ny >= 0 && ny < GRID_ROWS) {
+						const targetCellIdx = nx + ny * GRID_COLS;
+						let idx1 = gridHead[cellIdx];
+
+						while (idx1 !== -1) {
+							let idx2 = gridHead[targetCellIdx];
+							while (idx2 !== -1) {
+								solveCollision(entities[idx1], entities[idx2]);
+								idx2 = entityNext[idx2];
+							}
+							idx1 = entityNext[idx1];
+						}
+					}
+				}
 			}
 		}
 	}
 
-	function reinitializePhysics() {
-		// Cleanup old state first
-		if (animationFrameId) {
-			cancelAnimationFrame(animationFrameId);
-			animationFrameId = null;
-		}
+	function solveCollision(e1: Entity, e2: Entity) {
+		const dx = e1.x - e2.x;
+		const dy = e1.y - e2.y;
+		const distSq = dx * dx + dy * dy;
+		const rSum = e1.radius + e2.radius;
 
-		if (runner) Matter.Runner.stop(runner);
-		if (engine) {
-			Matter.Engine.clear(engine);
-			Matter.World.clear(world, false);
-		}
-
-		particleData.clear();
-
-		// Initialize new physics
-		if (canvas) {
-			ctx = canvas.getContext('2d');
-			scratchCanvas = document.createElement('canvas');
-			scratchCanvas.width = SCRATCH_CANVAS_SIZE;
-			scratchCanvas.height = SCRATCH_CANVAS_SIZE;
-			scratchCtx = scratchCanvas.getContext('2d');
-
-			initPhysics();
-
-			paperImg.src = paperTexture;
-			paperImg.onload = () => {
-				imgLoaded = true;
-				Matter.Runner.run(runner, engine);
-				render();
-				syncParticles();
-			};
-		}
-	}
-
-	// ============================================================================
-	// RENDERING
-	// ============================================================================
-
-	function render() {
-		if (!ctx || !canvas) return;
-
-		const context = ctx;
-
-		context.clearRect(0, 0, canvas.width, canvas.height);
-
-		// Debug: Visualize walls
-		if (showWalls) {
-			context.strokeStyle = 'red';
-			context.lineWidth = 2;
-			walls.forEach((wall) => {
-				const vertices = wall.vertices;
-				context.beginPath();
-				context.moveTo(vertices[0].x, vertices[0].y);
-				for (let i = 1; i < vertices.length; i++) {
-					context.lineTo(vertices[i].x, vertices[i].y);
-				}
-				context.closePath();
-				context.stroke();
-			});
-		}
-
-		particleData.forEach((data, body) => {
-			if (!world.bodies.includes(body)) {
-				particleData.delete(body);
+		if (distSq < rSum * rSum) {
+			if (distSq === 0) {
+				const angle = Math.random() * Math.PI * 2;
+				e1.x += Math.cos(angle) * rSum;
+				e1.y += Math.sin(angle) * rSum;
 				return;
 			}
 
-			renderParticle(body, data);
-		});
+			const dist = Math.sqrt(distSq);
+			const overlap = rSum - dist;
 
-		animationFrameId = requestAnimationFrame(render);
-	}
+			const response = overlap * PHYS_CONFIG.COLLISION_RESPONSE;
+			const nx = dx / dist;
+			const ny = dy / dist;
 
-	function renderParticle(body: Matter.Body, data: { color: string; size: number }) {
-		const { color, size } = data;
-		const { x, y } = body.position;
-		const angle = body.angle;
+			e1.x += nx * response * 0.5;
+			e1.y += ny * response * 0.5;
+			e2.x -= nx * response * 0.5;
+			e2.y -= ny * response * 0.5;
 
-		drawTexturedPaper(x, y, angle, color, size);
-	}
+			// Friction exchange
+			const v1x = e1.x - e1.oldX;
+			const v1y = e1.y - e1.oldY;
+			const v2x = e2.x - e2.oldX;
+			const v2y = e2.y - e2.oldY;
 
-	function drawTexturedPaper(x: number, y: number, angle: number, color: string, size: number) {
-		scratchCtx!.clearRect(0, 0, SCRATCH_CANVAS_SIZE, SCRATCH_CANVAS_SIZE);
-		scratchCtx!.save();
-		scratchCtx!.translate(SCRATCH_CANVAS_SIZE / 2, SCRATCH_CANVAS_SIZE / 2);
-		scratchCtx!.rotate(angle);
+			const rollingFriction = PHYS_CONFIG.ROLLING_FRICTION;
+			const tangentX = -ny;
+			const tangentY = nx;
 
-		// Base color
-		scratchCtx!.fillStyle = color;
-		scratchCtx!.fillRect(-size, -size, size * 2, size * 2);
+			const relTangentV = (v1x - v2x) * tangentX + (v1y - v2y) * tangentY;
 
-		// Apply paper texture mask
-		scratchCtx!.globalCompositeOperation = 'destination-in';
-		scratchCtx!.drawImage(paperImg, -size, -size, size * 2, size * 2);
-
-		// Soft light blend
-		scratchCtx!.globalCompositeOperation = 'soft-light';
-		scratchCtx!.drawImage(paperImg, -size, -size, size * 2, size * 2);
-
-		// Screen overlay
-		scratchCtx!.globalCompositeOperation = 'screen';
-		scratchCtx!.globalAlpha = TEXTURE_OVERLAY_ALPHA;
-		scratchCtx!.drawImage(paperImg, -size, -size, size * 2, size * 2);
-
-		scratchCtx!.restore();
-		ctx!.drawImage(scratchCanvas, x - SCRATCH_CANVAS_SIZE / 2, y - SCRATCH_CANVAS_SIZE / 2);
-	}
-
-	// ============================================================================
-	// REACTIVE EFFECTS
-	// ============================================================================
-
-	$effect(() => {
-		const _project = activeProject; // declared here to make the effect reactive
-		const _size = items.length; // declared here to make the effect reactive
-
-		if (imgLoaded && world) {
-			syncParticles();
+			e1.oldX += tangentX * relTangentV * rollingFriction;
+			e1.oldY += tangentY * relTangentV * rollingFriction;
+			e2.oldX -= tangentX * relTangentV * rollingFriction;
+			e2.oldY -= tangentY * relTangentV * rollingFriction;
 		}
-	});
+	}
 
-	// ============================================================================
-	// LIFECYCLE
-	// ============================================================================
+	function updatePhysicsSubSteps(dt: number, sub_steps: number) {
+		const sub_dt = dt / sub_steps;
+		for (let i = sub_steps; i--;) {
+			updatePhysics(sub_dt);
+		}
+	}
+
+	let lastTime = 0;
+	let isRunning = true;
+	function loop(timestamp: number) {
+		if (!isRunning) return;
+		if (!lastTime) lastTime = timestamp;
+		let dt = Math.min((timestamp - lastTime) / 1000, PHYS_CONFIG.MAX_FRAME_TIME);
+		lastTime = timestamp;
+
+		updatePhysicsSubSteps(dt, PHYS_CONFIG.SUBSTEPS);
+
+		if (ctx) {
+			ctx.clearRect(0, 0, SIM_WIDTH, SIM_HEIGHT);
+			for (let i = 0; i < entities.length; i++) {
+				const entity = entities[i];
+				ctx.beginPath();
+				ctx.arc(entity.x, entity.y, entity.radius, 0, Math.PI * 2);
+				ctx.fillStyle = entity.color;
+				ctx.fill();
+			}
+		}
+		if (isRunning) {
+			rafId = requestAnimationFrame(loop);
+		}
+	}
+
+	// Populate entities
+	$effect(() => {
+		const entityMap = new Map(entities.map((e) => [e.id, e]));
+		let updatedEntities: Entity[] = [];
+
+		for (let i = 0; i < items.length; i++) {
+			const item = items[i];
+			const existing = entityMap.get(item.id);
+
+			if (existing) {
+				existing.color = item.color;
+				updatedEntities.push(existing);
+			} else {
+				const x = SIM_WIDTH / 2;
+				const y = PHYS_CONFIG.LAUNCH_Y_OFFSET;
+				const launchVelocityX = (Math.random() - 0.5) * 300;
+				const launchVelocityY = (Math.random() - 0.5) * 100;
+				const fixedDt = 0.016;
+
+				updatedEntities.push({
+					id: item.id,
+					x,
+					y,
+					oldX: x - launchVelocityX * fixedDt,
+					oldY: y - launchVelocityY * fixedDt,
+					radius: PHYS_CONFIG.DEFAULT_RADIUS,
+					color: item.color
+				});
+			}
+		}
+
+		entities = updatedEntities;
+		entityNext = new Int32Array(entities.length);
+	});
 
 	onMount(() => {
-		if (canvas) {
-			ctx = canvas.getContext('2d');
-			scratchCanvas = document.createElement('canvas');
-			scratchCanvas.width = SCRATCH_CANVAS_SIZE;
-			scratchCanvas.height = SCRATCH_CANVAS_SIZE;
-			scratchCtx = scratchCanvas.getContext('2d');
+		ctx = canvas.getContext('2d');
+		isRunning = true;
+		rafId = requestAnimationFrame(loop);
 
-			initPhysics();
-
-			paperImg.src = paperTexture;
-			paperImg.onload = () => {
-				imgLoaded = true;
-				Matter.Runner.run(runner, engine);
-				render();
-				syncParticles();
-			};
-		}
-	});
-
-	onDestroy(() => {
-		if (animationFrameId) cancelAnimationFrame(animationFrameId);
-		if (runner) Matter.Runner.stop(runner);
-		if (engine) {
-			Matter.Engine.clear(engine);
-			Matter.World.clear(world, false);
-		}
-		particleData.clear();
-		if (scratchCanvas) {
-			scratchCanvas.width = 0;
-			scratchCanvas.height = 0;
-		}
+		return () => {
+			isRunning = false;
+			cancelAnimationFrame(rafId);
+		};
 	});
 </script>
 
 <canvas
 	bind:this={canvas}
-	width="400"
-	height="500"
-	class="pointer-events-none absolute inset-0 h-full w-full"
+	width={SIM_WIDTH}
+	height={SIM_HEIGHT}
+	class="pointer-events-none absolute inset-0 h-full w-full object-contain"
 ></canvas>

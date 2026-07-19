@@ -1,4 +1,7 @@
 export function textColorFromHex(hex: string) {
+	if (!hex || typeof hex !== 'string') {
+		return 'black';
+	}
 	const c = hex.replace('#', '');
 	const num = parseInt(
 		c.length === 3

@@ -22,10 +22,25 @@ export const settingsStore = createDialogStore();
 export const profileMenuStore = createDialogStore();
 
 // --- PROJECT MENU ---
-export const projectMenuStore = createDialogStore<ProjectDocType | null>(false, null);
-export const openProjectMenu = (project: ProjectDocType | null = null) =>
-	projectMenuStore.open(project);
+export const projectMenuStore = createDialogStore<{
+	project: ProjectDocType | null;
+	position: { x: number; y: number };
+}>(false, { project: null, position: { x: 0, y: 0 } });
+export const openProjectMenu = (data: {
+	project: ProjectDocType | null;
+	position: { x: number; y: number };
+}) => projectMenuStore.open(data);
 export const closeProjectMenu = () => projectMenuStore.close();
+
+export const projectSettingStore = createDialogStore<ProjectDocType | null>(false, null);
+export const openProjectSetting = (project: ProjectDocType | null = null) =>
+	projectSettingStore.open(project);
+export const closeProjectSetting = () => projectSettingStore.close();
+
+export const projectMembersStore = createDialogStore<ProjectDocType | null>(false, null);
+export const openProjectMembers = (project: ProjectDocType | null = null) =>
+	projectMembersStore.open(project);
+export const closeProjectMembers = () => projectMembersStore.close();
 
 // --- DELETE CONFIRMATION ---
 export const deleteConfirmStore = createDialogStore<DeleteTarget | null>(false, null);

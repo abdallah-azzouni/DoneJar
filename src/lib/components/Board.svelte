@@ -365,9 +365,11 @@
 							}}
 						/>
 					</div>
-					<div class="min-h-full w-full p-4">
+					<div
+						class="grid min-h-full w-full grid-cols-1 p-4 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+					>
 						{#each columnItems[columnIdx].notes as note (note.id)}
-							<div class="{notePassesFilter(columnIdx, note) ? 'inline-block' : 'hidden'} p-2">
+							<div class="{notePassesFilter(columnIdx, note) ? 'block' : 'hidden'} p-2">
 								<StickyNote {note} bind:hoveredNoteId={activeHoveredNoteId} />
 							</div>
 						{/each}

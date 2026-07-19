@@ -39,7 +39,7 @@
 		}
 	}
 
-	let size = 'size-[19vh]';
+	let size = 'w-full';
 	let isDragging = $state(false);
 
 	// Derived state: Is this exact card the one being hovered over during a drag?

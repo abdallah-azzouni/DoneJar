@@ -1,5 +1,6 @@
 <script lang="ts">
-	import ProjectMenu from '$lib/popups/ProjectMenu.svelte';
+	import ProjectMenu from '$lib/popups/ProjectMenu/ProjectMenu.svelte';
+	import ProjectSettings from '$lib/popups/ProjectMenu/ProjectSettings.svelte';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import { appStore, getAppState } from '$lib/stores/appState.svelte';
 	import Loading from '$lib/components/Loading.svelte';
@@ -55,6 +56,7 @@
 </svelte:head>
 
 <ProjectMenu />
+<ProjectSettings />
 <DeleteConfirmation />
 
 {#if !appStore.isLoaded || !projectStore.isReady}

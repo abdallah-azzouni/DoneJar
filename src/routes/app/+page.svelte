@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { openProjectMenu } from '$lib/stores/dialog';
+	import { openProjectSetting } from '$lib/stores/dialog';
 	import { projectStore } from '$lib/stores/projects.svelte';
 </script>
 
@@ -13,7 +13,7 @@
 			</p>
 			<button
 				class="doodle-border bg-yellow-400 px-8 py-4 font-patrick-hand text-3xl font-bold text-gray-900 transition-all duration-300 hover:scale-105 hover:bg-yellow-500"
-				onclick={() => openProjectMenu()}
+				onclick={() => openProjectSetting()}
 			>
 				Create Your First Project
 			</button>
@@ -28,7 +28,7 @@
 			</p>
 			<button
 				class="doodle-border bg-yellow-400 px-6 py-3 font-patrick-hand text-2xl font-bold text-gray-900 transition-all duration-300 hover:scale-105 hover:bg-yellow-500"
-				onclick={() => openProjectMenu()}
+				onclick={() => openProjectSetting()}
 			>
 				Create a Project
 			</button>

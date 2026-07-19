@@ -25,6 +25,14 @@
 	const isDesktop = new MediaQuery('(min-width: 1024px)');
 
 	$effect(() => {
+		if (isDesktop.current) {
+			projectSideBarStore.open();
+		} else {
+			projectSideBarStore.close();
+		}
+	});
+
+	$effect(() => {
 		const state = getAppState();
 		if (state == 'LOGGED_OUT') {
 			signOut().then(() => {

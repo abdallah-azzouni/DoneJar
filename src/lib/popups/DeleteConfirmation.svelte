@@ -4,7 +4,9 @@
 	import { notify } from '$lib/stores/notificationStore';
 	import { deleteConfirmStore, closeDelete } from '$lib/stores/dialog';
 	import { projectStore } from '$lib/stores/projects.svelte';
-	import { setActiveProject } from '$lib/actions';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import { ROUTES } from '$lib/constants';
 
 	let target = $derived(deleteConfirmStore.data);
 	let isOpen = $derived(deleteConfirmStore.isOpen);
@@ -16,21 +18,14 @@
 		let result;
 
 		if (target.type === 'projects' && projectStore.projects) {
-			const all = projectStore.projects;
-			const deletedIndex = all.findIndex((p) => p.id === target.id); // save deleted index before deletion
-
-			const nextIndex = Math.min(deletedIndex, all.length - 2);
-			const nextProjectId =
-				nextIndex >= 0 ? all[nextIndex === deletedIndex ? nextIndex + 1 : nextIndex].id : '';
-
 			result = await deleteProject(target.id);
+			projectStore.select(null);
+			goto(resolve(ROUTES.APP));
 
 			if (result.type === 'error') {
 				notify(result);
 				return;
 			}
-
-			setActiveProject(nextProjectId);
 		} else {
 			result = await deleteNote(target.id);
 			if (result.type === 'error') {

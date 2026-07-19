@@ -67,6 +67,10 @@ const _create = async () => {
 						delete oldDocument.tags;
 					}
 					return oldDocument;
+				},
+				2: function (oldDocument) {
+					delete oldDocument.position;
+					return oldDocument;
 				}
 			}
 		},

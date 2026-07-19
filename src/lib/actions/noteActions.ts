@@ -19,7 +19,6 @@ export async function createNote(note: NoteDocType): Promise<ActionResult> {
 			dueDateHasTime: note.dueDateHasTime,
 			dueDateTimestamp: note.dueDateTimestamp,
 			priority: note.priority,
-			position: note.position,
 			createdAt: new Date().toISOString(),
 			updatedAt: new Date().toISOString(),
 			pinned: note.pinned
@@ -48,7 +47,6 @@ export async function editNote(note: NoteDocType): Promise<ActionResult> {
 			dueDateHasTime: note.dueDateHasTime,
 			dueDateTimestamp: note.dueDateTimestamp,
 			priority: note.priority,
-			position: note.position,
 			createdAt: note.createdAt || new Date().toISOString(),
 			updatedAt: new Date().toISOString(),
 			pinned: note.pinned
@@ -79,11 +77,7 @@ export async function deleteNote(noteId: string): Promise<ActionResult> {
  * @param newColumnId the ID of the column to move the note to
  * @returns ActionResult indicating success or failure of the operation
  */
-export async function moveNote(
-	noteId: string,
-	newColumnId: string,
-	position?: number
-): Promise<ActionResult> {
+export async function moveNote(noteId: string, newColumnId: string): Promise<ActionResult> {
 	try {
 		const note = await noteRepository.get(noteId);
 		if (!note) {
@@ -93,8 +87,7 @@ export async function moveNote(
 		await noteRepository.update({
 			id: noteId,
 			columnId: newColumnId,
-			updatedAt: new Date().toISOString(),
-			position: position !== undefined ? position : note.position
+			updatedAt: new Date().toISOString()
 		});
 	} catch (error) {
 		return failure(`Error moving note: ${error}`);

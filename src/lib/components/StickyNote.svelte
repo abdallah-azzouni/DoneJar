@@ -5,11 +5,7 @@
 	import type { NoteDocType } from '$lib/db/schemas';
 	import { togglePinNote } from '$lib/actions';
 	import { notify } from '$lib/stores/notificationStore';
-	import {
-		draggable,
-		dropTargetForElements
-	} from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
-	import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
+	import { draggable } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 
 	// Track the bindable hover property
 	let {
@@ -39,44 +35,26 @@
 		}
 	}
 
-	let size = 'w-full';
 	let isDragging = $state(false);
 
-	// Derived state: Is this exact card the one being hovered over during a drag?
-	let isTargeted = $derived(hoveredNoteId === note.id);
-
 	function dndCardGridAction(node: HTMLElement) {
-		const cleanup = combine(
-			draggable({
-				element: node,
-				getInitialData: () => ({ noteId: note.id, columnId: note.columnId }),
-				onDragStart: () => (isDragging = true),
-				onDrop: () => (isDragging = false)
-			}),
-			dropTargetForElements({
-				element: node,
-				getIsSticky: () => true,
-				canDrop: ({ source }) => !!source.data.noteId && source.data.noteId !== note.id,
-				getData: () => ({ noteId: note.id, columnId: note.columnId }),
-				onDragEnter: () => (hoveredNoteId = note.id),
-				onDragLeave: () => {
-					if (hoveredNoteId === note.id) hoveredNoteId = null;
-				},
-				onDrop: () => {
-					if (hoveredNoteId === note.id) hoveredNoteId = null;
-				}
-			})
-		);
+		const cleanup = draggable({
+			element: node,
+			getInitialData: () => ({ noteId: note.id, columnId: note.columnId }),
+			onDragStart: () => (isDragging = true),
+			onDrop: () => (isDragging = false)
+		});
+
 		return {
 			destroy: cleanup
 		};
 	}
 </script>
 
-<div class="inline-flex items-center">
+<div class="flex w-full flex-col">
 	<div
 		use:dndCardGridAction
-		class=" group relative cursor-grab transition-all duration-200 ease-out select-none
+		class="group relative w-full cursor-grab transition-all duration-200 ease-out select-none
                {isDragging ? ' pointer-events-none scale-95 opacity-30 grayscale' : ''}"
 	>
 		<button
@@ -101,7 +79,7 @@
 				version="1.1"
 				xmlns="http://www.w3.org/2000/svg"
 				viewBox="0 0 232.3369863033555 229.1499924333649"
-				class={`${size}`}
+				class="h-auto w-full drop-shadow-md"
 				style="color: {note.color};"
 				><g stroke-linecap="round"
 					><g
@@ -168,10 +146,4 @@
 	{#key showNoteMenu}
 		<NoteMenu bind:isOpen={showNoteMenu} {note} />
 	{/key}
-
-	{#if isTargeted}
-		<div
-			class="mx-3 animate-pulse rounded-xl border-4 border-dashed border-sky-400 bg-sky-400/10 transition-all duration-150 {size}"
-		></div>
-	{/if}
 </div>

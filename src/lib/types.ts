@@ -22,7 +22,6 @@ export const emptyNote: NoteDocType = {
 	pinned: false,
 	description: '',
 	color: '',
-	position: 0,
 	createdAt: '',
 	updatedAt: ''
 };

@@ -57,42 +57,12 @@
 
 				const noteId = source.data.noteId as string;
 				const sourceColumnId = source.data.columnId as string;
-
-				// Pick up the target attributes now that the card exposes them!
-				const targetNoteId = destination.data.noteId as string | undefined;
 				const targetColumnId = destination.data.columnId as string;
 
-				if (!noteId || !targetColumnId) return;
+				if (!noteId || !targetColumnId || sourceColumnId === targetColumnId) return;
 
-				// Case A: Dropped into a column empty space wrapper
-				if (!targetNoteId) {
-					if (sourceColumnId !== targetColumnId) {
-						const result = await moveNote(noteId, targetColumnId);
-						if (result && result.type === 'error') notify(result);
-					}
-					return;
-				} else {
-					// Case B: Dropped directly onto another card in the grid
-					const targetColumn = columnItems.find((c) => c.id === targetColumnId);
-					if (!targetColumn) return;
-
-					const targetNotes = targetColumn.notes;
-					const targetIdx = targetNotes.findIndex((n) => n.id === targetNoteId);
-					if (targetIdx === -1) return;
-
-					// In grid layouts, we default to dropping right AFTER the targeted note
-					const prevNote = targetNotes[targetIdx];
-					const nextNote = targetNotes[targetIdx + 1];
-
-					const prevPos = prevNote ? (prevNote.position ?? 0) : 0;
-					// Generate a default high index if placing at the absolute end of the grid list
-					const nextPos = nextNote ? (nextNote.position ?? prevPos + 2000) : prevPos + 2000;
-
-					const newPosition = (prevPos + nextPos) / 2;
-
-					const result = await moveNote(noteId, targetColumnId, newPosition);
-					if (result && result.type === 'error') notify(result);
-				}
+				const result = await moveNote(noteId, targetColumnId);
+				if (result && result.type === 'error') notify(result);
 			}
 		});
 
@@ -109,12 +79,12 @@
 			// get custom sort key.
 			const cmp = col.sortKey ? getSortComparator(col.sortKey) : null;
 
-			// sort notes by custom comparator or position.
+			// sort notes by custom comparator, otherwise newest.
 			let notes = [...col.notes];
 			if (cmp) {
 				notes.sort(cmp);
 			} else {
-				notes.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+				notes.sort(getSortComparator('newest'));
 			}
 
 			// show pinned notes first.
@@ -365,27 +335,40 @@
 							}}
 						/>
 					</div>
-					<div
-						class="grid min-h-full w-full grid-cols-1 p-4 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
-					>
-						{#each columnItems[columnIdx].notes as note (note.id)}
-							<div class="{notePassesFilter(columnIdx, note) ? 'block' : 'hidden'} p-2">
-								<StickyNote {note} bind:hoveredNoteId={activeHoveredNoteId} />
-							</div>
-						{/each}
-					</div>
-					{#if column.specialType === 'inbox'}
-						<button
-							class="absolute right-0 bottom-0 m-2 size-15 cursor-pointer rounded-full border border-black bg-transparent p-2"
-							onclick={() => (showCreateNote = true)}
-						>
-							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
-								><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path
-									d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z"
-								/></svg
+					<div class="relative flex h-full w-full flex-col items-center justify-start">
+						{#if column.id === hoveredColumnId}
+							<div
+								class="pointer-events-none absolute inset-0 z-40 m-1.5 rounded-xl border-2 border-dashed border-black/20 bg-[#f1ebd9]/50 backdrop-blur-[1px] transition-all duration-150"
 							>
-						</button>
-					{/if}
+								<span
+									class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-patrick-hand text-lg font-bold tracking-wide text-black/40"
+								>
+									Drop notes here
+								</span>
+							</div>
+						{/if}
+						<div
+							class="grid w-full grid-cols-[repeat(auto-fill,minmax(120px,1fr))] content-start items-start gap-4 p-4"
+						>
+							{#each columnItems[columnIdx].notes as note (note.id)}
+								<div class="{notePassesFilter(columnIdx, note) ? 'block' : 'hidden'} p-2">
+									<StickyNote {note} bind:hoveredNoteId={activeHoveredNoteId} />
+								</div>
+							{/each}
+						</div>
+						{#if column.specialType === 'inbox'}
+							<button
+								class="absolute right-0 bottom-0 m-2 size-15 cursor-pointer rounded-full border border-black bg-transparent p-2"
+								onclick={() => (showCreateNote = true)}
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
+									><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path
+										d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z"
+									/></svg
+								>
+							</button>
+						{/if}
+					</div>
 				</div>
 			</div>
 		{/if}

@@ -54,22 +54,6 @@ export const noteRepository = {
 		if (!doc) return;
 		await doc.incrementalPatch(note);
 	},
-	updatePosition: async (id: string, position: number): Promise<void> => {
-		const db$ = await db();
-		const doc = await db$.notes.findOne(id).exec();
-		if (!doc) return;
-		await doc.incrementalPatch({ position });
-	},
-	reorderAll: async (noteIds: string[]): Promise<void> => {
-		const db$ = await db();
-		const docs = await db$.notes.findByIds(noteIds).exec();
-		await Promise.all(
-			noteIds.map((id, index) => {
-				const doc = docs.get(id);
-				return doc ? doc.incrementalPatch({ position: index }) : Promise.resolve();
-			})
-		);
-	},
 	getBulkByIds: async (ids: string[]): Promise<NoteDocType[]> => {
 		const db$ = await db();
 		const map = await db$.notes.findByIds(ids).exec();
@@ -294,7 +278,7 @@ export const columnService = {
 						return combineLatest(
 							cols.map((col) =>
 								database.notes
-									.find({ selector: { columnId: col.id }, sort: [{ position: 'asc' }] })
+									.find({ selector: { columnId: col.id } })
 									.$.pipe(
 										map((notes) => ({ ...col.toJSON(), notes: notes.map((n) => n.toJSON()) }))
 									)

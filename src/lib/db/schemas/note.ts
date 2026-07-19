@@ -10,7 +10,7 @@ import { HEX_COLOR_REGEX } from '$lib/constants';
 export const noteSchemaLiteral = {
 	title: 'note schema',
 	description: 'describes a note in DoneJar',
-	version: 1,
+	version: 2,
 	keyCompression: true,
 	primaryKey: 'id',
 	type: 'object',
@@ -23,12 +23,11 @@ export const noteSchemaLiteral = {
 		dueDateHasTime: { type: 'boolean', default: false },
 		dueDateTimestamp: { type: 'string', format: 'date-time' },
 		priority: { type: 'string', enum: ['low', 'medium', 'high'] },
-		position: { type: 'number' },
 		pinned: { type: 'boolean', default: false },
 		createdAt: { type: 'string', format: 'date-time' },
 		updatedAt: { type: 'string', format: 'date-time' }
 	},
-	required: ['id', 'columnId', 'title', 'color', 'position', 'createdAt', 'updatedAt'],
+	required: ['id', 'columnId', 'title', 'color', 'createdAt', 'updatedAt'],
 	indexes: [] // to be add when i have queries that need it
 } as const;
 

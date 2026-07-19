@@ -1,8 +1,7 @@
 <script lang="ts">
 	import kebabMenu from '$lib/assets/elements/kebabMenu.svg';
 	import grayBG from '$lib/assets/elements/grayBG.svg';
-
-	import { openProjectMenu } from '$lib/stores/dialog';
+	import { openProjectMenu, projectMenuStore } from '$lib/stores/dialog';
 	import { textColorFromHex } from '$lib/UiHelper';
 	import type { ProjectDocType } from '$lib/db/schemas';
 	import { projectStore } from '$lib/stores/projects.svelte';
@@ -10,13 +9,19 @@
 	import { ROUTES } from '$lib/constants';
 
 	let { project }: { project: ProjectDocType } = $props();
+
+	let isMenuOpen = $derived(
+		projectMenuStore.data?.project?.id === project.id && projectMenuStore.isOpen
+	);
 </script>
 
 <div
-	class="doodle-border {projectStore.current?.id === project.id ? 'bg-white' : 'is-hidden'} *:z-10"
+	class="doodle-border {projectStore.current?.id === project.id
+		? 'bg-white'
+		: 'is-hidden'} {isMenuOpen ? 'is-menu-open' : ''} *:z-10"
 >
 	<a
-		class=" relative flex cursor-pointer items-center gap-8"
+		class="relative flex cursor-pointer items-center gap-8"
 		href={resolve(ROUTES.PROJECT(project.id))}
 		tabindex="0"
 		aria-label={`Select project ${project.name}`}
@@ -46,7 +51,10 @@
 				onclick={(e) => {
 					e.preventDefault();
 					e.stopPropagation();
-					openProjectMenu(project);
+					openProjectMenu({
+						project: project,
+						position: { x: e.clientX, y: e.clientY }
+					});
 				}}
 				aria-label={`Project Menu ${project.name}`}
 			>
@@ -57,15 +65,18 @@
 </div>
 
 <style>
-	.is-hidden:not(:hover) {
+	/* Doodle Border */
+	.is-hidden:not(:hover):not(.is-menu-open) {
 		border-image-source: none !important;
 		border-color: transparent !important;
 	}
 
-	.is-hidden:not(:hover) .is-pa-hidden {
+	/* 3 Dot button */
+	.is-hidden:not(:hover):not(.is-menu-open) .is-pa-hidden {
 		visibility: hidden;
 	}
 
+	/* Background Image */
 	.is-hidden img.bg {
 		display: none;
 	}

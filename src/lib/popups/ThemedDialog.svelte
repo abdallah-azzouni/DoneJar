@@ -6,6 +6,9 @@
 		h = 'max-h-3/4',
 		mt = 'mt-[5%]',
 		cls = 'justify-self-center',
+		style = '',
+		blur = true,
+		pad = 'p-6',
 		isOpen = $bindable(false),
 		closeOnBackdrop = false,
 		cancelable = true,
@@ -19,6 +22,9 @@
 		h?: string;
 		mt?: string;
 		cls?: string;
+		style?: string;
+		blur?: boolean;
+		pad?: string;
 		isOpen?: boolean;
 		closeOnBackdrop?: boolean;
 		cancelable?: boolean;
@@ -137,6 +143,7 @@
 <dialog
 	aria-label={label}
 	bind:this={dialog}
+	data-blur={blur}
 	onclose={() => {
 		if (!isAnimatingClose) {
 			isOpen = false;
@@ -159,7 +166,8 @@
 	onpointermove={onSheetPointerMove}
 	onpointerup={onSheetPointerUp}
 	onpointercancel={onSheetPointerUp}
-	class="{mt} {h} {w} {cls} rounded-2xl bg-white p-6 shadow-lg {anim !== 'none'
+	{style}
+	class="{mt} {h} {w} {cls} rounded-2xl bg-white {pad} shadow-lg {anim !== 'none'
 		? `anim-${anim}`
 		: ''} {dragToClose ? 'will-change-transform' : ''}"
 	style:transform={dragToClose
@@ -238,13 +246,13 @@
 			overlay 0.25s allow-discrete;
 	}
 
-	dialog[open]::backdrop {
+	dialog[open]:not([data-blur='false'])::backdrop {
 		background-color: rgba(0, 0, 0, calc(0.5 * var(--backdrop-opacity, 1)));
 		backdrop-filter: blur(1px);
 	}
 
 	@starting-style {
-		dialog[open]::backdrop {
+		dialog[open]:not([data-blur='false'])::backdrop {
 			background-color: rgba(0, 0, 0, 0);
 			backdrop-filter: blur(0px);
 		}

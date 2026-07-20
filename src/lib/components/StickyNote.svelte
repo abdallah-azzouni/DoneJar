@@ -8,10 +8,7 @@
 	import { draggable } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 
 	// Track the bindable hover property
-	let {
-		note,
-		hoveredNoteId = $bindable(null)
-	}: { note: NoteDocType; hoveredNoteId: string | null } = $props();
+	let { note }: { note: NoteDocType } = $props();
 	let showNoteMenu = $state(false);
 
 	let infoColor = $derived(

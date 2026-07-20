@@ -95,19 +95,6 @@ export async function moveNote(noteId: string, newColumnId: string): Promise<Act
 	return success('Note moved successfully');
 }
 
-/**
- * Reorders notes within a column based on an array of note IDs in the desired order.
- * @param noteIds an array of note IDs in the desired order
- */
-export async function reorderNotes(noteIds: string[]): Promise<ActionResult> {
-	try {
-		await noteRepository.reorderAll(noteIds);
-	} catch (error) {
-		return failure(`Error reordering notes: ${error}`);
-	}
-	return success('Notes reordered successfully');
-}
-
 export async function togglePinNote(noteId: string): Promise<ActionResult> {
 	try {
 		const note = await noteRepository.get(noteId);

@@ -14,7 +14,7 @@
 		</button>
 	</div>
 	<div class="w-full border-t-2 border-dashed border-gray-500"></div>
-	<div class="overflow-x-clip overflow-y-scroll">
+	<div class="overflow-y-auto overflow-x-clip">
 		{#each projectStore.projects as project (project.id)}
 			<ProjectItem {project} />
 		{/each}

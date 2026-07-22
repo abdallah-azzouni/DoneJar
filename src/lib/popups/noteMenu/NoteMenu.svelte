@@ -374,7 +374,7 @@
 			</div>
 		</form>
 		<div class="flex w-60 flex-col gap-1 border-l-2 border-gray-500 pl-4 font-patrick-hand text-xl">
-			<div class="overflow-x-hidden overflow-y-auto">
+			<div class="overflow-x-hidden overflow-y-auto p-1">
 				<div>
 					<span class="mb-1 block">Project</span>
 					<div class="relative">
@@ -391,7 +391,7 @@
 				</div>
 				<div>
 					<span class="mb-1 block">Color</span>
-					<div class="flex flex-wrap gap-1">
+					<div class="flex gap-1 p-1">
 						{#each DEFAULT_MENU_COLORS as paletteColor (paletteColor)}
 							<button
 								type="button"

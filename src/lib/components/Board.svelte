@@ -25,6 +25,7 @@
 	} from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 
 	import { getSortComparator } from '$lib/sort';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	let showCreateNote = $state(false);
 
@@ -90,6 +91,15 @@
 	});
 
 	// Sort & Filter
+	let availableColors = $derived.by(() => {
+		const colors = new SvelteSet<string>();
+		for (const col of columns) {
+			for (const note of col.notes) {
+				if (note.color) colors.add(note.color);
+			}
+		}
+		return Array.from(colors);
+	});
 	const columnItems = $derived.by(() => {
 		return columns.map((col) => {
 			const parsedFilters = JSON.parse(col.filters || '{}');
@@ -297,10 +307,11 @@
 				<div class="doodle-border w-full flex-1 overflow-y-auto bg-white">
 					<div class="absolute top-22 right-4 z-10">
 						<SortFilter
-							bind:activeSortKey={column.sortKey}
-							bind:activeFilters={column.filters}
-							onSettingsChanged={() =>
-								updateColumnSettings(column.id, column.sortKey, column.filters)}
+							activeSortKey={column.sortKey}
+							activeFilters={column.filters}
+							colorOptions={availableColors}
+							onSettingsChanged={(newFilters, newSortKey) =>
+								updateColumnSettings(column.id, newSortKey, newFilters)}
 						/>
 					</div>
 					<div class="relative flex h-full w-full flex-col items-center justify-start">

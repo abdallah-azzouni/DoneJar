@@ -2,59 +2,64 @@
 	import FunnelSimpleIcon from 'phosphor-svelte/lib/FunnelSimpleIcon';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { sortOptions } from '$lib/sort';
+	import { DEFAULT_MENU_COLORS } from '$lib/constants';
 
 	// ═══ Props ═══
-
 	let {
-		activeSortKey = $bindable(undefined),
-		activeFilters = $bindable({}),
+		activeSortKey = undefined,
+		activeFilters = {},
+		colorOptions = [],
 		onSettingsChanged
 	}: {
-		activeSortKey?: string | undefined;
+		activeSortKey?: string;
 		activeFilters?: Record<string, string[]>;
-		onSettingsChanged?: () => void;
+		colorOptions?: string[];
+		onSettingsChanged: (filters: Record<string, string[]>, sortKey?: string) => void;
 	} = $props();
 
 	// ═══ State ═══
 	let isOpen = $state(false);
 	let panelEl: HTMLDivElement | undefined = $state();
 
-	// Filters collection (modular). Each filter exposes a getOptions(), set, and toggle handler.
+	// Filters collection
 	const filters = [
 		{ key: 'color', label: 'Filter by color', type: 'swatch' },
 		{ key: 'priority', label: 'Filter by priority', type: 'list' }
 	];
-	const filterOptions: Record<string, string[]> = {
-		color: ['#fffa8b', '#ffc0ad', '#a2e8dd', '#b0c4de', '#e6c5ff'], // Or derive from current theme
+	const filterOptions: Record<string, string[]> = $derived<Record<string, string[]>>({
+		color: colorOptions.length > 0 ? colorOptions : DEFAULT_MENU_COLORS,
 		priority: ['low', 'medium', 'high']
-	};
+	});
 
-	// Whether any sort or filter is active
+	// Derived indicator
 	let hasActive = $derived(
 		!!activeSortKey || filters.some((f) => (activeFilters[f.key] ?? []).length > 0)
 	);
 
 	// ═══ Handlers ═══
-
 	function toggleFilter(key: string, value: string) {
 		const current = new SvelteSet(activeFilters[key] ?? []);
 		if (current.has(value)) current.delete(value);
 		else current.add(value);
-		activeFilters = {
+
+		const updatedFilters = {
 			...activeFilters,
 			[key]: [...current]
 		};
-		onSettingsChanged?.();
+
+		// Pass updated filters back to parent handler
+		onSettingsChanged?.(updatedFilters, activeSortKey);
 	}
+
 	function toggleSort(key: string) {
-		activeSortKey = activeSortKey === key ? undefined : key;
-		onSettingsChanged?.();
+		const nextSortKey = activeSortKey === key ? undefined : key;
+
+		// Pass updated sortKey back to parent handler
+		onSettingsChanged?.(activeFilters, nextSortKey);
 	}
 
 	function clearAll() {
-		activeSortKey = undefined;
-		activeFilters = {};
-		onSettingsChanged?.();
+		onSettingsChanged?.({}, undefined);
 	}
 
 	function handleClickOutside(e: MouseEvent) {

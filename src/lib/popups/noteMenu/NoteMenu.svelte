@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createNote, editNote, saveNoteAttachments } from '$lib/actions';
+	import { createNote, editNote, saveNoteAttachments, deleteNote } from '$lib/actions';
 	import { attachmentRepository, columnRepository } from '$lib/db/dal';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import DatePicker from './DatePicker.svelte';
@@ -9,7 +9,7 @@
 	import { emptyNote, failure } from '$lib/types';
 	import type { NoteDocType, AttachmentDocType } from '$lib/db/schemas/index';
 	import { MAX_NOTE_TITLE_LENGTH, DEFAULT_NOTE_COLOR, DEFAULT_MENU_COLORS } from '$lib/constants';
-	import { confirmDelete } from '$lib/stores/dialog';
+	import { confirmMenu } from '$lib/stores/dialog';
 	import { projectStore } from '$lib/stores/projects.svelte';
 	import { untrack } from 'svelte';
 	import { nanoid } from 'nanoid';
@@ -479,11 +479,22 @@
 					class="mt-auto ml-auto size-fit rounded-2xl bg-red-700 px-5 py-3 font-bold text-white"
 					class:hidden={workingNote.id === ''}
 					onclick={() => {
+						if (workingNote.id === '') {
+							notify({
+								type: 'error',
+								message: 'Cannot delete a note that has not been saved yet.'
+							});
+							return;
+						}
 						isOpen = false;
-						confirmDelete({
-							type: 'notes',
-							id: workingNote.id,
-							name: workingNote.title
+						confirmMenu({
+							title: 'Delete Note?',
+							body: `The "${workingNote.title}" note and all of its data will be permanently deleted.`,
+							actionLabel: 'Delete',
+							actionColor: 'danger',
+							onConfirm: async () => {
+								return await deleteNote(workingNote.id);
+							}
 						});
 					}}>Delete</button
 				>

@@ -12,7 +12,7 @@
 	import { signOut } from '$lib/sb/auth';
 	import { projectStore } from '$lib/stores/projects.svelte';
 	import { projectSideBarStore } from '$lib/stores/dialog';
-	import DeleteConfirmation from '$lib/popups/DeleteConfirmation.svelte';
+	import ConfirmationMenu from '$lib/popups/ConfirmationMenu.svelte';
 	import { notify } from '$lib/stores/notificationStore';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { fly } from 'svelte/transition';
@@ -65,7 +65,7 @@
 
 <ProjectMenu />
 <ProjectSettings />
-<DeleteConfirmation />
+<ConfirmationMenu />
 
 {#if !appStore.isLoaded || !projectStore.isReady}
 	<Loading />

@@ -33,12 +33,14 @@ export type ProjectWithColumns = ProjectDocType & { columns: ColumnDocType[] };
 export type NoteInsertTarget =
 	{ type: 'index'; value: number } | { type: 'specialType'; value: 'inbox' | 'jar' };
 
-export type DeleteTarget =
-	| { type: 'projects'; id: string; name: string }
-	| { type: 'notes'; id: string; name: string }
-	| { type: 'columns'; id: string; projectId: string; name: string }
-	| { type: 'attachments'; id: string; noteId: string; name: string }
-	| null;
+export type ConfirmTarget = {
+	title: string;
+	body: string;
+	actionLabel: string;
+	cancelLabel?: string;
+	actionColor?: 'primary' | 'danger' | 'success' | 'info';
+	onConfirm: () => ActionResult | Promise<ActionResult>;
+};
 
 // sort options
 export interface SortOption {

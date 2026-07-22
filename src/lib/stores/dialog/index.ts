@@ -1,5 +1,5 @@
 import { createDialogStore } from './dialogFactory.svelte.ts';
-import { type DeleteTarget } from '$lib/types';
+import { type ConfirmTarget } from '$lib/types';
 import type { ProjectDocType } from '$lib/db/schemas';
 
 export * from './dialogFactory.svelte.ts';
@@ -43,8 +43,8 @@ export const openProjectMembers = (project: ProjectDocType | null = null) =>
 export const closeProjectMembers = () => projectMembersStore.close();
 
 // --- DELETE CONFIRMATION ---
-export const deleteConfirmStore = createDialogStore<DeleteTarget | null>(false, null);
-export const confirmDelete = (target: NonNullable<DeleteTarget>) => deleteConfirmStore.open(target);
-export const closeDelete = () => deleteConfirmStore.close();
+export const confirmMenuStore = createDialogStore<ConfirmTarget | null>(false, null);
+export const confirmMenu = (target: ConfirmTarget) => confirmMenuStore.open(target);
+export const closeConfirmMenu = () => confirmMenuStore.close();
 
 export const projectSideBarStore = createDialogStore();

@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { DropdownMenu } from 'bits-ui';
 	import { deleteProject } from '$lib/actions';
-	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
-	import { confirmMenu } from '$lib/stores/dialog';
 	import { projectStore } from '$lib/stores/projects.svelte';
 	import {
+		confirmMenu,
 		projectMenuStore,
 		closeProjectMenu,
 		openProjectMembers,
@@ -16,6 +15,29 @@
 	import { notify } from '$lib/stores/notificationStore';
 
 	let data = $derived(projectMenuStore.data);
+
+	async function handleDeleteProject() {
+		if (!data?.project?.id) {
+			notify({ type: 'error', message: 'No project selected for deletion.' });
+			return;
+		}
+		closeProjectMenu();
+		const confirm = await confirmMenu({
+			title: 'Delete Project?',
+			body: `The "${data.project.name}" project and all of its tasks will be permanently deleted.`,
+			actionLabel: 'Delete',
+			actionColor: 'danger'
+		});
+		if (confirm) {
+			const res = await deleteProject(data.project.id);
+			if (res.type !== 'error') {
+				projectStore.select(null);
+				goto(resolve(ROUTES.APP));
+			} else {
+				notify(res);
+			}
+		}
+	}
 </script>
 
 <DropdownMenu.Root
@@ -30,7 +52,7 @@
 			forceMount
 			class="z-9999 focus:outline-none"
 			style="position: fixed; top: {data?.position.y ?? 0}px; left: {data?.position.x ?? 0}px;"
->
+		>
 			{#snippet child({ props, open })}
 				{#if open}
 					<div
@@ -40,51 +62,30 @@
 						<DropdownMenu.Item
 							class="w-full cursor-pointer border-b-2 border-black/5 px-4 py-3 text-left font-bold text-gray-800 transition-colors outline-none data-highlighted:bg-gray-200"
 							onSelect={() => {
-				closeProjectMenu();
-				openProjectSetting(data?.project);
-			}}
-		>
-			Edit Project
+								closeProjectMenu();
+								openProjectSetting(data?.project);
+							}}
+						>
+							Edit Project
 						</DropdownMenu.Item>
 
 						<DropdownMenu.Item
 							class="w-full cursor-pointer border-b-2 border-black/5 px-4 py-3 text-left font-bold text-gray-800 transition-colors outline-none data-highlighted:bg-gray-200"
 							onSelect={() => {
-				closeProjectMenu();
-				openProjectMembers(data?.project);
-			}}
-		>
+								closeProjectMenu();
+								openProjectMembers(data?.project);
+							}}
+						>
 							Members
 						</DropdownMenu.Item>
 
-		<button
-			type="button"
-			class="w-full px-4 py-3 text-left font-bold text-red-600 transition-colors hover:bg-red-100 hover:text-red-700"
-			onclick={() => {
-				if (!data?.project?.id) {
-					notify({ type: 'error', message: 'No project selected for deletion.' });
-					return;
-				}
-				closeProjectMenu();
-				confirmMenu({
-					title: 'Delete Project?',
-					body: `The "${data?.project?.name}" project and all of its tasks will be permanently deleted.`,
-					actionLabel: 'Delete',
-					actionColor: 'danger',
-					onConfirm: async () => {
-						const result = await deleteProject(data?.project?.id || '');
-						if (result.type !== 'error') {
-							projectStore.select(null);
-							goto(resolve(ROUTES.APP));
-						}
-						return result;
-					}
-				});
-			}}
-		>
-			Delete Project
+						<DropdownMenu.Item
+							class="w-full cursor-pointer px-4 py-3 text-left font-bold text-red-600 transition-colors outline-none data-highlighted:bg-red-100 data-highlighted:text-red-700"
+							onSelect={async () => await handleDeleteProject()}
+						>
+							Delete Project
 						</DropdownMenu.Item>
-	</div>
+					</div>
 				{/if}
 			{/snippet}
 		</DropdownMenu.Content>

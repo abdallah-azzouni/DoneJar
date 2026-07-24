@@ -39,7 +39,6 @@ export type ConfirmTarget = {
 	actionLabel: string;
 	cancelLabel?: string;
 	actionColor?: 'primary' | 'danger' | 'success' | 'info';
-	onConfirm: () => ActionResult | Promise<ActionResult>;
 };
 
 // sort options

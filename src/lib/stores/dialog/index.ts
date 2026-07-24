@@ -42,9 +42,9 @@ export const openProjectMembers = (project: ProjectDocType | null = null) =>
 	projectMembersStore.open(project);
 export const closeProjectMembers = () => projectMembersStore.close();
 
-// --- DELETE CONFIRMATION ---
+// --- CONFIRMATION MENU ---
 export const confirmMenuStore = createDialogStore<ConfirmTarget | null>(false, null);
-export const confirmMenu = (target: ConfirmTarget) => confirmMenuStore.open(target);
-export const closeConfirmMenu = () => confirmMenuStore.close();
+export const confirmMenu = (target: ConfirmTarget) => confirmMenuStore.ask(target);
+export const closeConfirmMenu = () => confirmMenuStore.respond(false);
 
 export const projectSideBarStore = createDialogStore();

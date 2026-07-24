@@ -203,6 +203,27 @@
 		// Use .toFixed(1) for "1.5 MB" or .toFixed(2) for "1.45 MB"
 		return mb < 0.1 ? '< 0.1 MB' : `${mb.toFixed(1)} MB`;
 	}
+
+	async function handleDeleteNote() {
+		if (workingNote.id === '') {
+			notify({
+				type: 'error',
+				message: 'Cannot delete a note that has not been saved yet.'
+			});
+			return;
+		}
+		isOpen = false;
+		const result = await confirmMenu({
+			title: 'Delete Note?',
+			body: `The "${workingNote.title}" note and all of its data will be permanently deleted.`,
+			actionLabel: 'Delete',
+			actionColor: 'danger'
+		});
+		if (result) {
+			const res = await deleteNote(workingNote.id);
+			notify(res);
+		}
+	}
 </script>
 
 <DatePicker
@@ -436,84 +457,68 @@
 							</div>
 						</div>
 
-				<div>
-					<span class="mb-1 block">Due Date</span>
-					<button
-						class="doodle-border flex w-full items-center justify-center gap-2 py-2"
-						onclick={() => (showDatePicker = true)}
-					>
-						{#if workingNote.dueDateTimestamp}
-							<span
-								class={isDueDatePast(
-									workingNote.dueDateTimestamp,
-									workingNote.dueDateHasTime,
-									new Date()
-								)
-									? 'text-red-500'
-									: ''}
+						<div>
+							<span class="mb-1 block">Due Date</span>
+							<button
+								class="doodle-border flex w-full items-center justify-center gap-2 py-2"
+								onclick={() => (showDatePicker = true)}
 							>
-								{formatDueDate(workingNote.dueDateTimestamp, workingNote.dueDateHasTime)}
-							</span>
-						{:else}
-							<span class="text-gray-400">Set Date...</span>
-						{/if}
-					</button>
-				</div>
-				<div>
-					<span class="mb-1 block">Priority</span>
-					<div class="flex w-full items-center gap-2 font-patrick-hand text-2xl">
+								{#if workingNote.dueDateTimestamp}
+									<span
+										class={isDueDatePast(
+											workingNote.dueDateTimestamp,
+											workingNote.dueDateHasTime,
+											new Date()
+										)
+											? 'text-red-500'
+											: ''}
+									>
+										{formatDueDate(workingNote.dueDateTimestamp, workingNote.dueDateHasTime)}
+									</span>
+								{:else}
+									<span class="text-gray-400">Set Date...</span>
+								{/if}
+							</button>
+						</div>
+						<div>
+							<span class="mb-1 block">Priority</span>
+							<div class="flex w-full items-center gap-2 font-patrick-hand text-2xl">
+								<button
+									class="doodle-border flex-1 {workingNote.priority === 'low'
+										? 'bg-blue-100 text-blue-800'
+										: ''}"
+									onclick={() => {
+										workingNote.priority = workingNote.priority === 'low' ? undefined : 'low';
+									}}>Low</button
+								>
+								<button
+									class=" doodle-border flex-1 {workingNote.priority === 'medium'
+										? 'bg-amber-100 text-amber-800'
+										: ''}"
+									onclick={() => {
+										workingNote.priority = workingNote.priority === 'medium' ? undefined : 'medium';
+									}}>Medium</button
+								>
+								<button
+									class=" doodle-border flex-1 {workingNote.priority === 'high'
+										? 'bg-red-100 text-red-800'
+										: ''}"
+									onclick={() => {
+										workingNote.priority = workingNote.priority === 'high' ? undefined : 'high';
+									}}>High</button
+								>
+							</div>
+						</div>
+					</div>
+					<div class="mt-auto flex justify-end gap-3 border-t-2 border-gray-200 pt-2">
 						<button
-							class="doodle-border flex-1 {workingNote.priority === 'low'
-								? 'bg-blue-100 text-blue-800'
-								: ''}"
-							onclick={() => {
-								workingNote.priority = workingNote.priority === 'low' ? undefined : 'low';
-							}}>Low</button
-						>
-						<button
-							class=" doodle-border flex-1 {workingNote.priority === 'medium'
-								? 'bg-amber-100 text-amber-800'
-								: ''}"
-							onclick={() => {
-								workingNote.priority = workingNote.priority === 'medium' ? undefined : 'medium';
-							}}>Medium</button
-						>
-						<button
-							class=" doodle-border flex-1 {workingNote.priority === 'high'
-								? 'bg-red-100 text-red-800'
-								: ''}"
-							onclick={() => {
-								workingNote.priority = workingNote.priority === 'high' ? undefined : 'high';
-							}}>High</button
+							class="mt-auto ml-auto size-fit rounded-2xl bg-red-700 px-5 py-3 font-bold text-white"
+							class:hidden={workingNote.id === ''}
+							onclick={async () => await handleDeleteNote()}>Delete</button
 						>
 					</div>
 				</div>
 			</div>
-			<div class="mt-auto flex justify-end gap-3 border-t-2 border-gray-200 pt-2">
-				<button
-					class="mt-auto ml-auto size-fit rounded-2xl bg-red-700 px-5 py-3 font-bold text-white"
-					class:hidden={workingNote.id === ''}
-					onclick={() => {
-						if (workingNote.id === '') {
-							notify({
-								type: 'error',
-								message: 'Cannot delete a note that has not been saved yet.'
-							});
-							return;
-						}
-						isOpen = false;
-						confirmMenu({
-							title: 'Delete Note?',
-							body: `The "${workingNote.title}" note and all of its data will be permanently deleted.`,
-							actionLabel: 'Delete',
-							actionColor: 'danger',
-							onConfirm: async () => {
-								return await deleteNote(workingNote.id);
-							}
-						});
-					}}>Delete</button
-				>
-			</div>
-		</div>
-	</div>
-</ThemedDialog>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>

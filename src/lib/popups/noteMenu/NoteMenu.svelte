@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createNote, editNote, saveNoteAttachments, deleteNote } from '$lib/actions';
 	import { attachmentRepository, columnRepository } from '$lib/db/dal';
-	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
+	import { Dialog } from 'bits-ui';
 	import DatePicker from './DatePicker.svelte';
 	import QEditor from '$lib/components/QEditor.svelte';
 	import { formatDueDate, isDueDatePast } from '$lib/UiHelper';
@@ -218,208 +218,223 @@
 		workingNote.dueDateHasTime = date?.hasTime;
 	}}
 />
-<ThemedDialog bind:isOpen w="w-5/6" h="h-5/6">
-	<div class="flex h-full flex-row">
-		<form class="flex min-h-0 flex-1 flex-col space-y-2 pr-2" onsubmit={handleSubmit}>
-			<input
-				type="text"
-				class="doodle-border w-full text-2xl font-bold outline-none"
-				placeholder="Note title..."
-				maxlength={MAX_NOTE_TITLE_LENGTH}
-				bind:value={workingNote.title}
-				required
-			/>
-			<hr class=" border border-gray-500" />
+<Dialog.Root bind:open={isOpen}>
+	<Dialog.Portal to="body">
+		<Dialog.Overlay class="fixed inset-0 z-9998 bg-black/50 backdrop-blur-[1px]" />
+		<Dialog.Content
+			interactOutsideBehavior="ignore"
+			class="fixed top-[5%] left-1/2 z-9998 h-5/6 w-5/6 -translate-x-1/2 rounded-2xl bg-white p-6 shadow-lg"
+		>
+			<div class="flex h-full flex-row">
+				<form class="flex min-h-0 flex-1 flex-col space-y-2 pr-2" onsubmit={handleSubmit}>
+					<input
+						type="text"
+						class="doodle-border w-full text-2xl font-bold outline-none"
+						placeholder="Note title..."
+						maxlength={MAX_NOTE_TITLE_LENGTH}
+						bind:value={workingNote.title}
+						required
+					/>
+					<hr class=" border border-gray-500" />
 
-			<div class="overflow-y-auto">
-				<QEditor bind:description={workingNote.description} />
-				<div class="mt-4 flex min-h-0 flex-1 flex-col">
-					<!-- Header Divider -->
-					<div class="flex w-full items-center gap-3 opacity-60">
-						<div class="flex-1 border-t-2 border-dashed border-gray-400"></div>
-						<span class="text-xs font-bold tracking-widest text-gray-500 uppercase"
-							>Attachments</span
-						>
-						<!-- The "Add" Action -->
-						<input
-							bind:this={fileInput}
-							type="file"
-							multiple
-							class="hidden"
-							onchange={handleFileSelected}
-						/>
-						<button
-							type="button"
-							title="Add file or image"
-							class="flex size-7 items-center justify-center rounded-full border-2 border-black bg-amber-400 text-xl font-bold shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all hover:bg-amber-300 active:translate-y-px active:shadow-none"
-							onclick={handleAddAttachment}
-						>
-							+
-						</button>
-						<div class="flex-1 border-t-2 border-dashed border-gray-400"></div>
-					</div>
+					<div class="overflow-y-auto">
+						<QEditor bind:description={workingNote.description} />
+						<div class="mt-4 flex min-h-0 flex-1 flex-col">
+							<!-- Header Divider -->
+							<div class="flex w-full items-center gap-3 opacity-60">
+								<div class="flex-1 border-t-2 border-dashed border-gray-400"></div>
+								<span class="text-xs font-bold tracking-widest text-gray-500 uppercase"
+									>Attachments</span
+								>
+								<!-- The "Add" Action -->
+								<input
+									bind:this={fileInput}
+									type="file"
+									multiple
+									class="hidden"
+									onchange={handleFileSelected}
+								/>
+								<button
+									type="button"
+									title="Add file or image"
+									class="flex size-7 items-center justify-center rounded-full border-2 border-black bg-amber-400 text-xl font-bold shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all hover:bg-amber-300 active:translate-y-px active:shadow-none"
+									onclick={handleAddAttachment}
+								>
+									+
+								</button>
+								<div class="flex-1 border-t-2 border-dashed border-gray-400"></div>
+							</div>
 
-					<div class=" gap-2 py-4 pr-2">
-						<!-- BIG PREVIEW: Image/Screenshot -->
-						<div class="flex w-full flex-wrap gap-3">
-							{#each attachments.filter( (a) => a.mimeType.startsWith('image/') ) as attachment (attachment.id)}
-								<div class="group relative mt-2 self-start">
-									<!-- Washi Tape Effect -->
-									<div
-										class="absolute -top-3 left-1/2 z-10 h-6 w-16 -translate-x-1/2 rotate-2 border border-blue-300 bg-blue-200/50 opacity-80 shadow-sm"
-									></div>
+							<div class=" gap-2 py-4 pr-2">
+								<!-- BIG PREVIEW: Image/Screenshot -->
+								<div class="flex w-full flex-wrap gap-3">
+									{#each attachments.filter( (a) => a.mimeType.startsWith('image/') ) as attachment (attachment.id)}
+										<div class="group relative mt-2 self-start">
+											<!-- Washi Tape Effect -->
+											<div
+												class="absolute -top-3 left-1/2 z-10 h-6 w-16 -translate-x-1/2 rotate-2 border border-blue-300 bg-blue-200/50 opacity-80 shadow-sm"
+											></div>
 
-									<div
-										class="doodle-border flex w-64 flex-col overflow-hidden bg-white p-2 transition-transform hover:rotate-1"
-									>
-										<div
-											class="aspect-video w-full overflow-hidden border border-gray-200 bg-gray-100"
-										>
-											<img
-												src={getPreviewUrl(attachment)}
-												alt="Preview"
-												class="h-full w-full object-contain"
-											/>
-											<!-- File Size Badge -->
-											<span
-												class="text-xxs absolute top-1 right-1 rounded bg-black/70 px-1 py-0.5 font-bold text-white"
+											<div
+												class="doodle-border flex w-64 flex-col overflow-hidden bg-white p-2 transition-transform hover:rotate-1"
 											>
-												{formatSize(attachment.size)}
-											</span>
-										</div>
-										<div class="mt-2 flex items-center justify-between">
-											<span class="truncate text-xs font-bold italic">{attachment.filename}</span>
-											<div class="flex gap-1">
-												<button
-													type="button"
-													onclick={(e) => {
-														e.stopPropagation();
-														handlePinAttachment(attachment.id);
-													}}
-													class="size-6 rounded border border-black {attachment.pinned
-														? 'bg-amber-400'
-														: 'bg-white'} text-xs hover:bg-amber-200">📌</button
+												<div
+													class="aspect-video w-full overflow-hidden border border-gray-200 bg-gray-100"
 												>
-												<button
-													type="button"
-													class="size-6 rounded border border-black bg-white text-xs hover:bg-red-200"
-													onclick={(e) => {
-														e.stopPropagation();
-														handleDeleteAttachment(attachment.id);
-													}}>x</button
-												>
+													<img
+														src={getPreviewUrl(attachment)}
+														alt="Preview"
+														class="h-full w-full object-contain"
+													/>
+													<!-- File Size Badge -->
+													<span
+														class="text-xxs absolute top-1 right-1 rounded bg-black/70 px-1 py-0.5 font-bold text-white"
+													>
+														{formatSize(attachment.size)}
+													</span>
+												</div>
+												<div class="mt-2 flex items-center justify-between">
+													<span class="truncate text-xs font-bold italic"
+														>{attachment.filename}</span
+													>
+													<div class="flex gap-1">
+														<button
+															type="button"
+															onclick={(e) => {
+																e.stopPropagation();
+																handlePinAttachment(attachment.id);
+															}}
+															class="size-6 rounded border border-black {attachment.pinned
+																? 'bg-amber-400'
+																: 'bg-white'} text-xs hover:bg-amber-200">📌</button
+														>
+														<button
+															type="button"
+															class="size-6 rounded border border-black bg-white text-xs hover:bg-red-200"
+															onclick={(e) => {
+																e.stopPropagation();
+																handleDeleteAttachment(attachment.id);
+															}}>x</button
+														>
+													</div>
+												</div>
 											</div>
 										</div>
-									</div>
-								</div>
-							{:else}
-								<span class="text-center text-sm italic text-gray-400">No image attachments...</span
-								>
-							{/each}
-						</div>
-						<div class="mt-4 border-t-2 border-dashed border-gray-300 pt-4">
-							<!-- LIST ROW: Standard File -->
-							{#each attachments.filter((a) => !a.mimeType.startsWith('image/')) as attachment (attachment.id)}
-								<div class="doodle-border flex items-center gap-3 bg-white p-2 hover:bg-gray-50">
-									<span class="text-2xl">📄</span>
-									<div class="flex flex-1 flex-col">
-										<span class="text-sm leading-tight font-bold">{attachment.filename}</span>
-										<span class="text-xxs font-black text-gray-500 uppercase"
-											>{formatSize(attachment.size)}</span
+									{:else}
+										<span class="text-center text-sm italic text-gray-400"
+											>No image attachments...</span
 										>
-									</div>
-									<button
-										type="button"
-										class="size-8 rounded-full border border-black {attachment.pinned
-											? 'bg-amber-400'
-											: 'bg-white'} hover:bg-amber-200"
-										onclick={(e) => {
-											e.stopPropagation();
-											handlePinAttachment(attachment.id);
-										}}
-										title="Pin attachment">📌</button
-									>
-									<button
-										type="button"
-										class="size-8 rounded-full border border-black bg-white hover:bg-red-200"
-										onclick={(e) => {
-											e.stopPropagation(); // Prevent triggering parent click events
-											handleDeleteAttachment(attachment.id);
-										}}
-										title="Delete">x</button
-									>
+									{/each}
 								</div>
-							{:else}
-								<span class="text-center text-sm italic text-gray-400">No file attachments...</span>
-							{/each}
+								<div class="mt-4 border-t-2 border-dashed border-gray-300 pt-4">
+									<!-- LIST ROW: Standard File -->
+									{#each attachments.filter((a) => !a.mimeType.startsWith('image/')) as attachment (attachment.id)}
+										<div
+											class="doodle-border flex items-center gap-3 bg-white p-2 hover:bg-gray-50"
+										>
+											<span class="text-2xl">📄</span>
+											<div class="flex flex-1 flex-col">
+												<span class="text-sm leading-tight font-bold">{attachment.filename}</span>
+												<span class="text-xxs font-black text-gray-500 uppercase"
+													>{formatSize(attachment.size)}</span
+												>
+											</div>
+											<button
+												type="button"
+												class="size-8 rounded-full border border-black {attachment.pinned
+													? 'bg-amber-400'
+													: 'bg-white'} hover:bg-amber-200"
+												onclick={(e) => {
+													e.stopPropagation();
+													handlePinAttachment(attachment.id);
+												}}
+												title="Pin attachment">📌</button
+											>
+											<button
+												type="button"
+												class="size-8 rounded-full border border-black bg-white hover:bg-red-200"
+												onclick={(e) => {
+													e.stopPropagation(); // Prevent triggering parent click events
+													handleDeleteAttachment(attachment.id);
+												}}
+												title="Delete">x</button
+											>
+										</div>
+									{:else}
+										<span class="text-center text-sm italic text-gray-400"
+											>No file attachments...</span
+										>
+									{/each}
+								</div>
+							</div>
 						</div>
 					</div>
-				</div>
-			</div>
 
-			<div class="mx-2 mt-auto flex justify-end gap-3 border-t-2 border-gray-200 pt-4">
-				<button
-					class="rounded-2xl border-2 border-black px-6 py-2 font-bold transition-transform active:translate-y-1"
-					type="button"
-					onclick={handleCancel}
-				>
-					Cancel
-				</button>
-				<button
-					class="rounded-2xl border-2 border-black bg-green-400 px-8 py-2 font-bold shadow-[4px_4px_0px_rgba(0,0,0,1)] transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
-					type="submit"
-				>
-					Save Note
-				</button>
-			</div>
-		</form>
-		<div class="flex w-60 flex-col gap-1 border-l-2 border-gray-500 pl-4 font-patrick-hand text-xl">
-			<div class="overflow-x-hidden overflow-y-auto p-1">
-				<div>
-					<span class="mb-1 block">Project</span>
-					<div class="relative">
-						<span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2">📁</span>
-						<select
-							bind:value={noteProjectId}
-							class="doodle-border w-full cursor-pointer bg-transparent py-2 pr-4 pl-10"
+					<div class="mx-2 mt-auto flex justify-end gap-3 border-t-2 border-gray-200 pt-4">
+						<button
+							class="rounded-2xl border-2 border-black px-6 py-2 font-bold transition-transform active:translate-y-1"
+							type="button"
+							onclick={handleCancel}
 						>
-							{#each projectStore.projects as project (project.id)}
-								<option value={project.id}>{project.name}</option>
-							{/each}
-						</select>
+							Cancel
+						</button>
+						<button
+							class="rounded-2xl border-2 border-black bg-green-400 px-8 py-2 font-bold shadow-[4px_4px_0px_rgba(0,0,0,1)] transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+							type="submit"
+						>
+							Save Note
+						</button>
 					</div>
-				</div>
-				<div>
-					<span class="mb-1 block">Color</span>
-					<div class="flex gap-1 p-1">
-						{#each DEFAULT_MENU_COLORS as paletteColor (paletteColor)}
-							<button
-								type="button"
-								class="size-10 rounded-xl border-2 border-black transition-all"
-								style:background-color={paletteColor}
-								class:border-4={workingNote.color === paletteColor}
-								onclick={() => (workingNote.color = paletteColor)}
-								title="Select color {paletteColor}"
-							>
-							</button>
-						{/each}
+				</form>
+				<div
+					class="flex w-60 flex-col gap-1 border-l-2 border-gray-500 pl-4 font-patrick-hand text-xl"
+				>
+					<div class="overflow-x-hidden overflow-y-auto p-1">
+						<div>
+							<span class="mb-1 block">Project</span>
+							<div class="relative">
+								<span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2">📁</span>
+								<select
+									bind:value={noteProjectId}
+									class="doodle-border w-full cursor-pointer bg-transparent py-2 pr-4 pl-10"
+								>
+									{#each projectStore.projects as project (project.id)}
+										<option value={project.id}>{project.name}</option>
+									{/each}
+								</select>
+							</div>
+						</div>
+						<div>
+							<span class="mb-1 block">Color</span>
+							<div class="flex gap-1 p-1">
+								{#each DEFAULT_MENU_COLORS as paletteColor (paletteColor)}
+									<button
+										type="button"
+										class="size-10 rounded-xl border-2 border-black transition-all"
+										style:background-color={paletteColor}
+										class:border-4={workingNote.color === paletteColor}
+										onclick={() => (workingNote.color = paletteColor)}
+										title="Select color {paletteColor}"
+									>
+									</button>
+								{/each}
 
-						<label
-							class="relative flex size-10 transform cursor-pointer items-center justify-center rounded-full border-2 border-black transition-all hover:scale-110 active:scale-100"
-							style:background-color={workingNote.color}
-							class:border-4={!DEFAULT_MENU_COLORS.includes(workingNote.color)}
-						>
-							<span class="text-m font-bold" style:color={textColorFromHex(workingNote.color)}
-								>+</span
-							>
-							<input
-								type="color"
-								bind:value={workingNote.color}
-								class="absolute inset-0 cursor-pointer opacity-0"
-							/>
-						</label>
-					</div>
-				</div>
+								<label
+									class="relative flex size-10 transform cursor-pointer items-center justify-center rounded-full border-2 border-black transition-all hover:scale-110 active:scale-100"
+									style:background-color={workingNote.color}
+									class:border-4={!DEFAULT_MENU_COLORS.includes(workingNote.color)}
+								>
+									<span class="text-m font-bold" style:color={textColorFromHex(workingNote.color)}
+										>+</span
+									>
+									<input
+										type="color"
+										bind:value={workingNote.color}
+										class="absolute inset-0 cursor-pointer opacity-0"
+									/>
+								</label>
+							</div>
+						</div>
 
 				<div>
 					<span class="mb-1 block">Due Date</span>

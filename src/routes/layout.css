@@ -24,13 +24,8 @@ body {
 	min-height: 500px;
 }
 
-body,
-dialog {
+body [data-dialog-content] {
 	background-color: var(--app-bg-color);
-}
-
-dialog::backdrop {
-	background-color: rgba(0, 0, 0, 0.25);
 }
 
 select option {

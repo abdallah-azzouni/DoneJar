@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { DropdownMenu } from 'bits-ui';
 	import { deleteProject } from '$lib/actions';
 	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
 	import { confirmMenu } from '$lib/stores/dialog';
@@ -17,40 +18,44 @@
 	let data = $derived(projectMenuStore.data);
 </script>
 
-<ThemedDialog
-	isOpen={projectMenuStore.isOpen}
-	onClose={closeProjectMenu}
-	closeOnBackdrop={true}
-	blur={false}
-	w="w-48"
-	h="h-fit"
-	cls="shadow-[4px_4px_0px_rgba(0,0,0,0.15)] border-2 border-black rounded-xl overflow-hidden"
-	pad="p-0"
-	style="position: fixed; margin: 0; top: {data?.position.y}px; left: {data?.position.x}px;"
+<DropdownMenu.Root
+	open={projectMenuStore.isOpen}
+	onOpenChange={(open) => {
+		if (!open) closeProjectMenu();
+	}}
 >
-	<div class="flex flex-col bg-[#FDFBF7]">
-		<button
-			type="button"
-			class="w-full border-b-2 border-black/5 px-4 py-3 text-left font-bold text-gray-800 transition-colors hover:bg-gray-200"
-			onclick={() => {
+	<!-- 1. Portal directly to document body to escape parent stacking contexts -->
+	<DropdownMenu.Portal to="body">
+		<DropdownMenu.Content
+			forceMount
+			class="z-9999 focus:outline-none"
+			style="position: fixed; top: {data?.position.y ?? 0}px; left: {data?.position.x ?? 0}px;"
+>
+			{#snippet child({ props, open })}
+				{#if open}
+					<div
+						{...props}
+						class="z-9999 flex w-48 flex-col overflow-hidden rounded-xl border-2 border-black bg-[#FDFBF7] shadow-[4px_4px_0px_rgba(0,0,0,0.15)]"
+					>
+						<DropdownMenu.Item
+							class="w-full cursor-pointer border-b-2 border-black/5 px-4 py-3 text-left font-bold text-gray-800 transition-colors outline-none data-highlighted:bg-gray-200"
+							onSelect={() => {
 				closeProjectMenu();
 				openProjectSetting(data?.project);
 			}}
 		>
 			Edit Project
-		</button>
+						</DropdownMenu.Item>
 
-		<button
-			type="button"
-			class="w-full border-b-2 border-black/5 px-4 py-3 text-left font-bold text-gray-800 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
-			disabled={true}
-			onclick={() => {
+						<DropdownMenu.Item
+							class="w-full cursor-pointer border-b-2 border-black/5 px-4 py-3 text-left font-bold text-gray-800 transition-colors outline-none data-highlighted:bg-gray-200"
+							onSelect={() => {
 				closeProjectMenu();
 				openProjectMembers(data?.project);
 			}}
 		>
-			Members ( Soon... )
-		</button>
+							Members
+						</DropdownMenu.Item>
 
 		<button
 			type="button"
@@ -78,6 +83,10 @@
 			}}
 		>
 			Delete Project
-		</button>
+						</DropdownMenu.Item>
 	</div>
-</ThemedDialog>
+				{/if}
+			{/snippet}
+		</DropdownMenu.Content>
+	</DropdownMenu.Portal>
+</DropdownMenu.Root>

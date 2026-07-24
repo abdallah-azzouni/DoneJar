@@ -1,7 +1,6 @@
 <script lang="ts">
-	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
-	import { notify } from '$lib/stores/notificationStore';
-	import { confirmMenuStore, closeConfirmMenu } from '$lib/stores/dialog';
+	import { confirmMenuStore } from '$lib/stores/dialog';
+	import { Dialog } from 'bits-ui';
 
 	let target = $derived(confirmMenuStore.data);
 	let isOpen = $derived(confirmMenuStore.isOpen);
@@ -40,7 +39,18 @@
 	};
 </script>
 
-<ThemedDialog {isOpen} onClose={closeConfirmMenu}>
+<Dialog.Root
+	open={confirmMenuStore.isOpen}
+	onOpenChange={(o) => {
+		if (!o) confirmMenuStore.respond(false);
+	}}
+>
+	<Dialog.Portal to="body">
+		<Dialog.Overlay class="fixed inset-0 z-9999 bg-black/50 backdrop-blur-[1px]" />
+		<Dialog.Content
+			interactOutsideBehavior="ignore"
+			class="fixed top-[5%] left-1/2 z-9999 max-h-3/4 w-2/3 -translate-x-1/2 justify-self-center rounded-2xl bg-white p-6 shadow-lg"
+		>
 	<h1 class="m-4 text-2xl font-bold">
 		{target?.title ?? 'Confirm Action'}
 	</h1>
@@ -62,4 +72,6 @@
 			{target?.actionLabel ?? 'Confirm'}
 		</button>
 	</div>
-</ThemedDialog>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>

@@ -7,7 +7,7 @@
 	import { notify } from '$lib/stores/notificationStore';
 	import { failure } from '$lib/types';
 	import { fade, fly } from 'svelte/transition';
-	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
+	import { Dialog } from 'bits-ui';
 
 	let isLogin = $state(true);
 	let email = $state('');
@@ -94,30 +94,33 @@
 	}
 </script>
 
-<ThemedDialog isOpen={hasExistingProjects} cls="dark:bg-zinc-900 justify-self-center">
-	<p class="text-sm text-zinc-600 dark:text-zinc-400">
-		You have existing projects. Do you want to import them to your new account or delete them and
-		start fresh?
-	</p>
-	<div class="mt-4 flex justify-end gap-2">
-		<button
-			onclick={async () => {
-				await deleteAndContinue();
-			}}
-			class="rounded-lg border border-black/10 px-3 py-1 text-sm text-zinc-500 transition hover:bg-stone-50 dark:border-white/8 dark:text-zinc-400 dark:hover:bg-zinc-800"
-		>
-			Start fresh
-		</button>
-		<button
-			onclick={async () => {
-				await continueOnline();
-			}}
-			class="rounded-lg bg-zinc-900 px-3 py-1 text-sm font-medium text-white transition hover:bg-zinc-700 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-		>
-			Import projects
-		</button>
-	</div>
-</ThemedDialog>
+<Dialog.Root open={hasExistingProjects}>
+	<Dialog.Overlay class="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm" />
+	<Dialog.Content class="justify-self-center dark:bg-zinc-900">
+		<p class="text-sm text-zinc-600 dark:text-zinc-400">
+			You have existing projects. Do you want to import them to your new account or delete them and
+			start fresh?
+		</p>
+		<div class="mt-4 flex justify-end gap-2">
+			<button
+				onclick={async () => {
+					await deleteAndContinue();
+				}}
+				class="rounded-lg border border-black/10 px-3 py-1 text-sm text-zinc-500 transition hover:bg-stone-50 dark:border-white/8 dark:text-zinc-400 dark:hover:bg-zinc-800"
+			>
+				Start fresh
+			</button>
+			<button
+				onclick={async () => {
+					await continueOnline();
+				}}
+				class="rounded-lg bg-zinc-900 px-3 py-1 text-sm font-medium text-white transition hover:bg-zinc-700 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+			>
+				Import projects
+			</button>
+		</div>
+	</Dialog.Content>
+</Dialog.Root>
 
 <div class="flex min-h-svh items-center justify-center bg-stone-100 px-4 py-12 dark:bg-zinc-950">
 	<div

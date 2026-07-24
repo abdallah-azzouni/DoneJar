@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ThemedDialog from '$lib/popups/ThemedDialog.svelte';
+	import { Dialog } from 'bits-ui';
 	import { exportStore } from '$lib/stores/dialog';
 	import { projectStore } from '$lib/stores/projects.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
@@ -97,73 +97,79 @@
 	}
 </script>
 
-<ThemedDialog
-	w="w-1/2"
-	h="h-fit"
-	isOpen={exportStore.isOpen}
-	closeOnBackdrop={true}
-	onClose={exportStore.close}
+<Dialog.Root
+	open={exportStore.isOpen}
+	onOpenChange={(o) => {
+		if (!o) exportStore.close();
+	}}
 >
-	<div>
-		<h2 class="mb-6 font-patrick-hand text-2xl font-bold">Export 📤</h2>
+	<Dialog.Portal to="body">
+		<Dialog.Overlay class="fixed inset-0 z-9998 bg-black/50 backdrop-blur-[1px]" />
+		<Dialog.Content
+			class="fixed top-[5%] left-1/2 z-9998 h-fit w-1/2 -translate-x-1/2 justify-self-center rounded-2xl bg-white p-6 shadow-lg"
+		>
+			<div>
+				<h2 class="mb-6 font-patrick-hand text-2xl font-bold">Export 📤</h2>
 
-		<!-- Select all row -->
-		<div class="mb-3 flex items-center justify-between border-b border-gray-200 pb-3">
-			<label
-				class="flex cursor-pointer items-center gap-2 font-patrick-hand text-base text-gray-500 select-none"
-			>
-				<input
-					type="checkbox"
-					class="h-4 w-4 cursor-pointer accent-yellow-400"
-					checked={selectAllState() === 'all'}
-					use:bindIndeterminate={selectAllState() === 'some'}
-					onchange={toggleSelectAll}
-				/>
-				Select all
-			</label>
-			<span class="font-patrick-hand text-sm text-gray-400">
-				{totalSelectedProjects} of {projectStore.projects.length} projects
-			</span>
-		</div>
+				<!-- Select all row -->
+				<div class="mb-3 flex items-center justify-between border-b border-gray-200 pb-3">
+					<label
+						class="flex cursor-pointer items-center gap-2 font-patrick-hand text-base text-gray-500 select-none"
+					>
+						<input
+							type="checkbox"
+							class="h-4 w-4 cursor-pointer accent-yellow-400"
+							checked={selectAllState() === 'all'}
+							use:bindIndeterminate={selectAllState() === 'some'}
+							onchange={toggleSelectAll}
+						/>
+						Select all
+					</label>
+					<span class="font-patrick-hand text-sm text-gray-400">
+						{totalSelectedProjects} of {projectStore.projects.length} projects
+					</span>
+				</div>
 
-		<div class="max-h-96 overflow-y-auto">
-			<!-- Project list -->
-			<div class="flex flex-col gap-2 pr-1">
-				{#each projectStore.projects as project (project.id)}
-					<div class="doodle-border overflow-hidden rounded-xl">
-						<!-- Project header -->
-						<div
-							class="flex w-full items-center gap-3 bg-gray-50 px-3 py-2.5 transition-colors select-none hover:bg-gray-100"
-						>
-							<input
-								type="checkbox"
-								class="h-4 w-4 shrink-0 cursor-pointer accent-yellow-400"
-								checked={selectedProjects.has(project.id)}
-								onchange={() => toggleProject(project.id)}
-							/>
-							<span class="flex-1 text-left font-patrick-hand text-lg">
-								{project.name}
-							</span>
-						</div>
+				<div class="max-h-96 overflow-y-auto">
+					<!-- Project list -->
+					<div class="flex flex-col gap-2 pr-1">
+						{#each projectStore.projects as project (project.id)}
+							<div class="doodle-border overflow-hidden rounded-xl">
+								<!-- Project header -->
+								<div
+									class="flex w-full items-center gap-3 bg-gray-50 px-3 py-2.5 transition-colors select-none hover:bg-gray-100"
+								>
+									<input
+										type="checkbox"
+										class="h-4 w-4 shrink-0 cursor-pointer accent-yellow-400"
+										checked={selectedProjects.has(project.id)}
+										onchange={() => toggleProject(project.id)}
+									/>
+									<span class="flex-1 text-left font-patrick-hand text-lg">
+										{project.name}
+									</span>
+								</div>
+							</div>
+						{/each}
 					</div>
-				{/each}
+				</div>
+				<!-- Actions -->
+				<div class="mt-6 flex justify-end gap-3">
+					<button
+						class="doodle-border rounded-lg px-4 py-2 font-patrick-hand text-lg hover:bg-gray-100"
+						onclick={exportStore.close}
+					>
+						Cancel
+					</button>
+					<button
+						class="doodle-border rounded-lg bg-yellow-300 px-4 py-2 font-patrick-hand text-lg hover:bg-yellow-400 disabled:opacity-40"
+						disabled={!canExport || loading}
+						onclick={handleExport}
+					>
+						{loading ? 'Exporting...' : 'Download'}
+					</button>
+				</div>
 			</div>
-		</div>
-		<!-- Actions -->
-		<div class="mt-6 flex justify-end gap-3">
-			<button
-				class="doodle-border rounded-lg px-4 py-2 font-patrick-hand text-lg hover:bg-gray-100"
-				onclick={exportStore.close}
-			>
-				Cancel
-			</button>
-			<button
-				class="doodle-border rounded-lg bg-yellow-300 px-4 py-2 font-patrick-hand text-lg hover:bg-yellow-400 disabled:opacity-40"
-				disabled={!canExport || loading}
-				onclick={handleExport}
-			>
-				{loading ? 'Exporting...' : 'Download'}
-			</button>
-		</div>
-	</div>
-</ThemedDialog>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>

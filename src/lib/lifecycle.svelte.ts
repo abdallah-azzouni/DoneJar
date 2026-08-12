@@ -3,7 +3,6 @@ import { getAppState } from '$lib/stores/appState.svelte';
 import { clearDatabase } from '$lib/db/dal';
 import { initDb, isDbReady, resetDb } from '$lib/db/db.svelte';
 import { projectStore } from './stores/projects.svelte';
-import { projectMembersStore } from './stores/projectMembers.svelte';
 import { userSessionsStore } from './stores/userSessionsStore.svelte';
 import { sessionStore } from '$lib/stores/currentUser.svelte';
 import { dev } from '$app/environment';
@@ -24,8 +23,7 @@ export function initLifecycle() {
 					'Lifecycle State': state,
 					'DB Ready': dbReady,
 					'Is Replicating': replicating,
-					'Project Members Loading': projectMembersStore.loading,
-					'User Sessions Loading': userSessionsStore.loading,
+					'User Sessions Ready': userSessionsStore.isReady,
 					'User Sessions Valid': validSession,
 					'Project Store Ready': projectStore.isReady,
 					'User ID': userId ? userId.substring(0, 3) + '...' + userId.slice(-3) : null,
@@ -36,13 +34,15 @@ export function initLifecycle() {
 		if (state === 'LOGGED_OUT' && !cleaning) {
 			cleaning = true;
 			userSessionsStore.reset();
-			projectMembersStore.reset();
 			projectStore.reset();
 			(async () => {
 				try {
 					if (replicating) {
 						await stopReplication();
 					}
+
+					if (getAppState() !== 'LOGGED_OUT') return; // check if user logged in again during cleanup
+
 					await clearDatabase();
 					resetDb();
 				} catch (error) {
@@ -59,15 +59,15 @@ export function initLifecycle() {
 
 				if (state === 'LOGGED_IN' && userId) {
 					userSessionsStore.initialize(userId);
-					projectMembersStore.initialize(userId);
-					if (!userSessionsStore.loading && !validSession) {
+					if (userSessionsStore.isReady && !validSession) {
 						sessionStore.current = null;
 					}
 				}
 			}
 
-			if (dbReady && state === 'LOGGED_IN' && !replicating && !projectMembersStore.loading)
+			if (dbReady && state === 'LOGGED_IN' && !replicating) {
 				startReplication();
+			}
 		}
 	});
 }

@@ -15,7 +15,7 @@ export type UserSession = {
 };
 
 let sessions = $state<UserSession[]>([]);
-let loading = $state<boolean>(true);
+let isReady = $state<boolean>(false);
 let error = $state<string | null>(null);
 
 let channel: RealtimeChannel | null = null;
@@ -30,45 +30,49 @@ async function initialize(userId: string) {
 	if (currentUserId === userId) return;
 
 	currentUserId = userId;
-	loading = true;
 
-	const { data, error: fetchError } = await supabase
-		.from('user_sessions')
-		.select('*')
-		.eq('user_id', userId)
-		.order('created_at', { ascending: false });
+	try {
+		const { data, error: fetchError } = await supabase
+			.from('user_sessions')
+			.select('*')
+			.eq('user_id', userId)
+			.order('created_at', { ascending: false });
 
-	if (fetchError) {
-		error = fetchError.message;
-		loading = false;
-		return;
-	}
+		if (fetchError) {
+			error = fetchError.message;
+			isReady = false;
+			return;
+		}
 
-	if (data) sessions = data as UserSession[];
-	loading = false;
+		if (data) sessions = data as UserSession[];
 
-	if (channel) supabase.removeChannel(channel);
+		if (channel) supabase.removeChannel(channel);
 
-	channel = supabase
-		.channel(`user-sessions-${userId}`)
-		.on(
-			'postgres_changes',
-			{
-				event: '*',
-				schema: 'public',
-				table: 'user_sessions',
-				filter: `user_id=eq.${userId}`
-			},
-			(payload) => {
-				const { eventType, new: newRow, old: oldRow } = payload;
-				if (eventType === 'INSERT') {
-					sessions = [newRow as UserSession, ...sessions];
-				} else if (eventType === 'DELETE') {
-					sessions = sessions.filter((s) => s.session_id !== oldRow.session_id);
+		channel = supabase
+			.channel(`user-sessions-${userId}`)
+			.on(
+				'postgres_changes',
+				{
+					event: '*',
+					schema: 'public',
+					table: 'user_sessions',
+					filter: `user_id=eq.${userId}`
+				},
+				(payload) => {
+					const { eventType, new: newRow, old: oldRow } = payload;
+					if (eventType === 'INSERT') {
+						sessions = [newRow as UserSession, ...sessions];
+					} else if (eventType === 'DELETE') {
+						sessions = sessions.filter((s) => s.session_id !== oldRow.session_id);
+					}
 				}
-			}
-		)
-		.subscribe();
+			)
+			.subscribe();
+	} catch (err) {
+		console.error('Error initializing user sessions store:', err);
+	} finally {
+		isReady = true;
+	}
 }
 
 async function kickDevice(sessionId: string) {
@@ -93,15 +97,15 @@ function reset() {
 	sessions = [];
 	currentUserId = null;
 	error = null;
-	loading = false;
+	isReady = false;
 }
 
 export const userSessionsStore = {
 	get allSessions() {
 		return sessions;
 	},
-	get loading() {
-		return loading;
+	get isReady() {
+		return isReady;
 	},
 	get error() {
 		return error;

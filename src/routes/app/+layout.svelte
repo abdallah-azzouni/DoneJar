@@ -1,7 +1,6 @@
 <script lang="ts">
 	import ProjectMenu from '$lib/popups/ProjectMenu/ProjectMenu.svelte';
 	import ProjectSettings from '$lib/popups/ProjectMenu/ProjectSettings.svelte';
-	import ProjectMembers from '$lib/popups/ProjectMenu/ProjectMembers.svelte';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import { appStore, getAppState } from '$lib/stores/appState.svelte';
 	import Loading from '$lib/components/Loading.svelte';
@@ -72,7 +71,6 @@
 
 <ProjectMenu />
 <ProjectSettings />
-<ProjectMembers />
 <ConfirmationMenu />
 
 {#if !appStore.isLoaded || !projectStore.isReady}

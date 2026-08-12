@@ -6,7 +6,6 @@
 		confirmMenu,
 		projectMenuStore,
 		closeProjectMenu,
-		openProjectMembers,
 		openProjectSetting
 	} from '$lib/stores/dialog';
 	import { goto } from '$app/navigation';
@@ -67,16 +66,6 @@
 							}}
 						>
 							Edit Project
-						</DropdownMenu.Item>
-
-						<DropdownMenu.Item
-							class="w-full cursor-pointer border-b-2 border-black/5 px-4 py-3 text-left font-bold text-gray-800 transition-colors outline-none data-highlighted:bg-gray-200"
-							onSelect={() => {
-								closeProjectMenu();
-								openProjectMembers(data?.project);
-							}}
-						>
-							Members
 						</DropdownMenu.Item>
 
 						<DropdownMenu.Item

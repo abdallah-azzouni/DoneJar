@@ -37,10 +37,6 @@ export const openProjectSetting = (project: ProjectDocType | null = null) =>
 	projectSettingStore.open(project);
 export const closeProjectSetting = () => projectSettingStore.close();
 
-export const projectMembersStore = createDialogStore<ProjectDocType | null>(false, null);
-export const openProjectMembers = (project: ProjectDocType | null = null) =>
-	projectMembersStore.open(project);
-export const closeProjectMembers = () => projectMembersStore.close();
 
 // --- CONFIRMATION MENU ---
 export const confirmMenuStore = createDialogStore<ConfirmTarget | null>(false, null);

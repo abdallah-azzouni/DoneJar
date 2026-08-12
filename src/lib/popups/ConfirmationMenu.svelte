@@ -22,26 +22,31 @@
 		<Dialog.Overlay class="fixed inset-0 z-9999 bg-black/50 backdrop-blur-[1px]" />
 		<Dialog.Content
 			interactOutsideBehavior="ignore"
-			class="fixed top-[5%] left-1/2 z-9999 max-h-3/4 w-2/3 -translate-x-1/2 justify-self-center rounded-2xl bg-white p-6 shadow-lg"
+			class="fixed top-[15%] left-1/2 z-9999 w-full max-w-lg -translate-x-1/2 rounded-2xl bg-white p-6 shadow-xl"
 		>
-			<h1 class="m-4 text-2xl font-bold">
+			<Dialog.Title class="m-2 text-xl font-bold text-gray-900">
 				{target?.title ?? 'Confirm Action'}
-			</h1>
-			<hr class="border-gray-500" />
-			<div class="m-4 space-y-4">
-				<span>
-					{target?.body ?? 'Are you sure you want to proceed?'}
-				</span>
-			</div>
-			<div class="mx-8 mt-auto mb-6 flex justify-end gap-3">
+			</Dialog.Title>
+
+			<hr class="my-3 border border-gray-300" />
+
+			<Dialog.Description class="m-2 leading-relaxed whitespace-pre-line text-gray-600">
+				{target?.body ?? 'Are you sure you want to proceed?'}
+			</Dialog.Description>
+
+			<div class="mt-6 flex justify-end gap-3">
+				{#if target?.cancelLabel}
+					<button
+						type="button"
+						class="rounded-xl bg-gray-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-gray-600"
+						onclick={() => confirmMenuStore.respond(false)}
+					>
+						{target?.cancelLabel}
+					</button>
+				{/if}
 				<button
-					class="rounded-2xl bg-gray-500 p-4 font-bold text-white"
-					onclick={() => confirmMenuStore.respond(false)}
-				>
-					{target?.cancelLabel ?? 'Cancel'}
-				</button>
-				<button
-					class="rounded-2xl p-4 font-bold text-white"
+					type="button"
+					class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
 					style="background-color: {colors[target?.actionColor ?? 'primary']};"
 					onclick={() => confirmMenuStore.respond(true)}
 				>

@@ -7,6 +7,23 @@
 	--app-bg-color: #f4efe6;
 }
 
+/* Base Styles & HTML Overrides */
+@layer base {
+	body {
+		min-height: 500px;
+	}
+
+	body [data-dialog-content] {
+		background-color: var(--app-bg-color);
+	}
+
+	/* Universal Button Base Styling */
+	button {
+		@apply cursor-pointer transition duration-150 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 active:scale-95;
+	}
+}
+
+/* Custom Utility Classes */
 @layer utilities {
 	.no-scrollbar::-webkit-scrollbar {
 		display: none;
@@ -15,19 +32,4 @@
 		-ms-overflow-style: none;
 		scrollbar-width: none;
 	}
-	button {
-		@apply cursor-pointer transition duration-150 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 active:scale-95;
-	}
-}
-
-body {
-	min-height: 500px;
-}
-
-body [data-dialog-content] {
-	background-color: var(--app-bg-color);
-}
-
-select option {
-	font-size: var(--text-xl);
 }

@@ -62,7 +62,6 @@
 		"svelte-persisted-store": "^0.12.0",
 		"svelte-sonner": "^1.1.1",
 		"tailwindcss-animate": "^1.0.7",
-		"vaul-svelte": "^0.3.2",
-		"zod": "^4.3.6"
+		"vaul-svelte": "^0.3.2"
 	}
 }

@@ -47,7 +47,6 @@ DoneJar is built on a **local-first** foundation — the local database is the s
 - **Sync**: RxDB's Supabase replication plugin handles bidirectional sync against a Postgres backend. RLS policies enforce access control at the database level; the DAL enforces role checks client-side before writes reach RxDB.
 - **Auth**: Supabase Auth with scoped local DB instances per user (`donejar-{userId}`). Replication starts and stops cleanly on auth state changes.
 - **Attachments**: Metadata lives in RxDB; blobs go to Cloudflare R2. The browser Cache API handles local caching keyed by `attachmentId`. Attachment records are immutable — upload or delete only.
-- **Collaboration**: A `project_members` junction table is the membership authority. RLS subqueries on all tables reference it. The creator is auto-inserted as `owner` via an `AFTER INSERT` trigger on `projects`.
 - **State**: UI state (stores) sits above the DAL. Reactive queries use RxDB observables composed with `from(db()).pipe(switchMap(...))`.
 
 ---
@@ -118,14 +117,13 @@ The app gains a persistent identity and works seamlessly across devices.
 - Real-time cross-device sync (RxDB ↔ Supabase replication)
 - Per-user scoped local databases
 - RLS-enforced access control on all collections
-- Collaboration infrastructure (project_members, roles, RLS policies)
 - Offline-first: full functionality without a connection, syncs on reconnect
 
-### 🚧 Phase 3 — Collaboration & Mobile (Planned)
+### 🚧 Phase 3 — Jar & Mobile & Polish (Planned)
 
 The social and platform layer.
 
-- **Collaboration** — invite flow, role enforcement, free/Pro tier limits
+- **Pricing** — Free/Pro tier limits
 - **Mobile layout** — optimized kanban experience on small screens
 - **Mobile & desktop apps** — Tauri packaging for native distribution
 - **Jar browsing** — view and retrieve notes from inside the physics jar

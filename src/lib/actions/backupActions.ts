@@ -8,14 +8,19 @@ import { backupSchemaLiteral, type BackupDocType } from '$lib/db/schemas';
  */
 export async function importBackup(backup: unknown): Promise<ActionResult> {
 	const { default: Ajv } = await import('ajv');
-	const ajv = new Ajv();
+
+	const ajv = new Ajv({ strictSchema: false }); // Ignores RxDB metadata
+	ajv.addFormat('date-time', {
+		type: 'string',
+		validate: (str: string) => !isNaN(Date.parse(str)) && str.includes('T')
+	});
+	
 	const validate = ajv.compile(backupSchemaLiteral);
 
 	try {
-		const parsedBackup = JSON.parse(JSON.stringify(backup));
-		if (!validate(parsedBackup)) return failure('Invalid backup data');
+		if (!validate(backup)) return failure('Invalid backup data');
 
-		await backupService.import(parsedBackup);
+		await backupService.import(backup);
 	} catch (error) {
 		return failure(`Error importing backup: ${error}`);
 	}

@@ -4,6 +4,7 @@ import { clearDatabase } from '$lib/db/dal';
 import { initDb, isDbReady, resetDb } from '$lib/db/db.svelte';
 import { projectStore } from './stores/projects.svelte';
 import { userSessionsStore } from './stores/userSessionsStore.svelte';
+import { subscriptionStore } from './stores/subscription.svelte';
 import { sessionStore } from '$lib/stores/currentUser.svelte';
 import { dev } from '$app/environment';
 import { untrack } from 'svelte';
@@ -26,6 +27,7 @@ export function initLifecycle() {
 					'User Sessions Ready': userSessionsStore.isReady,
 					'User Sessions Valid': validSession,
 					'Project Store Ready': projectStore.isReady,
+					'Subscription Store Ready': subscriptionStore.isReady,
 					'User ID': userId ? userId.substring(0, 3) + '...' + userId.slice(-3) : null,
 					Cleaning: cleaning
 				});
@@ -59,8 +61,9 @@ export function initLifecycle() {
 
 				if (state === 'LOGGED_IN' && userId) {
 					userSessionsStore.initialize(userId);
-					if (userSessionsStore.isReady && !validSession) {
-						sessionStore.current = null;
+					if (userSessionsStore.isReady) {
+						if (!validSession) sessionStore.current = null;
+						if (!subscriptionStore.isReady) subscriptionStore.load(userId);
 					}
 				}
 			}

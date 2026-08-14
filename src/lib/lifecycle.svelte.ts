@@ -37,6 +37,7 @@ export function initLifecycle() {
 			cleaning = true;
 			userSessionsStore.reset();
 			projectStore.reset();
+			subscriptionStore.reset();
 			(async () => {
 				try {
 					if (replicating) {
@@ -63,7 +64,9 @@ export function initLifecycle() {
 					userSessionsStore.initialize(userId);
 					if (userSessionsStore.isReady) {
 						if (!validSession) sessionStore.current = null;
-						if (!subscriptionStore.isReady) subscriptionStore.load(userId);
+						if (!subscriptionStore.isLoading) {
+							subscriptionStore.load(userId);
+						}
 					}
 				}
 			}

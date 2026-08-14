@@ -17,6 +17,7 @@
 	import { textColorFromHex } from '$lib/UiHelper';
 	import { SvelteMap } from 'svelte/reactivity';
 	import { MAX_NOTE_ATTACHMENTS_SIZE } from '$lib/constants';
+	import { subscriptionStore } from '$lib/stores/subscription.svelte';
 
 	// ─── Props ───────────────────────────────────────
 	let { isOpen = $bindable(false), note }: { isOpen: boolean; note: NoteDocType | null } = $props();
@@ -265,7 +266,7 @@
 							<div class="flex w-full items-center gap-3 opacity-60">
 								<div class="flex-1 border-t-2 border-dashed border-gray-400"></div>
 								<span class="text-xs font-bold tracking-widest text-gray-500 uppercase"
-									>Attachments</span
+									>Attachments {subscriptionStore.isPro ? '' : '(Pro)'}</span
 								>
 								<!-- The "Add" Action -->
 								<input
@@ -279,115 +280,128 @@
 									type="button"
 									title="Add file or image"
 									class="flex size-7 items-center justify-center rounded-full border-2 border-black bg-amber-400 text-xl font-bold shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all hover:bg-amber-300 active:translate-y-px active:shadow-none"
-									onclick={handleAddAttachment}
+									onclick={() => {
+										if (subscriptionStore.isPro) {
+											handleAddAttachment();
+										} else {
+											confirmMenu({
+												title: 'Coming Soon',
+												body: 'Adding attachments is a Pro feature. Pro plans are coming soon!',
+												actionLabel: 'Got it',
+												actionColor: 'primary'
+											});
+										}
+									}}
 								>
 									+
 								</button>
 								<div class="flex-1 border-t-2 border-dashed border-gray-400"></div>
 							</div>
 
-							<div class=" gap-2 py-4 pr-2">
-								<!-- BIG PREVIEW: Image/Screenshot -->
-								<div class="flex w-full flex-wrap gap-3">
-									{#each attachments.filter( (a) => a.mimeType.startsWith('image/') ) as attachment (attachment.id)}
-										<div class="group relative mt-2 self-start">
-											<!-- Washi Tape Effect -->
-											<div
-												class="absolute -top-3 left-1/2 z-10 h-6 w-16 -translate-x-1/2 rotate-2 border border-blue-300 bg-blue-200/50 opacity-80 shadow-sm"
-											></div>
-
-											<div
-												class="doodle-border flex w-64 flex-col overflow-hidden bg-white p-2 transition-transform hover:rotate-1"
-											>
+							{#if subscriptionStore.isPro}
+								<div class=" gap-2 py-4 pr-2">
+									<!-- BIG PREVIEW: Image/Screenshot -->
+									<div class="flex w-full flex-wrap gap-3">
+										{#each attachments.filter( (a) => a.mimeType.startsWith('image/') ) as attachment (attachment.id)}
+											<div class="group relative mt-2 self-start">
+												<!-- Washi Tape Effect -->
 												<div
-													class="aspect-video w-full overflow-hidden border border-gray-200 bg-gray-100"
+													class="absolute -top-3 left-1/2 z-10 h-6 w-16 -translate-x-1/2 rotate-2 border border-blue-300 bg-blue-200/50 opacity-80 shadow-sm"
+												></div>
+
+												<div
+													class="doodle-border flex w-64 flex-col overflow-hidden bg-white p-2 transition-transform hover:rotate-1"
 												>
-													<img
-														src={getPreviewUrl(attachment)}
-														alt="Preview"
-														class="h-full w-full object-contain"
-													/>
-													<!-- File Size Badge -->
-													<span
-														class="text-xxs absolute top-1 right-1 rounded bg-black/70 px-1 py-0.5 font-bold text-white"
+													<div
+														class="aspect-video w-full overflow-hidden border border-gray-200 bg-gray-100"
 													>
-														{formatSize(attachment.size)}
-													</span>
-												</div>
-												<div class="mt-2 flex items-center justify-between">
-													<span class="truncate text-xs font-bold italic"
-														>{attachment.filename}</span
-													>
-													<div class="flex gap-1">
-														<button
-															type="button"
-															onclick={(e) => {
-																e.stopPropagation();
-																handlePinAttachment(attachment.id);
-															}}
-															class="size-6 rounded border border-black {attachment.pinned
-																? 'bg-amber-400'
-																: 'bg-white'} text-xs hover:bg-amber-200">📌</button
+														<img
+															src={getPreviewUrl(attachment)}
+															alt="Preview"
+															class="h-full w-full object-contain"
+														/>
+														<!-- File Size Badge -->
+														<span
+															class="text-xxs absolute top-1 right-1 rounded bg-black/70 px-1 py-0.5 font-bold text-white"
 														>
-														<button
-															type="button"
-															class="size-6 rounded border border-black bg-white text-xs hover:bg-red-200"
-															onclick={(e) => {
-																e.stopPropagation();
-																handleDeleteAttachment(attachment.id);
-															}}>x</button
+															{formatSize(attachment.size)}
+														</span>
+													</div>
+													<div class="mt-2 flex items-center justify-between">
+														<span class="truncate text-xs font-bold italic"
+															>{attachment.filename}</span
 														>
+														<div class="flex gap-1">
+															<button
+																type="button"
+																onclick={(e) => {
+																	e.stopPropagation();
+																	handlePinAttachment(attachment.id);
+																}}
+																class="size-6 rounded border border-black {attachment.pinned
+																	? 'bg-amber-400'
+																	: 'bg-white'} text-xs hover:bg-amber-200">📌</button
+															>
+															<button
+																type="button"
+																class="size-6 rounded border border-black bg-white text-xs hover:bg-red-200"
+																onclick={(e) => {
+																	e.stopPropagation();
+																	handleDeleteAttachment(attachment.id);
+																}}>x</button
+															>
+														</div>
 													</div>
 												</div>
 											</div>
-										</div>
-									{:else}
-										<span class="text-center text-sm italic text-gray-400"
-											>No image attachments...</span
-										>
-									{/each}
-								</div>
-								<div class="mt-4 border-t-2 border-dashed border-gray-300 pt-4">
-									<!-- LIST ROW: Standard File -->
-									{#each attachments.filter((a) => !a.mimeType.startsWith('image/')) as attachment (attachment.id)}
-										<div
-											class="doodle-border flex items-center gap-3 bg-white p-2 hover:bg-gray-50"
-										>
-											<span class="text-2xl">📄</span>
-											<div class="flex flex-1 flex-col">
-												<span class="text-sm leading-tight font-bold">{attachment.filename}</span>
-												<span class="text-xxs font-black text-gray-500 uppercase"
-													>{formatSize(attachment.size)}</span
+										{:else}
+											<span class="text-center text-sm italic text-gray-400"
+												>No image attachments...</span
+											>
+										{/each}
+									</div>
+									<div class="mt-4 border-t-2 border-dashed border-gray-300 pt-4">
+										<!-- LIST ROW: Standard File -->
+										{#each attachments.filter((a) => !a.mimeType.startsWith('image/')) as attachment (attachment.id)}
+											<div
+												class="doodle-border flex items-center gap-3 bg-white p-2 hover:bg-gray-50"
+											>
+												<span class="text-2xl">📄</span>
+												<div class="flex flex-1 flex-col">
+													<span class="text-sm leading-tight font-bold">{attachment.filename}</span>
+													<span class="text-xxs font-black text-gray-500 uppercase"
+														>{formatSize(attachment.size)}</span
+													>
+												</div>
+												<button
+													type="button"
+													class="size-8 rounded-full border border-black {attachment.pinned
+														? 'bg-amber-400'
+														: 'bg-white'} hover:bg-amber-200"
+													onclick={(e) => {
+														e.stopPropagation();
+														handlePinAttachment(attachment.id);
+													}}
+													title="Pin attachment">📌</button
+												>
+												<button
+													type="button"
+													class="size-8 rounded-full border border-black bg-white hover:bg-red-200"
+													onclick={(e) => {
+														e.stopPropagation(); // Prevent triggering parent click events
+														handleDeleteAttachment(attachment.id);
+													}}
+													title="Delete">x</button
 												>
 											</div>
-											<button
-												type="button"
-												class="size-8 rounded-full border border-black {attachment.pinned
-													? 'bg-amber-400'
-													: 'bg-white'} hover:bg-amber-200"
-												onclick={(e) => {
-													e.stopPropagation();
-													handlePinAttachment(attachment.id);
-												}}
-												title="Pin attachment">📌</button
+										{:else}
+											<span class="text-center text-sm italic text-gray-400"
+												>No file attachments...</span
 											>
-											<button
-												type="button"
-												class="size-8 rounded-full border border-black bg-white hover:bg-red-200"
-												onclick={(e) => {
-													e.stopPropagation(); // Prevent triggering parent click events
-													handleDeleteAttachment(attachment.id);
-												}}
-												title="Delete">x</button
-											>
-										</div>
-									{:else}
-										<span class="text-center text-sm italic text-gray-400"
-											>No file attachments...</span
-										>
-									{/each}
+										{/each}
+									</div>
 								</div>
-							</div>
+							{/if}
 						</div>
 					</div>
 

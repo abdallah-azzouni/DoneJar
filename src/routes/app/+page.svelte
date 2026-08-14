@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { openProjectSetting } from '$lib/stores/dialog';
 	import { projectStore } from '$lib/stores/projects.svelte';
+	import { subscriptionStore } from '$lib/stores/subscription.svelte';
+	import { confirmMenu } from '$lib/stores/dialog';
+	import { FREE_MAX_PROJECTS } from '$lib/constants';
 </script>
 
 <div class="flex h-full w-full flex-1 flex-col items-center justify-center">
@@ -27,9 +30,32 @@
 				Pick a project from the sidebar or create a new one to get started.
 			</p>
 			<button
-				class="doodle-border bg-yellow-400 px-6 py-3 font-patrick-hand text-2xl font-bold text-gray-900 transition-all duration-300 hover:scale-105 hover:bg-yellow-500"
-				onclick={() => openProjectSetting()}
+				class="doodle-border relative bg-yellow-400 px-6 py-3 font-patrick-hand text-2xl font-bold text-gray-900 transition-all duration-300 hover:scale-105 hover:bg-yellow-500"
+				onclick={() => {
+					if (!subscriptionStore.isPro && projectStore.projects.length >= FREE_MAX_PROJECTS) {
+						confirmMenu({
+							title: 'Free Plan Limit Reached',
+							body: `You've reached the maximum limit of ${FREE_MAX_PROJECTS} free projects. Pro plans are coming soon!`,
+							actionLabel: 'Got it',
+							actionColor: 'primary'
+						});
+					} else {
+						openProjectSetting();
+					}
+				}}
 			>
+				<!-- Overlay -->
+				{#if !subscriptionStore.isPro && projectStore.projects.length >= FREE_MAX_PROJECTS}
+					<div
+						class="absolute -inset-2 z-10 flex items-center justify-center rounded bg-slate-900/60 backdrop-blur-xs"
+					>
+						<span
+							class="flex items-center gap-1 font-patrick-hand text-sm font-bold text-[#e6dec9]"
+						>
+							🔒 Upgrade
+						</span>
+					</div>
+				{/if}
 				Create a Project
 			</button>
 		</div>

@@ -17,6 +17,7 @@
 	import { MediaQuery } from 'svelte/reactivity';
 	import { fly } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
+	import { subscriptionStore } from '$lib/stores/subscription.svelte';
 
 	let { children } = $props();
 
@@ -73,7 +74,7 @@
 <ProjectSettings />
 <ConfirmationMenu />
 
-{#if !appStore.isLoaded || !projectStore.isReady}
+{#if !appStore.isLoaded || !projectStore.isReady || !subscriptionStore.isReady}
 	<Loading />
 {:else}
 	<div class="flex h-screen flex-col overflow-hidden">

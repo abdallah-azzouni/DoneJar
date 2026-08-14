@@ -77,6 +77,7 @@ export const subscriptionStore = {
 		const cached = readCache(userId);
 		if (cached) {
 			sub = cached;
+			isReady = true;
 			return;
 		}
 		sub = await fetchSub(userId);

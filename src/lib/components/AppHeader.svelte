@@ -30,7 +30,12 @@
 <ImportMenu />
 <ExportMenu />
 <ProfileMenu />
-<header class="doodle-border m-2 bg-white px-4">
+<header class="doodle-border relative m-2 bg-white px-4">
+	<span
+		class="text-xxs absolute -top-3 -left-3 rounded-full border border-black bg-sky-100 px-2 py-0.5 font-extrabold tracking-widest text-sky-900 uppercase shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] select-none"
+	>
+		BETA
+	</span>
 	<div class="flex h-16 items-center justify-between">
 		<div class="flex items-center gap-4">
 			<button

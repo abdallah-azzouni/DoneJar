@@ -1,5 +1,5 @@
 import { isReplicating, startReplication, stopReplication } from '$lib/sb/replication.svelte';
-import { getAppState } from '$lib/stores/appState.svelte';
+import { getAppState, UserState } from '$lib/stores/appState.svelte';
 import { clearDatabase } from '$lib/db/dal';
 import { initDb, isDbReady, resetDb } from '$lib/db/db.svelte';
 import { projectStore } from './stores/projects.svelte';
@@ -33,7 +33,7 @@ export function initLifecycle() {
 				});
 			});
 		}
-		if (state === 'LOGGED_OUT' && !cleaning) {
+		if (state === UserState.LOGGED_OUT && !cleaning) {
 			cleaning = true;
 			userSessionsStore.reset();
 			projectStore.reset();
@@ -44,7 +44,7 @@ export function initLifecycle() {
 						await stopReplication();
 					}
 
-					if (getAppState() !== 'LOGGED_OUT') return; // check if user logged in again during cleanup
+					if (getAppState() !== UserState.LOGGED_OUT) return; // check if user logged in again during cleanup
 
 					await clearDatabase();
 					resetDb();
@@ -54,13 +54,13 @@ export function initLifecycle() {
 					cleaning = false;
 				}
 			})();
-		} else if ((state === 'LOGGED_IN' || state === 'GUEST_LOCAL') && !cleaning) {
+		} else if ((state === UserState.LOGGED_IN || state === UserState.GUEST_LOCAL) && !cleaning) {
 			if (!dbReady) initDb();
 
 			if (dbReady) {
 				projectStore.init();
 
-				if (state === 'LOGGED_IN' && userId) {
+				if (state === UserState.LOGGED_IN && userId) {
 					userSessionsStore.initialize(userId);
 					if (userSessionsStore.isReady) {
 						if (!validSession) sessionStore.current = null;
@@ -71,7 +71,7 @@ export function initLifecycle() {
 				}
 			}
 
-			if (dbReady && state === 'LOGGED_IN' && !replicating) {
+			if (dbReady && state === UserState.LOGGED_IN && !replicating) {
 				startReplication();
 			}
 		}

@@ -14,7 +14,7 @@ export async function importBackup(backup: unknown): Promise<ActionResult> {
 		type: 'string',
 		validate: (str: string) => !isNaN(Date.parse(str)) && str.includes('T')
 	});
-	
+
 	const validate = ajv.compile(backupSchemaLiteral);
 
 	try {

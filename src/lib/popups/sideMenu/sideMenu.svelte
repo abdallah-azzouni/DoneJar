@@ -22,7 +22,7 @@
 			},
 			{} as Record<number, typeof sideMenuItems>
 		)
-	);
+	).filter((row) => !(row[0]?.label?.startsWith('Feedback') && getAppState() !== 'LOGGED_IN'));
 </script>
 
 {#if !isWide.current}
@@ -71,7 +71,7 @@
 						</button>
 					{:else}
 						<button
-							class="doodle-border mb-4 w-full rounded-lg p-2 text-left font-patrick-hand text-xl"
+							class="doodle-border mb-4 w-full rounded-lg bg-white p-2 text-left font-patrick-hand text-xl"
 							onclick={() => {
 								sideMenuStore.close();
 								goto(resolve('/auth/login'));
@@ -128,7 +128,7 @@
 						</button>
 					{:else}
 						<button
-							class="doodle-border mb-4 w-full rounded-lg p-2 text-left font-patrick-hand text-xl"
+							class="doodle-border mb-4 w-full rounded-lg bg-white p-2 text-left font-patrick-hand text-xl"
 							onclick={() => {
 								sideMenuStore.close();
 								goto(resolve('/auth/login'));

@@ -45,6 +45,7 @@
 		"@atlaskit/pragmatic-drag-and-drop": "^1.8.1",
 		"@atlaskit/pragmatic-drag-and-drop-hitbox": "^1.2.0",
 		"@internationalized/date": "^3.11.0",
+		"@sentry/sveltekit": "^10.70.0",
 		"@supabase/supabase-js": "^2.107.0",
 		"ajv": "^8.20.0",
 		"bits-ui": "^2.16.2",

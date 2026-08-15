@@ -9,16 +9,19 @@ export * from './dialogFactory.svelte.ts';
 
 export const sideMenuStore = createDialogStore();
 
+// Each index mean a row, two items with the same index will be in the same row.
 export const sideMenuItems = [
 	{ index: 0, label: 'Import 📥', action: () => importStore.open() },
-	{ index: 1, label: 'Export 📤', action: () => exportStore.open() },
-	{ index: 2, label: 'Settings ⚙️', action: () => settingsStore.open() },
+	{ index: 0, label: 'Export 📤', action: () => exportStore.open() },
+	{ index: 1, label: 'Settings ⚙️', action: () => settingsStore.open() },
+	{ index: 2, label: 'Feedback 💬', action: () => feedbackStore.open() },
 	{ index: 3, label: 'profile', action: () => profileMenuStore.open() }
 ];
 
 export const exportStore = createDialogStore();
 export const importStore = createDialogStore();
 export const settingsStore = createDialogStore();
+export const feedbackStore = createDialogStore();
 export const profileMenuStore = createDialogStore();
 
 // --- PROJECT MENU ---
@@ -36,7 +39,6 @@ export const projectSettingStore = createDialogStore<ProjectDocType | null>(fals
 export const openProjectSetting = (project: ProjectDocType | null = null) =>
 	projectSettingStore.open(project);
 export const closeProjectSetting = () => projectSettingStore.close();
-
 
 // --- CONFIRMATION MENU ---
 export const confirmMenuStore = createDialogStore<ConfirmTarget | null>(false, null);

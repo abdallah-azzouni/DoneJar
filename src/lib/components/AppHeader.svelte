@@ -8,6 +8,7 @@
 	import SideMenu from '$lib/popups/sideMenu/sideMenu.svelte';
 	import ImportMenu from '$lib/popups/sideMenu/sideMenuItems/importMenu.svelte';
 	import ExportMenu from '$lib/popups/sideMenu/sideMenuItems/exportMenu.svelte';
+	import FeedbackMenu from '$lib/popups/sideMenu/sideMenuItems/feedbackMenu.svelte';
 	import ProfileMenu from '$lib/popups/sideMenu/sideMenuItems/profileMenu.svelte';
 
 	import { searchQuery } from '$lib/stores/search';
@@ -29,6 +30,7 @@
 <!-- Side menu Items -->
 <ImportMenu />
 <ExportMenu />
+<FeedbackMenu />
 <ProfileMenu />
 <header class="doodle-border relative m-2 bg-white px-4">
 	<span

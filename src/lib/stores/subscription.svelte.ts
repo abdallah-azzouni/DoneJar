@@ -1,4 +1,5 @@
 import { supabase } from '$lib/sb/sb';
+import { getAppState, UserState } from './appState.svelte';
 
 export type subscription = {
 	id: string;
@@ -77,7 +78,9 @@ export const subscriptionStore = {
 		if (!sub || sub.plan !== 'pro') return false;
 		const validStatus = sub.status === 'active' || sub.status === 'trialing';
 		const notExpired = Date.parse(sub.current_period_end) > Date.now();
-		return validStatus && notExpired;
+		// We are allowing guest users to have pro features
+		// because there data is not synced with supabase, Therefor there is no hosting costs.
+		return (validStatus && notExpired) || getAppState() === UserState.GUEST_LOCAL;
 	},
 	get isReady() {
 		return isReady;

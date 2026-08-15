@@ -49,6 +49,8 @@ export const getAppState = () => currentAppState;
 
 export const appStore = {
 	get isLoaded() {
-		return browser && sessionStore.current !== undefined;
+		return (
+			browser && (sessionStore.current !== undefined || getAppState() === UserState.GUEST_LOCAL)
+		);
 	}
 };

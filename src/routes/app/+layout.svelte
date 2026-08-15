@@ -2,7 +2,7 @@
 	import ProjectMenu from '$lib/popups/ProjectMenu/ProjectMenu.svelte';
 	import ProjectSettings from '$lib/popups/ProjectMenu/ProjectSettings.svelte';
 	import AppHeader from '$lib/components/AppHeader.svelte';
-	import { appStore, getAppState } from '$lib/stores/appState.svelte';
+	import { appStore, getAppState, UserState } from '$lib/stores/appState.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import ProjectSidebarContent from '$lib/components/ProjectSidebarContent.svelte';
 	import { Dialog } from 'bits-ui';
@@ -24,6 +24,8 @@
 	let currentProjectId: string | null = null;
 
 	const isDesktop = new MediaQuery('(min-width: 1024px)');
+
+	let dismissed = $state(false);
 
 	$effect(() => {
 		if (!projectSideBarStore.isOpen) {
@@ -74,11 +76,36 @@
 <ProjectSettings />
 <ConfirmationMenu />
 
-{#if !appStore.isLoaded || !projectStore.isReady || !subscriptionStore.isReady}
+{#if !appStore.isLoaded || !projectStore.isReady || (!subscriptionStore.isReady && getAppState() !== UserState.GUEST_LOCAL)}
 	<Loading />
 {:else}
 	<div class="flex h-screen flex-col overflow-hidden bg-[#f4efe6]">
-		<AppHeader />
+		<div class="m-2">
+			<AppHeader />
+			{#if !dismissed && getAppState() === UserState.GUEST_LOCAL}
+				<div
+					class="flex items-center justify-between border-b-2 border-black bg-[#FEF08A] px-4 py-1.5 text-xs font-semibold text-black"
+				>
+					<div class="flex items-center gap-2">
+						<span>💡</span>
+						<span>
+							<strong>Guest Mode:</strong> Data is saved locally in this browser. Sign in or export via
+							menu to back up.
+						</span>
+					</div>
+
+					<button
+						onclick={() => {
+							dismissed = true;
+						}}
+						class="ml-2 rounded-md p-1 font-bold text-black/70 transition hover:bg-black/10 hover:text-black"
+						aria-label="Dismiss banner"
+					>
+						✕
+					</button>
+				</div>
+			{/if}
+		</div>
 		<div class="flex flex-1 flex-row overflow-hidden">
 			{#if isDesktop.current}
 				<!-- Desktop permanent sidebar -->

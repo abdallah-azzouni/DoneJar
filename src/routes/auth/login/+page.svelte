@@ -8,6 +8,7 @@
 	import { failure } from '$lib/types';
 	import { fade, fly } from 'svelte/transition';
 	import { Dialog } from 'bits-ui';
+	import { projectStore } from '$lib/stores/projects.svelte';
 
 	let isLogin = $state(true);
 	let email = $state('');
@@ -15,6 +16,8 @@
 	let name = $state('');
 
 	let hasExistingProjects = $state(false);
+
+	let deleting = $state(false);
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
@@ -85,41 +88,60 @@
 	}
 
 	async function deleteAndContinue() {
+		if (deleting) return;
+		deleting = true;
 		try {
 			await clearDatabase();
+			projectStore.reset();
 			await continueOnline();
 		} catch {
 			notify(failure('Something went wrong. Please try again.'));
+		} finally {
+			deleting = false;
 		}
 	}
 </script>
 
 <Dialog.Root open={hasExistingProjects}>
-	<Dialog.Overlay class="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm" />
-	<Dialog.Content class="justify-self-center dark:bg-zinc-900">
-		<p class="text-sm text-zinc-600 dark:text-zinc-400">
-			You have existing projects. Do you want to import them to your new account or delete them and
-			start fresh?
-		</p>
-		<div class="mt-4 flex justify-end gap-2">
-			<button
-				onclick={async () => {
-					await deleteAndContinue();
-				}}
-				class="rounded-lg border border-black/10 px-3 py-1 text-sm text-zinc-500 transition hover:bg-stone-50 dark:border-white/8 dark:text-zinc-400 dark:hover:bg-zinc-800"
-			>
-				Start fresh
-			</button>
-			<button
-				onclick={async () => {
-					await continueOnline();
-				}}
-				class="rounded-lg bg-zinc-900 px-3 py-1 text-sm font-medium text-white transition hover:bg-zinc-700 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-			>
-				Import projects
-			</button>
-		</div>
-	</Dialog.Content>
+	<Dialog.Portal to="body">
+		<Dialog.Overlay class="fixed inset-0 z-9997 bg-black/40 backdrop-blur-xs" />
+		<Dialog.Content
+			interactOutsideBehavior="ignore"
+			class="fixed top-[20%] left-1/2 z-9997 w-full max-w-md -translate-x-1/2 rounded-2xl border-2 border-black p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+		>
+			<h3 class="text-xl font-bold text-zinc-900">Unsaved Local Data</h3>
+
+			<p class="mt-2 text-sm leading-relaxed text-zinc-700">
+				You have projects saved locally on this device. Signing in will clear local storage and sync
+				your account data.
+			</p>
+
+			<p class="mt-2 text-xs font-semibold text-zinc-600">
+				💡 Tip: Export your local projects first if you'd like to keep them.
+			</p>
+
+			<div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+				<button
+					onclick={() => {
+						hasExistingProjects = false;
+					}}
+					class="rounded-xl border-2 border-black bg-white px-4 py-2 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-100 active:translate-y-px"
+				>
+					Cancel & Back Up
+				</button>
+
+				<button
+					onclick={async () => {
+						await deleteAndContinue();
+					}}
+					class="rounded-xl border-2 border-black bg-[#DC2626] px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 active:translate-y-px disabled:opacity-50"
+					disabled={deleting}
+				>
+					{deleting ? 'Deleting...' : 'Delete & Sign In'}
+				</button>
+			</div>
+		</Dialog.Content>
+	</Dialog.Portal>
 </Dialog.Root>
 
 <div class="flex min-h-svh items-center justify-center bg-stone-100 px-4 py-12 dark:bg-zinc-950">

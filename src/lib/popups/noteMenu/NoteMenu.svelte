@@ -245,13 +245,13 @@
 		<Dialog.Overlay class="fixed inset-0 z-9998 bg-black/50 backdrop-blur-[1px]" />
 		<Dialog.Content
 			interactOutsideBehavior="ignore"
-			class="fixed top-[5%] left-1/2 z-9998 h-5/6 w-5/6 -translate-x-1/2 rounded-2xl bg-white p-6 shadow-lg"
+			class="fixed top-[5%] left-1/2 z-9998 h-5/6 w-5/6 -translate-x-1/2 rounded-2xl p-6 shadow-lg"
 		>
 			<div class="flex h-full flex-row">
 				<form class="flex min-h-0 flex-1 flex-col space-y-2 pr-2" onsubmit={handleSubmit}>
 					<input
 						type="text"
-						class="doodle-border w-full text-2xl font-bold outline-none"
+						class="doodle-border w-full bg-white text-2xl font-bold outline-none"
 						placeholder="Note title..."
 						maxlength={MAX_NOTE_TITLE_LENGTH}
 						bind:value={workingNote.title}
@@ -407,7 +407,7 @@
 
 					<div class="mx-2 mt-auto flex justify-end gap-3 border-t-2 border-gray-200 pt-4">
 						<button
-							class="rounded-2xl border-2 border-black px-6 py-2 font-bold transition-transform active:translate-y-1"
+							class="rounded-2xl border-2 border-black bg-white px-6 py-2 font-bold transition-transform active:translate-y-1"
 							type="button"
 							onclick={handleCancel}
 						>
@@ -431,7 +431,7 @@
 								<span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2">📁</span>
 								<select
 									bind:value={noteProjectId}
-									class="doodle-border w-full cursor-pointer bg-transparent py-2 pr-4 pl-10"
+									class="doodle-border w-full cursor-pointer bg-white py-2 pr-4 pl-10"
 								>
 									{#each projectStore.projects as project (project.id)}
 										<option value={project.id}>{project.name}</option>
@@ -474,7 +474,7 @@
 						<div>
 							<span class="mb-1 block">Due Date</span>
 							<button
-								class="doodle-border flex w-full items-center justify-center gap-2 py-2"
+								class="doodle-border flex w-full items-center justify-center gap-2 bg-white py-2"
 								onclick={() => (showDatePicker = true)}
 							>
 								{#if workingNote.dueDateTimestamp}
@@ -500,7 +500,7 @@
 								<button
 									class="doodle-border flex-1 {workingNote.priority === 'low'
 										? 'bg-blue-100 text-blue-800'
-										: ''}"
+										: 'bg-white'}"
 									onclick={() => {
 										workingNote.priority = workingNote.priority === 'low' ? undefined : 'low';
 									}}>Low</button
@@ -508,7 +508,7 @@
 								<button
 									class=" doodle-border flex-1 {workingNote.priority === 'medium'
 										? 'bg-amber-100 text-amber-800'
-										: ''}"
+										: 'bg-white'}"
 									onclick={() => {
 										workingNote.priority = workingNote.priority === 'medium' ? undefined : 'medium';
 									}}>Medium</button
@@ -516,7 +516,7 @@
 								<button
 									class=" doodle-border flex-1 {workingNote.priority === 'high'
 										? 'bg-red-100 text-red-800'
-										: ''}"
+										: 'bg-white'}"
 									onclick={() => {
 										workingNote.priority = workingNote.priority === 'high' ? undefined : 'high';
 									}}>High</button

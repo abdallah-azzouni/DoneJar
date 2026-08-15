@@ -77,7 +77,7 @@
 {#if !appStore.isLoaded || !projectStore.isReady || !subscriptionStore.isReady}
 	<Loading />
 {:else}
-	<div class="flex h-screen flex-col overflow-hidden">
+	<div class="flex h-screen flex-col overflow-hidden bg-[#f4efe6]">
 		<AppHeader />
 		<div class="flex flex-1 flex-row overflow-hidden">
 			{#if isDesktop.current}

@@ -82,7 +82,7 @@
 	});
 </script>
 
-<div class="editor-wrapper doodle-border w-full overflow-hidden">
+<div class="editor-wrapper doodle-border w-full overflow-hidden bg-white">
 	<div bind:this={editor}></div>
 </div>
 

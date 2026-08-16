@@ -75,12 +75,15 @@ export const subscriptionStore = {
 		return sub;
 	},
 	get isPro() {
-		if (!sub || sub.plan !== 'pro') return false;
-		const validStatus = sub.status === 'active' || sub.status === 'trialing';
-		const notExpired = Date.parse(sub.current_period_end) > Date.now();
 		// We are allowing guest users to have pro features
 		// because there data is not synced with supabase, Therefor there is no hosting costs.
-		return (validStatus && notExpired) || getAppState() === UserState.GUEST_LOCAL;
+		if (getAppState() === UserState.GUEST_LOCAL) return true;
+
+		if (!sub || sub.plan !== 'pro') return false;
+
+		const validStatus = sub.status === 'active' || sub.status === 'trialing';
+		const notExpired = Date.parse(sub.current_period_end) > Date.now();
+		return validStatus && notExpired;
 	},
 	get isReady() {
 		return isReady;

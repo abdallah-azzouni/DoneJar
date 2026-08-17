@@ -15,12 +15,11 @@ type CollectionName = 'projects' | 'columns' | 'notes' | 'attachments';
 const replicationStates = new SvelteMap<CollectionName, RxSupabaseReplicationState<any>>();
 
 function sanitizePulledDoc(doc: any) {
-	const { _modified, userId, ...rest } = doc;
-	return Object.fromEntries(Object.entries(rest).filter(([_, value]) => value !== null));
+	return { ...doc, userId: null };
 }
 
 function preparePushedDoc(doc: any) {
-	return { userId: sessionStore.current?.user.id, ...doc };
+	return { ...doc, userId: sessionStore?.current?.user?.id ?? null };
 }
 
 type CollectionConfig = {

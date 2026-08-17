@@ -3,6 +3,7 @@ import { addRxPlugin, createRxDatabase, type RxDatabase } from 'rxdb/plugins/cor
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { projectSchema, columnSchema, noteSchema, attachmentSchema } from '$lib/db/schemas';
 import { DB_NAME } from '$lib/constants';
+import { customConflictHandler } from '$lib/db/conflictHandler';
 
 // Plugins
 import { RxDBJsonDumpPlugin } from 'rxdb/plugins/json-dump';
@@ -49,18 +50,33 @@ const _create = async () => {
 	await database.addCollections({
 		projects: {
 			schema: projectSchema,
+			conflictHandler: customConflictHandler,
 			migrationStrategies: {
 				1: function (oldDocument) {
 					if (!oldDocument.maxCapacity) {
 						oldDocument.maxCapacity = 100;
 					}
 					return oldDocument;
+				},
+				2: function (oldDocument) {
+					oldDocument.userId = null;
+					return oldDocument;
 				}
 			}
 		},
-		columns: { schema: columnSchema },
+		columns: {
+			schema: columnSchema,
+			conflictHandler: customConflictHandler,
+			migrationStrategies: {
+				1: function (oldDocument) {
+					oldDocument.userId = null;
+					return oldDocument;
+				}
+			}
+		},
 		notes: {
 			schema: noteSchema,
+			conflictHandler: customConflictHandler,
 			migrationStrategies: {
 				1: function (oldDocument) {
 					if (oldDocument.tags) {
@@ -71,10 +87,25 @@ const _create = async () => {
 				2: function (oldDocument) {
 					delete oldDocument.position;
 					return oldDocument;
+				},
+				3: function (oldDocument) {
+					oldDocument.description_updatedAt =
+						oldDocument.description_updatedAt ?? new Date().toISOString();
+					oldDocument.userId = null;
+					return oldDocument;
 				}
 			}
 		},
-		attachments: { schema: attachmentSchema }
+		attachments: {
+			schema: attachmentSchema,
+			conflictHandler: customConflictHandler,
+			migrationStrategies: {
+				1: function (oldDocument) {
+					oldDocument.userId = null;
+					return oldDocument;
+				}
+			}
+		}
 	});
 
 	return database;

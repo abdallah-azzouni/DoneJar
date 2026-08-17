@@ -7,23 +7,35 @@ import {
 export const attachmentSchemaLiteral = {
 	title: 'attachment schema',
 	description: 'describes an attachment in DoneJar',
-	version: 0,
+	version: 1,
 	keyCompression: true,
 	primaryKey: 'id',
 	type: 'object',
 	properties: {
 		id: { type: 'string', maxLength: 21 },
+		userId: { type: ['string', 'null'] },
 		noteId: { type: 'string', maxLength: 21 },
 		filename: { type: 'string' },
 		mimeType: { type: 'string' },
 		size: { type: 'number' },
-		url: { type: 'string' },
+		url: { type: ['string', 'null'] },
 		pinned: { type: 'boolean' },
-		createdAt: { type: 'string', format: 'date-time' },
+		createdAt: { type: 'string', format: 'date-time', maxLength: 40 },
 		updatedAt: { type: 'string', format: 'date-time' }
 	},
-	required: ['id', 'noteId', 'filename', 'mimeType', 'size', 'pinned', 'createdAt', 'updatedAt'],
-	indexes: [] // to be add when i have queries that need it
+	required: [
+		'id',
+		'userId',
+		'noteId',
+		'filename',
+		'mimeType',
+		'size',
+		'url',
+		'pinned',
+		'createdAt',
+		'updatedAt'
+	],
+	indexes: ['noteId', ['noteId', 'createdAt']]
 } as const;
 
 const _attachmentSchemaTyped = toTypedRxJsonSchema(attachmentSchemaLiteral);

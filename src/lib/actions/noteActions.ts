@@ -12,9 +12,11 @@ export async function createNote(note: NoteDocType): Promise<ActionResult> {
 	try {
 		const newNote: NoteDocType = {
 			id: note.id || nanoid(),
+			userId: null,
 			columnId: note.columnId,
 			title: note.title,
 			description: note.description,
+			description_updatedAt: new Date().toISOString(),
 			color: note.color,
 			dueDateHasTime: note.dueDateHasTime,
 			dueDateTimestamp: note.dueDateTimestamp,
@@ -43,6 +45,7 @@ export async function editNote(note: NoteDocType): Promise<ActionResult> {
 			columnId: note.columnId,
 			title: note.title,
 			description: note.description,
+			description_updatedAt: note.description_updatedAt || new Date().toISOString(),
 			color: note.color,
 			dueDateHasTime: note.dueDateHasTime,
 			dueDateTimestamp: note.dueDateTimestamp,

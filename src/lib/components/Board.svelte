@@ -136,12 +136,12 @@
 
 	function updateColumnSettings(
 		columnId: string,
-		sortKey: string | undefined,
+		sortKey: string | null,
 		filters: Record<string, string[]>
 	) {
 		columnRepository.update({
 			id: columnId,
-			sortKey: sortKey === undefined ? '' : sortKey,
+			sortKey: sortKey,
 			filters: JSON.stringify(filters)
 		});
 	}

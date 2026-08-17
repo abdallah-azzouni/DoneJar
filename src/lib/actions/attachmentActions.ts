@@ -32,7 +32,7 @@ export async function saveNoteAttachments(
 				{
 					...attachment,
 					noteId,
-					url: undefined,
+					url: null,
 					createdAt: new Date().toISOString(),
 					updatedAt: new Date().toISOString()
 				},

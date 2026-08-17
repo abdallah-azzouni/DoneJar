@@ -29,6 +29,7 @@
 				? { ...project }
 				: {
 						id: '',
+						userId: null,
 						name: '',
 						type: 'default',
 						color: DEFAULT_PROJECT_COLOR,
@@ -44,9 +45,9 @@
 	});
 
 	function buildColumnsWithSpecialTypes(): ColumnDocType[] {
-		return customColumns.map((col, i) => ({
+		return customColumns.map((col, i): ColumnDocType => ({
 			...col,
-			specialType: i === inboxIndex ? 'inbox' : i === jarIndex ? 'jar' : undefined
+			specialType: i === inboxIndex ? 'inbox' : i === jarIndex ? 'jar' : null
 		}));
 	}
 

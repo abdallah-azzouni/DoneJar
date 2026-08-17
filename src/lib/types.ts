@@ -6,21 +6,29 @@ export const success = (message: string): ActionResult => ({ type: 'success', me
 export const info = (message: string): ActionResult => ({ type: 'info', message });
 
 export function createColumn(
-	partial: Omit<ColumnDocType, 'sortKey' | 'filters' | 'specialType' | 'name'> &
-		Partial<Pick<ColumnDocType, 'sortKey' | 'filters' | 'specialType' | 'name'>>
+	partial: Omit<ColumnDocType, 'userId' | 'sortKey' | 'filters' | 'specialType' | 'name'> &
+		Partial<Pick<ColumnDocType, 'userId' | 'sortKey' | 'filters' | 'specialType' | 'name'>>
 ): ColumnDocType {
 	return {
+		userId: null,
 		filters: '[]',
+		sortKey: null,
+		specialType: null,
 		name: 'New Column',
 		...partial
 	};
 }
 export const emptyNote: NoteDocType = {
 	id: '',
+	userId: null,
 	columnId: '',
 	title: '',
 	pinned: false,
 	description: '',
+	description_updatedAt: '',
+	dueDateHasTime: false,
+	dueDateTimestamp: null,
+	priority: null,
 	color: '',
 	createdAt: '',
 	updatedAt: ''

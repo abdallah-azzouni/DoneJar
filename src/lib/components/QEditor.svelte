@@ -4,7 +4,7 @@
 	import { notify } from '$lib/stores/notificationStore';
 
 	let editor: HTMLElement;
-	let { description = $bindable() }: { description: string | undefined } = $props();
+	let { description = $bindable() }: { description: string | null } = $props();
 
 	let toolbarOptions = [
 		[{ header: 1 }, { header: 2 }, { align: [] }, 'blockquote', 'code', 'link'],

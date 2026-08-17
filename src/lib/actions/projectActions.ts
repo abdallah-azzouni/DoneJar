@@ -53,6 +53,7 @@ export async function createProject(
 		// Create project with columns
 		const newProject: ProjectDocType = {
 			id: projectId,
+			userId: null,
 			name,
 			type,
 			color,

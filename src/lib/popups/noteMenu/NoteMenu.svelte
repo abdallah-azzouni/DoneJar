@@ -33,6 +33,8 @@
 		})
 	);
 
+	let original_description = $state('');
+
 	// noteId is stable per dialog open because parent uses {#key} to remount this component
 	const noteId = workingNote.id || nanoid();
 
@@ -47,6 +49,10 @@
 		if (workingNote.columnId === '' || col?.projectId !== noteProjectId) {
 			col = await columnRepository.findInboxColumn(noteProjectId);
 			workingNote.columnId = col?.id || '';
+		}
+
+		if (original_description != workingNote.description) {
+			workingNote.description_updatedAt = new Date().toISOString();
 		}
 
 		const plain = $state.snapshot(workingNote) as unknown as NoteDocType; // snapshot to unwarp any proxies made by $state
@@ -84,6 +90,8 @@
 
 	let noteProjectId: string = $state('');
 	onMount(async () => {
+		original_description = workingNote.description || '';
+
 		const items = await attachmentRepository.getManyByNoteId(workingNote.id);
 
 		// load attachments in cache
@@ -142,11 +150,12 @@
 			const id = nanoid();
 			const newAttachment: AttachmentDocType = {
 				id: id,
+				userId: null,
 				noteId,
 				filename: file.name,
 				mimeType: file.type,
 				size: file.size,
-				url: undefined,
+				url: null,
 				createdAt: '',
 				updatedAt: '',
 				pinned: false
@@ -176,7 +185,7 @@
 		attachments = [...attachments, attachment];
 	}
 
-	function getPreviewUrl(attachment: AttachmentDocType): string | undefined {
+	function getPreviewUrl(attachment: AttachmentDocType): string | null {
 		return blobUrlCache.get(attachment.id) ?? attachment.url;
 	}
 
@@ -236,8 +245,8 @@
 			}
 		: undefined}
 	onSave={(date) => {
-		workingNote.dueDateTimestamp = date?.timestamp;
-		workingNote.dueDateHasTime = date?.hasTime;
+		workingNote.dueDateTimestamp = date?.timestamp ?? null;
+		workingNote.dueDateHasTime = date?.hasTime ?? false;
 	}}
 />
 <Dialog.Root bind:open={isOpen}>
@@ -502,7 +511,7 @@
 										? 'bg-blue-100 text-blue-800'
 										: 'bg-white'}"
 									onclick={() => {
-										workingNote.priority = workingNote.priority === 'low' ? undefined : 'low';
+										workingNote.priority = workingNote.priority === 'low' ? null : 'low';
 									}}>Low</button
 								>
 								<button
@@ -510,7 +519,7 @@
 										? 'bg-amber-100 text-amber-800'
 										: 'bg-white'}"
 									onclick={() => {
-										workingNote.priority = workingNote.priority === 'medium' ? undefined : 'medium';
+										workingNote.priority = workingNote.priority === 'medium' ? null : 'medium';
 									}}>Medium</button
 								>
 								<button
@@ -518,7 +527,7 @@
 										? 'bg-red-100 text-red-800'
 										: 'bg-white'}"
 									onclick={() => {
-										workingNote.priority = workingNote.priority === 'high' ? undefined : 'high';
+										workingNote.priority = workingNote.priority === 'high' ? null : 'high';
 									}}>High</button
 								>
 							</div>

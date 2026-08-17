@@ -6,15 +6,15 @@
 
 	// ═══ Props ═══
 	let {
-		activeSortKey = undefined,
+		activeSortKey = null,
 		activeFilters = {},
 		colorOptions = [],
 		onSettingsChanged
 	}: {
-		activeSortKey?: string;
+		activeSortKey: string | null;
 		activeFilters?: Record<string, string[]>;
 		colorOptions?: string[];
-		onSettingsChanged: (filters: Record<string, string[]>, sortKey?: string) => void;
+		onSettingsChanged: (filters: Record<string, string[]>, sortKey: string | null) => void;
 	} = $props();
 
 	// ═══ State ═══
@@ -52,14 +52,14 @@
 	}
 
 	function toggleSort(key: string) {
-		const nextSortKey = activeSortKey === key ? undefined : key;
+		const nextSortKey = activeSortKey === key ? null : key;
 
 		// Pass updated sortKey back to parent handler
 		onSettingsChanged?.(activeFilters, nextSortKey);
 	}
 
 	function clearAll() {
-		onSettingsChanged?.({}, undefined);
+		onSettingsChanged?.({}, null);
 	}
 
 	function handleClickOutside(e: MouseEvent) {

@@ -27,7 +27,7 @@ export function textColorFromHex(hex: string) {
  * - Omits year if it's the current year.
  * - Omits time if hasTime is false or if the date is not in the current year.
  */
-export function formatDueDate(timestamp: string, hasTime: boolean | undefined): string {
+export function formatDueDate(timestamp: string, hasTime: boolean | null): string {
 	const d = new Date(timestamp);
 	const now = new Date();
 	const sameYear = d.getFullYear() === now.getFullYear();
@@ -52,7 +52,7 @@ export function formatDueDate(timestamp: string, hasTime: boolean | undefined): 
  * Checks whether a due date is in the past.
  * For date-only entries, considers the due date passed only after the day ends.
  */
-export function isDueDatePast(timestamp: string, hasTime: boolean | undefined, now: Date): boolean {
+export function isDueDatePast(timestamp: string, hasTime: boolean | null, now: Date): boolean {
 	const due = new Date(timestamp);
 	if (!hasTime) {
 		due.setDate(due.getDate() + 1); // date-only: overdue after end of day

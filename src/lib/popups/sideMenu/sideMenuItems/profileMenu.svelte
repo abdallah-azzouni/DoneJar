@@ -406,7 +406,7 @@
 						<p class="text-xxs font-bold tracking-widest text-gray-400 uppercase">Active Devices</p>
 
 						<div class="doodle-border rounded-lg bg-gray-50 px-4 py-4">
-							{#if userSessionsStore.loading}
+							{#if !userSessionsStore.isReady}
 								<div class="flex justify-center py-2 text-xs font-bold text-gray-400">
 									Loading active devices...
 								</div>

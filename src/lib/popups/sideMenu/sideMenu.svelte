@@ -48,7 +48,10 @@
 							{#each row as item (item.label)}
 								<button
 									class="doodle-border w-full rounded-lg p-2 text-left font-patrick-hand text-xl"
-									onclick={() => item.action()}
+									onclick={() => {
+										sideMenuStore.close();
+										item.action();
+									}}
 								>
 									<span>{item.label}</span>
 								</button>
@@ -60,7 +63,10 @@
 					{#if getAppState() === 'LOGGED_IN'}
 						<button
 							class="doodle-border mb-4 w-full rounded-lg bg-white p-2 text-left font-patrick-hand text-xl"
-							onclick={() => profileItem?.action()}
+							onclick={() => {
+								sideMenuStore.close();
+								profileItem?.action();
+							}}
 						>
 							<img
 								//src={getURLfromObject($currentUser, $currentUser?.avatar)}
@@ -106,7 +112,10 @@
 							{#each row as item (item.label)}
 								<button
 									class="doodle-border w-full rounded-lg p-2 text-left font-patrick-hand text-xl"
-									onclick={() => item.action()}
+									onclick={() => {
+										sideMenuStore.close();
+										item.action();
+									}}
 								>
 									<span>{item.label}</span>
 								</button>
@@ -117,7 +126,10 @@
 					{#if getAppState() == 'LOGGED_IN'}
 						<button
 							class="doodle-border mb-4 w-full rounded-lg bg-white p-2 text-left font-patrick-hand text-xl"
-							onclick={() => profileItem?.action()}
+							onclick={() => {
+								sideMenuStore.close();
+								profileItem?.action();
+							}}
 						>
 							<img
 								//src={getURLfromObject($currentUser, $currentUser?.avatar)}

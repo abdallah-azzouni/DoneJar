@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { sideMenuStore, sideMenuItems } from '$lib/stores/dialog';
+	import { sideMenuStore, sideMenuRows } from '$lib/stores/dialog';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { getAppState } from '$lib/stores/appState.svelte';
@@ -10,20 +10,69 @@
 
 	const isWide = new MediaQuery('(min-width: 640px)');
 
-	const navItems = sideMenuItems.filter((item) => item.label !== 'profile');
-	const profileItem = sideMenuItems.find((item) => item.label === 'profile');
+	const profileId = 4;
 
-	const menuRows = Object.values(
-		navItems.reduce(
-			(acc, item) => {
-				acc[item.index] = acc[item.index] || [];
-				acc[item.index].push(item);
-				return acc;
-			},
-			{} as Record<number, typeof sideMenuItems>
-		)
-	).filter((row) => !(row[0]?.label?.startsWith('Feedback') && getAppState() !== 'LOGGED_IN'));
+	const disabledIds = $derived(getAppState() !== 'LOGGED_IN' ? [2, 3] : [2]);
+	$effect(() => {
+		sideMenuRows.map((row) => {
+			row.items.map((item) => {
+				if (item.id === 3) {
+					item.label =
+						getAppState() !== 'LOGGED_IN' ? 'Feedback 💬 (Login Required)' : 'Feedback 💬';
+				}
+			});
+		});
+	});
 </script>
+
+{#snippet content()}
+	{#each sideMenuRows as row, i (i)}
+		<div
+			class="mb-4 grid gap-3 [*&>button]:bg-white"
+			style="grid-template-columns: repeat({row.items.length}, minmax(0, 1fr));"
+		>
+			{#each row.items.filter((item) => item.id !== profileId) as item (item.id)}
+				<button
+					class="doodle-border w-full rounded-lg p-2 text-left font-patrick-hand text-xl disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
+					disabled={disabledIds.includes(item.id)}
+					onclick={() => {
+						sideMenuStore.close();
+						item.action();
+					}}
+				>
+					<span>{item.label}</span>
+				</button>
+			{/each}
+		</div>
+	{/each}
+	<hr class="my-4 mt-auto border-2 border-dashed border-gray-300" />
+
+	{#if getAppState() === 'LOGGED_IN'}
+		<button
+			class="doodle-border mb-4 w-full rounded-lg bg-white p-2 text-left font-patrick-hand text-xl"
+			onclick={() => {
+				sideMenuStore.close();
+				sideMenuRows[3].items[0].action();
+			}}
+		>
+			<img
+				//src={getURLfromObject($currentUser, $currentUser?.avatar)}
+				alt="Avatar"
+				class="mr-2 inline-block size-9 rounded-full border-2 border-black p-1"
+			/>
+			<span>{sessionStore.current?.user?.user_metadata?.display_name}</span>
+		</button>
+	{:else}
+		<button
+			class="doodle-border mb-4 w-full rounded-lg bg-white p-2 text-left font-patrick-hand text-xl"
+			onclick={() => {
+				sideMenuStore.close();
+				goto(resolve('/auth/login'));
+			}}
+		>
+			<span>Login</span>
+		</button>
+	{/if}{/snippet}
 
 {#if !isWide.current}
 	<Drawer.Root
@@ -39,53 +88,7 @@
 			>
 				<div class="flex h-full flex-col">
 					<hr class="mx-auto mb-6 w-1/3 rounded-3xl border-2 border-gray-500 bg-gray-500" />
-
-					{#each menuRows as row (row[0].index)}
-						<div
-							class="mb-4 grid gap-3 [*&>button]:bg-white"
-							style="grid-template-columns: repeat({row.length}, minmax(0, 1fr));"
-						>
-							{#each row as item (item.label)}
-								<button
-									class="doodle-border w-full rounded-lg p-2 text-left font-patrick-hand text-xl"
-									onclick={() => {
-										sideMenuStore.close();
-										item.action();
-									}}
-								>
-									<span>{item.label}</span>
-								</button>
-							{/each}
-						</div>
-					{/each}
-					<hr class="my-4 mt-auto border-2 border-dashed border-gray-300" />
-
-					{#if getAppState() === 'LOGGED_IN'}
-						<button
-							class="doodle-border mb-4 w-full rounded-lg bg-white p-2 text-left font-patrick-hand text-xl"
-							onclick={() => {
-								sideMenuStore.close();
-								profileItem?.action();
-							}}
-						>
-							<img
-								//src={getURLfromObject($currentUser, $currentUser?.avatar)}
-								alt="Avatar"
-								class="mr-2 inline-block size-9 rounded-full border-2 border-black p-1"
-							/>
-							<span>{sessionStore.current?.user?.user_metadata?.display_name}</span>
-						</button>
-					{:else}
-						<button
-							class="doodle-border mb-4 w-full rounded-lg bg-white p-2 text-left font-patrick-hand text-xl"
-							onclick={() => {
-								sideMenuStore.close();
-								goto(resolve('/auth/login'));
-							}}
-						>
-							<span>Login</span>
-						</button>
-					{/if}
+					{@render content()}
 				</div>
 			</Drawer.Content>
 			<Drawer.Overlay />
@@ -104,51 +107,7 @@
 				class="fixed top-[-5%] right-[-4%] z-9997 mt-10 mr-12 ml-auto h-3/4 w-1/3 rounded-2xl p-6 shadow-lg"
 			>
 				<div class="flex h-full flex-col">
-					{#each menuRows as row (row[0].index)}
-						<div
-							class="mb-4 grid gap-3 [*&>button]:bg-white"
-							style="grid-template-columns: repeat({row.length}, minmax(0, 1fr));"
-						>
-							{#each row as item (item.label)}
-								<button
-									class="doodle-border w-full rounded-lg p-2 text-left font-patrick-hand text-xl"
-									onclick={() => {
-										sideMenuStore.close();
-										item.action();
-									}}
-								>
-									<span>{item.label}</span>
-								</button>
-							{/each}
-						</div>
-					{/each}
-					<hr class="my-4 mt-auto border-2 border-dashed border-gray-300" />
-					{#if getAppState() == 'LOGGED_IN'}
-						<button
-							class="doodle-border mb-4 w-full rounded-lg bg-white p-2 text-left font-patrick-hand text-xl"
-							onclick={() => {
-								sideMenuStore.close();
-								profileItem?.action();
-							}}
-						>
-							<img
-								//src={getURLfromObject($currentUser, $currentUser?.avatar)}
-								alt="Avatar"
-								class="mr-2 inline-block size-9 rounded-full border-2 border-black p-1"
-							/>
-							<span>{sessionStore.current?.user?.user_metadata?.display_name}</span>
-						</button>
-					{:else}
-						<button
-							class="doodle-border mb-4 w-full rounded-lg bg-white p-2 text-left font-patrick-hand text-xl"
-							onclick={() => {
-								sideMenuStore.close();
-								goto(resolve('/auth/login'));
-							}}
-						>
-							<span>Login</span>
-						</button>
-					{/if}
+					{@render content()}
 				</div>
 			</Dialog.Content>
 			<Dialog.Overlay />

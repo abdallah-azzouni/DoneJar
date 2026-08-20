@@ -10,12 +10,22 @@ export * from './dialogFactory.svelte.ts';
 export const sideMenuStore = createDialogStore();
 
 // Each index mean a row, two items with the same index will be in the same row.
-export const sideMenuItems = [
-	{ index: 0, label: 'Import 📥', action: () => importStore.open() },
-	{ index: 0, label: 'Export 📤', action: () => exportStore.open() },
-	{ index: 1, label: 'Settings ⚙️ (Soon...)', action: () => ({}) }, //settingsStore.open() },
-	{ index: 2, label: 'Feedback 💬', action: () => feedbackStore.open() },
-	{ index: 3, label: 'profile', action: () => profileMenuStore.open() }
+export const sideMenuRows = [
+	{
+		items: [
+			{ id: 0, label: 'Import 📥', action: () => importStore.open() },
+			{ id: 1, label: 'Export 📤', action: () => exportStore.open() }
+		]
+	},
+	{
+		items: [{ id: 2, label: 'Settings ⚙️ (Soon...)', action: () => settingsStore.open() }]
+	},
+	{
+		items: [{ id: 3, label: 'Feedback 💬', action: () => feedbackStore.open() }]
+	},
+	{
+		items: [{ id: 4, label: 'profile', action: () => profileMenuStore.open() }]
+	}
 ];
 
 export const exportStore = createDialogStore();

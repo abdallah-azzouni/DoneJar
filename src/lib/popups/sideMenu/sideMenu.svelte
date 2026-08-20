@@ -2,11 +2,18 @@
 	import { sideMenuStore, sideMenuRows } from '$lib/stores/dialog';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { onMount } from 'svelte';
 	import { getAppState } from '$lib/stores/appState.svelte';
 	import { sessionStore } from '$lib/stores/currentUser.svelte';
+	import { type Profile } from '$lib/types';
+	import { supabase } from '$lib/sb/sb';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { Drawer } from 'vaul-svelte';
 	import { Dialog } from 'bits-ui';
+	import ImportMenu from '$lib/popups/sideMenu/sideMenuItems/importMenu.svelte';
+	import ExportMenu from '$lib/popups/sideMenu/sideMenuItems/exportMenu.svelte';
+	import FeedbackMenu from '$lib/popups/sideMenu/sideMenuItems/feedbackMenu.svelte';
+	import ProfileMenu from '$lib/popups/sideMenu/sideMenuItems/profileMenu.svelte';
 
 	const isWide = new MediaQuery('(min-width: 640px)');
 
@@ -23,7 +30,37 @@
 			});
 		});
 	});
+
+	let profile: Profile = $state({
+		id: '???',
+		display_name: '???',
+		email: '???',
+		created_at: '???'
+	});
+
+	async function fetchProfileData() {
+		const { data, error } = await supabase
+			.from('profiles')
+			.select('id, display_name, email, created_at')
+			.eq('id', sessionStore.current?.user?.id)
+			.single();
+
+		if (error) {
+			console.error('Error fetching profile data:', error);
+		} else {
+			profile = data as Profile;
+		}
+	}
+
+	onMount(async () => {
+		await fetchProfileData();
+	});
 </script>
+
+<ImportMenu />
+<ExportMenu />
+<FeedbackMenu />
+<ProfileMenu {profile} onProfileUpdated={fetchProfileData} />
 
 {#snippet content()}
 	{#each sideMenuRows as row, i (i)}
@@ -49,18 +86,24 @@
 
 	{#if getAppState() === 'LOGGED_IN'}
 		<button
-			class="doodle-border mb-4 w-full rounded-lg bg-white p-2 text-left font-patrick-hand text-xl"
+			class="doodle-border mb-4 flex w-full shrink-0 items-center gap-4 rounded-lg bg-white p-1.5 text-left font-patrick-hand text-xl"
 			onclick={() => {
 				sideMenuStore.close();
 				sideMenuRows[3].items[0].action();
 			}}
 		>
-			<img
-				//src={getURLfromObject($currentUser, $currentUser?.avatar)}
-				alt="Avatar"
-				class="mr-2 inline-block size-9 rounded-full border-2 border-black p-1"
-			/>
-			<span>{sessionStore.current?.user?.user_metadata?.display_name}</span>
+			<!-- Avatar -->
+			<div
+				class="justify-content-center relative flex h-12 w-12 shrink-0 items-center overflow-hidden rounded-full border-2 border-black bg-white transition-opacity focus:outline-none"
+			>
+				<span
+					class="w-full text-center font-patrick-hand text-2xl leading-none font-bold text-black"
+				>
+					{(profile.display_name?.match(/\b\w/g)?.join('').slice(0, 2) || '').toUpperCase() ?? '?'}
+				</span>
+			</div>
+
+			<span>{profile.display_name}</span>
 		</button>
 	{:else}
 		<button

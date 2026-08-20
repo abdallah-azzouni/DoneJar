@@ -1,13 +1,17 @@
 <script lang="ts">
 	import { profileMenuStore } from '$lib/stores/dialog';
 	import { Dialog } from 'bits-ui';
-	import { sessionStore, currentSessionId } from '$lib/stores/currentUser.svelte';
+	import { currentSessionId } from '$lib/stores/currentUser.svelte';
 	import { exportStore } from '$lib/stores/dialog';
 	import { signOut, sendPasswordResetEmail } from '$lib/sb/auth';
 	import { notify } from '$lib/stores/notificationStore';
-	import { failure } from '$lib/types';
+	import { failure, type Profile } from '$lib/types';
+	import { supabase } from '$lib/sb/sb';
 	import { userSessionsStore } from '$lib/stores/userSessionsStore.svelte';
 	import Bowser from 'bowser';
+
+	let { profile, onProfileUpdated }: { profile: Profile; onProfileUpdated: () => Promise<void> } =
+		$props();
 
 	// --- Types ---
 	type Tab = 'profile' | 'account' | 'danger';
@@ -19,35 +23,12 @@
 	let savingName = $state(false);
 	let nameError = $state('');
 
-	let sendingVerification = $state(false);
-	let verificationSent = $state(false);
-
 	let sendingReset = $state(false);
 	let resetSent = $state(false);
 
-	let avatarUploading = $state(false);
-	let avatarFileInput: HTMLInputElement;
-
-	let currentUser = $derived(sessionStore.current?.user);
-
 	const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
 
-	// Sync nameValue when currentUser changes
-	$effect(() => {
-		if (currentUser?.user_metadata?.display_name)
-			nameValue = currentUser.user_metadata.display_name;
-	});
-
 	// --- Helpers ---
-	function getInitials(name: string): string {
-		return name
-			.split(' ')
-			.map((n) => n[0])
-			.join('')
-			.toUpperCase()
-			.slice(0, 2);
-	}
-
 	function formatDate(dateStr: string | undefined): string {
 		if (!dateStr) return '—';
 		return new Date(dateStr).toLocaleDateString('en-US', {
@@ -55,6 +36,11 @@
 			month: 'long',
 			day: 'numeric'
 		});
+	}
+
+	function startEditing() {
+		nameValue = profile.display_name ?? '';
+		editingName = true;
 	}
 
 	function close() {
@@ -95,8 +81,15 @@
 		savingName = true;
 		nameError = '';
 		try {
-			// await updateUserInfo({ name: nameValue.trim() });
+			const { error } = await supabase
+				.from('profiles')
+				.update({ display_name: nameValue.trim() })
+				.eq('id', profile.id);
+			if (error) {
+				throw new Error(error.message);
+			}
 			editingName = false;
+			await onProfileUpdated();
 		} catch (e) {
 			nameError = e instanceof Error ? e?.message : 'Failed to save name.';
 		} finally {
@@ -104,24 +97,11 @@
 		}
 	}
 
-	async function sendVerificationEmail() {
-		if (!currentUser?.email) return;
-		sendingVerification = true;
-		try {
-			// await pb.collection('users').requestVerification(currentUser.email);
-			verificationSent = true;
-		} catch {
-			// silently fail — user sees nothing changed
-		} finally {
-			sendingVerification = false;
-		}
-	}
-
 	async function sendPasswordReset() {
-		if (!currentUser?.email) return;
+		if (!profile.email) return;
 		sendingReset = true;
 		try {
-			const result = await sendPasswordResetEmail(currentUser.email);
+			const result = await sendPasswordResetEmail(profile.email);
 			if (result?.error) {
 				notify(failure(result.error.message ?? 'Failed to send reset email.'));
 			} else {
@@ -131,21 +111,6 @@
 			// silently fail
 		} finally {
 			sendingReset = false;
-		}
-	}
-
-	async function handleAvatarChange(e: Event) {
-		const file = (e.target as HTMLInputElement).files?.[0];
-		if (!file) return;
-		avatarUploading = true;
-		try {
-			const form = new FormData();
-			form.append('avatar', file);
-			// await updateUserInfo(form);
-		} catch {
-			// silently fail
-		} finally {
-			avatarUploading = false;
 		}
 	}
 
@@ -183,47 +148,15 @@
 				class="flex shrink-0 items-center gap-4 border-b-2 border-black bg-[#f5a623] px-6 pt-5 pb-4"
 			>
 				<!-- Avatar -->
-				<div class="relative shrink-0">
-					<button
-						class="justify-content-center flex h-16 w-16 items-center overflow-hidden rounded-full border-2 border-black bg-white transition-opacity hover:opacity-90 focus:outline-none"
-						onclick={() => avatarFileInput.click()}
-						title="Change avatar"
-						disabled={avatarUploading}
+				<div
+					class="justify-content-center relative flex h-16 w-16 shrink-0 items-center overflow-hidden rounded-full border-2 border-black bg-white transition-opacity focus:outline-none"
+				>
+					<span
+						class="w-full text-center font-patrick-hand text-2xl leading-none font-bold text-black"
 					>
-						<!--  currentUser?.avatar && getURLfromObject(currentUser, currentUser.avatar)} -->
-						{#if false}
-							<img
-								//src={getURLfromObject(currentUser, currentUser.avatar)}
-								alt="Avatar"
-								class="h-full w-full object-cover"
-							/>
-						{:else}
-							<span
-								class="w-full text-center font-patrick-hand text-2xl leading-none font-bold text-black"
-							>
-								{getInitials(currentUser?.user_metadata?.display_name ?? '?')}
-							</span>
-						{/if}
-						{#if avatarUploading}
-							<div
-								class="absolute inset-0 flex items-center justify-center rounded-full bg-white/70"
-							>
-								<span class="text-xs font-bold">...</span>
-							</div>
-						{/if}
-					</button>
-					<div
-						class="pointer-events-none absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-black bg-white text-[11px]"
-					>
-						📷
-					</div>
-					<input
-						bind:this={avatarFileInput}
-						type="file"
-						accept="image/*"
-						class="hidden"
-						onchange={handleAvatarChange}
-					/>
+						{(profile.display_name?.match(/\b\w/g)?.join('').slice(0, 2) || '').toUpperCase() ??
+							'?'}
+					</span>
 				</div>
 
 				<!-- Name + email + badge -->
@@ -238,7 +171,7 @@
 									if (e.key === 'Enter') saveName();
 									if (e.key === 'Escape') {
 										editingName = false;
-										nameValue = currentUser?.user_metadata?.display_name ?? '';
+										nameValue = profile.display_name ?? '';
 									}
 								}}
 							/>
@@ -253,7 +186,7 @@
 								class="shrink-0 rounded-md border-2 border-black bg-white px-2 py-1 text-xs font-bold hover:bg-gray-100"
 								onclick={() => {
 									editingName = false;
-									nameValue = currentUser?.user_metadata?.display_name ?? '';
+									nameValue = profile.display_name ?? '';
 									nameError = '';
 								}}>✕</button
 							>
@@ -261,32 +194,17 @@
 					{:else}
 						<button
 							class="mb-1 flex items-center gap-1 font-patrick-hand text-xl font-bold text-black decoration-dashed underline-offset-2 hover:underline"
-							onclick={() => {
-								editingName = true;
-							}}
+							onclick={() => startEditing()}
 							title="Edit name"
 						>
-							{currentUser?.user_metadata?.display_name ?? 'User'}
+							{profile.display_name ?? 'User'}
 							<span class="text-sm opacity-60">✏️</span>
 						</button>
 					{/if}
 					{#if nameError}
 						<p class="mb-1 text-xs font-bold text-red-700">{nameError}</p>
 					{/if}
-					<p class="mb-1.5 truncate text-sm text-[#4a2e00]">{currentUser?.email ?? ''}</p>
-					{#if currentUser?.user_metadata?.email_verified}
-						<span
-							class="inline-flex items-center gap-1 rounded-full border border-green-800 bg-green-100 px-2 py-0.5 text-[11px] font-bold text-green-800"
-						>
-							✓ Verified
-						</span>
-					{:else}
-						<span
-							class="inline-flex items-center gap-1 rounded-full border border-yellow-700 bg-yellow-100 px-2 py-0.5 text-[11px] font-bold text-yellow-800"
-						>
-							⚠ Not verified
-						</span>
-					{/if}
+					<p class="mb-1.5 truncate text-sm text-[#4a2e00]">{profile.email ?? ''}</p>
 				</div>
 			</div>
 
@@ -318,7 +236,7 @@
 						>
 							<span class="w-28 shrink-0 text-xs font-bold text-gray-500">Display name</span>
 							<span class="text-right text-sm font-bold text-black"
-								>{currentUser?.user_metadata?.display_name ?? '—'}</span
+								>{profile.display_name ?? '—'}</span
 							>
 						</div>
 
@@ -327,32 +245,8 @@
 						>
 							<span class="w-28 shrink-0 text-xs font-bold text-gray-500">Email</span>
 							<span class="max-w-50 truncate text-right text-sm font-bold text-black"
-								>{currentUser?.email ?? '—'}</span
+								>{profile.email ?? '—'}</span
 							>
-						</div>
-
-						<div
-							class="doodle-border flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3"
-						>
-							<span class="w-28 shrink-0 text-xs font-bold text-gray-500">Verification</span>
-							{#if currentUser?.user_metadata?.email_verified}
-								<span class="text-sm font-bold text-green-700">Verified ✓</span>
-							{:else}
-								<div class="flex items-center gap-2">
-									<span class="text-sm font-bold text-yellow-700">Not verified</span>
-									{#if verificationSent}
-										<span class="text-xs font-bold text-green-700">Email sent!</span>
-									{:else}
-										<button
-											class="rounded-md border-2 border-black bg-white px-2 py-0.5 text-xs font-bold hover:bg-gray-100 disabled:opacity-50"
-											onclick={sendVerificationEmail}
-											disabled={sendingVerification}
-										>
-											{sendingVerification ? 'Sending...' : 'Send link'}
-										</button>
-									{/if}
-								</div>
-							{/if}
 						</div>
 
 						<p class="text-xxs pt-2 font-bold tracking-widest text-gray-400 uppercase">
@@ -363,16 +257,7 @@
 							class="doodle-border flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3"
 						>
 							<span class="w-28 shrink-0 text-xs font-bold text-gray-500">Member since</span>
-							<span class="text-sm font-bold text-black">{formatDate(currentUser?.created_at)}</span
-							>
-						</div>
-
-						<div
-							class="doodle-border flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3"
-						>
-							<span class="w-28 shrink-0 text-xs font-bold text-gray-500">Last updated</span>
-							<span class="text-sm font-bold text-black">{formatDate(currentUser?.updated_at)}</span
-							>
+							<span class="text-sm font-bold text-black">{formatDate(profile.created_at)}</span>
 						</div>
 					</div>
 
@@ -384,8 +269,7 @@
 						<div class="doodle-border rounded-lg bg-gray-50 px-4 py-4">
 							<p class="mb-1 text-sm font-bold text-black">Change password</p>
 							<p class="mb-3 text-xs text-gray-500">
-								We'll send a reset link to <span class="font-bold text-black"
-									>{currentUser?.email}</span
+								We'll send a reset link to <span class="font-bold text-black">{profile.email}</span
 								>.
 							</p>
 							{#if resetSent}
@@ -533,7 +417,7 @@
 				class="flex shrink-0 items-center justify-between border-t-2 border-dashed border-gray-300 bg-white px-6 py-3"
 			>
 				<span class="font-mono text-[11px] text-gray-300 select-all" title="Your user ID"
-					>{currentUser?.id ?? ''}</span
+					>{profile.id ?? ''}</span
 				>
 				<button
 					class="text-xs font-bold text-gray-400 transition-colors hover:text-black"

@@ -6,10 +6,6 @@
 	import { sideMenuStore } from '$lib/stores/dialog';
 	import { projectSideBarStore } from '$lib/stores/dialog';
 	import SideMenu from '$lib/popups/sideMenu/sideMenu.svelte';
-	import ImportMenu from '$lib/popups/sideMenu/sideMenuItems/importMenu.svelte';
-	import ExportMenu from '$lib/popups/sideMenu/sideMenuItems/exportMenu.svelte';
-	import FeedbackMenu from '$lib/popups/sideMenu/sideMenuItems/feedbackMenu.svelte';
-	import ProfileMenu from '$lib/popups/sideMenu/sideMenuItems/profileMenu.svelte';
 
 	import { searchQuery } from '$lib/stores/search';
 
@@ -27,11 +23,7 @@
 </script>
 
 <SideMenu />
-<!-- Side menu Items -->
-<ImportMenu />
-<ExportMenu />
-<FeedbackMenu />
-<ProfileMenu />
+
 <header class="doodle-border relative bg-white px-4">
 	<span
 		class="text-xxs absolute -top-3 -left-3 rounded-full border border-black bg-sky-100 px-2 py-0.5 font-extrabold tracking-widest text-sky-900 uppercase shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] select-none"

@@ -55,3 +55,10 @@ export interface SortOption {
 	label: string;
 	compare: (a: NoteDocType, b: NoteDocType) => number;
 }
+
+export type Profile = {
+	id: string;
+	display_name: string;
+	created_at: string;
+	email: string;
+};

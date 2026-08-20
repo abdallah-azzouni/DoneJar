@@ -89,8 +89,8 @@
 					<div class="flex items-center gap-2">
 						<span>💡</span>
 						<span>
-							<strong>Guest Mode:</strong> Data is saved locally in this browser. Sign in or export via
-							menu to back up.
+							<strong>Guest Mode:</strong> Data is saved locally on this device and won't sync across
+							devices. Sign in or export via menu to back up.
 						</span>
 					</div>
 

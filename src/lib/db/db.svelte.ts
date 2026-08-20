@@ -4,6 +4,9 @@ import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { projectSchema, columnSchema, noteSchema, attachmentSchema } from '$lib/db/schemas';
 import { DB_NAME } from '$lib/constants';
 import { customConflictHandler } from '$lib/db/conflictHandler';
+import { notify } from '$lib/stores/notificationStore';
+import { failure } from '$lib/types';
+import { captureException } from '@sentry/sveltekit';
 
 // Plugins
 import { RxDBJsonDumpPlugin } from 'rxdb/plugins/json-dump';
@@ -111,13 +114,18 @@ const _create = async () => {
 	return database;
 };
 
-const dbState = $state({ ready: false });
+const dbState = $state({ ready: false, failed: false, loading: false });
 export const isDbReady = () => dbState.ready;
+export const isDbLoading = () => dbState.loading;
+export const isDbFailed = () => dbState.failed;
 
 // make the dbPrmoise null.
 export const resetDb = () => {
 	dbPromise = null;
+	dbInitAttempts = 0;
 	dbState.ready = false;
+	dbState.failed = false;
+	dbState.loading = false;
 };
 
 export const closeDb = async (): Promise<void> => {
@@ -130,12 +138,28 @@ export const closeDb = async (): Promise<void> => {
 	}
 };
 
+let dbInitAttempts = 0;
+
 export const initDb = async (): Promise<void> => {
-	if (dbPromise) return;
-	dbPromise = _create().catch((err) => {
-		dbPromise = null;
-		throw err;
-	});
+	if (dbPromise || dbState.loading) return;
+	if (dbInitAttempts >= 3) {
+		if (!dbState.failed) {
+			dbState.failed = true;
+			notify(failure('Having trouble loading? Try refreshing the page.'), Infinity);
+		}
+		return;
+	}
+	dbInitAttempts++;
+	dbState.loading = true;
+	dbPromise = _create()
+		.catch((err) => {
+			dbPromise = null;
+			captureException(err);
+			throw err;
+		})
+		.finally(() => {
+			dbState.loading = false;
+		});
 
 	await dbPromise;
 	dbState.ready = true;
@@ -147,7 +171,7 @@ export const db = async (): Promise<RxDatabase> => {
 	const existing = await dbPromise;
 	if (!existing.closed) return existing;
 	console.warn('Existing DB instance was closed. Creating a new one.');
-	dbPromise = null;
-	dbState.ready = false;
-	return dbPromise!;
+	resetDb();
+	dbState.failed = true;
+	throw new Error('DB_CLOSED');
 };

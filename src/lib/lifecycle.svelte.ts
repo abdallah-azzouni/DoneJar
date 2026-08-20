@@ -1,7 +1,7 @@
 import { isReplicating, startReplication, stopReplication } from '$lib/sb/replication.svelte';
 import { getAppState, UserState } from '$lib/stores/appState.svelte';
 import { clearDatabase } from '$lib/db/dal';
-import { initDb, isDbReady, resetDb } from '$lib/db/db.svelte';
+import { initDb, isDbReady, isDbLoading, isDbFailed, resetDb } from '$lib/db/db.svelte';
 import { projectStore } from './stores/projects.svelte';
 import { userSessionsStore } from './stores/userSessionsStore.svelte';
 import { subscriptionStore } from './stores/subscription.svelte';
@@ -14,6 +14,8 @@ export function initLifecycle() {
 	$effect(() => {
 		const state = getAppState();
 		const dbReady = isDbReady();
+		const dbLoading = isDbLoading();
+		const dbFailed = isDbFailed();
 		const replicating = isReplicating();
 		const userId = sessionStore.current?.user?.id;
 		const validSession = userSessionsStore.isValid;
@@ -23,6 +25,7 @@ export function initLifecycle() {
 				console.table({
 					'Lifecycle State': state,
 					'DB Ready': dbReady,
+					'DB Loading': dbLoading,
 					'Is Replicating': replicating,
 					'User Sessions Ready': userSessionsStore.isReady,
 					'User Sessions Valid': validSession,
@@ -33,9 +36,13 @@ export function initLifecycle() {
 				});
 			});
 		}
-		if (state === UserState.LOGGED_OUT && !cleaning) {
+		if ((state === UserState.LOGGED_OUT || dbFailed) && !cleaning) {
 			cleaning = true;
-			userSessionsStore.reset();
+
+			if (state === UserState.LOGGED_OUT) {
+				userSessionsStore.reset();
+			}
+
 			projectStore.reset();
 			subscriptionStore.reset();
 			(async () => {
@@ -44,9 +51,12 @@ export function initLifecycle() {
 						await stopReplication();
 					}
 
-					if (getAppState() !== UserState.LOGGED_OUT) return; // check if user logged in again during cleanup
+					if (!dbFailed && getAppState() !== UserState.LOGGED_OUT) return;
 
-					await clearDatabase();
+					if (!dbFailed) {
+						await clearDatabase();
+					}
+
 					resetDb();
 				} catch (error) {
 					console.error('Error during cleanup:', error);

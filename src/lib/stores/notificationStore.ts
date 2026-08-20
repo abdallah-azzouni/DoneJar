@@ -5,18 +5,18 @@ const SUCCESS_DURATION = 3000; // 3 seconds
 const ERROR_DURATION = 5000; // 5 seconds
 const INFO_DURATION = 4000; // 4 seconds
 
-export function notify(result: ActionResult) {
+export function notify(result: ActionResult, duration?: number) {
 	if (result.type === 'error') {
 		toast.error(result.message, {
-			duration: ERROR_DURATION
+			duration: duration ?? ERROR_DURATION
 		});
 	} else if (result.type === 'success') {
 		toast.success(result.message, {
-			duration: SUCCESS_DURATION
+			duration: duration ?? SUCCESS_DURATION
 		});
 	} else if (result.type === 'info') {
 		toast.info(result.message, {
-			duration: INFO_DURATION
+			duration: duration ?? INFO_DURATION
 		});
 	}
 }

@@ -13,7 +13,7 @@ export const sideMenuStore = createDialogStore();
 export const sideMenuItems = [
 	{ index: 0, label: 'Import 📥', action: () => importStore.open() },
 	{ index: 0, label: 'Export 📤', action: () => exportStore.open() },
-	{ index: 1, label: 'Settings ⚙️', action: () => settingsStore.open() },
+	{ index: 1, label: 'Settings ⚙️ (Soon...)', action: () => ({}) }, //settingsStore.open() },
 	{ index: 2, label: 'Feedback 💬', action: () => feedbackStore.open() },
 	{ index: 3, label: 'profile', action: () => profileMenuStore.open() }
 ];

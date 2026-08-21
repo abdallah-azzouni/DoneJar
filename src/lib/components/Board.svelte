@@ -23,9 +23,37 @@
 		dropTargetForElements,
 		monitorForElements
 	} from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
-
+	import { fade, fly } from 'svelte/transition';
 	import { getSortComparator } from '$lib/sort';
 	import { SvelteSet } from 'svelte/reactivity';
+
+	// --- Mobile
+	let width = $state(0);
+	let height = $state(0);
+	$effect(() => {
+		const update = () => {
+			width = window.visualViewport?.width ?? window.innerWidth;
+			height = window.visualViewport?.height ?? window.innerHeight;
+		};
+
+		update();
+		window.visualViewport?.addEventListener('resize', update);
+
+		return () => window.visualViewport?.removeEventListener('resize', update);
+	});
+
+	let viewMode: 'desktop' | 'mobile' = $derived.by(() => {
+		const w = width;
+		const h = height;
+		if (h > w * 1.15) return 'mobile';
+		return 'desktop';
+	});
+
+	let scrollIdx = $state(0);
+
+	let holdedNoteId = $state<string | null>(null);
+
+	// ---
 
 	let showCreateNote = $state(false);
 
@@ -228,128 +256,327 @@
 			message
 		};
 	}
+
+	// --- Mobile Swipe Handlers ---
+	let touchStartX = 0;
+	let touchStartY = 0;
+
+	function handleTouchStart(e: TouchEvent) {
+		touchStartX = e.touches[0].clientX;
+		touchStartY = e.touches[0].clientY;
+	}
+
+	function handleTouchEnd(e: TouchEvent) {
+		// Prevent swiping while holding a note modal target active
+		if (holdedNoteId !== null) return;
+
+		const touchEndX = e.changedTouches[0].clientX;
+		const touchEndY = e.changedTouches[0].clientY;
+
+		const deltaX = touchEndX - touchStartX;
+		const deltaY = touchEndY - touchStartY;
+
+		// Verify gesture is primarily horizontal (> 50px delta & 1.5x greater than vertical movement)
+		if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+			if (deltaX < 0 && scrollIdx < columnItems.length - 1) {
+				scrollIdx += 1; // Swipe left -> Next Column
+			} else if (deltaX > 0 && scrollIdx > 0) {
+				scrollIdx -= 1; // Swipe right -> Previous Column
+			}
+		}
+	}
 </script>
+
+{#snippet dropOverlay()}
+	<div
+		class="pointer-events-none absolute inset-0 z-40 m-1.5 rounded-xl border-2 border-dashed border-black/20 bg-[#f1ebd9]/50 backdrop-blur-[1px] transition-all duration-150"
+	>
+		<span
+			class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-patrick-hand text-lg font-bold tracking-wide text-black/40"
+		>
+			Drop notes here
+		</span>
+	</div>
+{/snippet}
+{#snippet createNoteButton()}<button
+		class="absolute right-0 bottom-0 m-2 size-15 cursor-pointer rounded-full border border-black bg-white p-2"
+		onclick={() => (showCreateNote = true)}
+	>
+		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
+			><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path
+				d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z"
+			/></svg
+		>
+	</button>
+{/snippet}
 
 {#key showCreateNote}
 	<NoteMenu bind:isOpen={showCreateNote} note={null} />
 {/key}
+{#if viewMode === 'desktop'}
+	<div class="flex h-full w-full flex-row overflow-hidden">
+		{#each columnItems as column (column.id)}
+			{#if column.specialType === 'jar'}
+				{@const status = getJarStatus(column.notes.length)}
+				<div
+					use:dndColumn={column.id}
+					class="relative m-2 flex max-h-full flex-col items-center {getColumnClass(
+						projectStore.current?.type,
+						column.specialType
+					)}"
+				>
+					<!-- Jar Column Layout Wrapper -->
+					<div class="flex h-full w-full flex-col justify-between">
+						<!-- Jar drop area -->
 
-<div class="flex h-full w-full flex-row overflow-hidden">
-	{#each columnItems as column (column.id)}
-		{#if column.specialType === 'jar'}
-			{@const status = getJarStatus(column.notes.length)}
-			<div
-				use:dndColumn={column.id}
-				class="relative m-2 flex max-h-full flex-col items-center {getColumnClass(
-					projectStore.current?.type,
-					column.specialType
-				)}"
-			>
-				<!-- Jar Column Layout Wrapper -->
-				<div class="flex h-full w-full flex-col justify-between">
-					<!-- Jar drop area -->
-
-					<div
-						class="{status.pulse
-							? 'animate-pulse'
-							: ''} relative mt-20 flex w-full flex-1 items-center justify-center rounded-xl border-2 p-4 transition-all duration-300"
-						style={status.style}
-					>
-						{#each column.notes as note (note.id)}
-							<div class="pointer-events-none absolute top-0 left-0 size-10 opacity-0"></div>
-						{/each}
-						<div class="flex items-center gap-2">
-							<span class="font-patrick-hand text-xl font-bold tracking-wide transition-all">
-								{status.message}
-							</span>
-						</div>
-					</div>
-
-					<!-- Jar Interactive Container Box -->
-					<div class="relative mt-4 flex min-h-0 w-full flex-initial items-center justify-center">
-						<button
-							type="button"
-							class="group relative max-h-11/12 overflow-hidden rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-						>
-							<img
-								src={backJar}
-								alt=""
-								class="pointer-events-none block w-full object-contain opacity-0"
-							/>
-
-							<img
-								src={backJar}
-								alt="Jar container graphic background"
-								class="pointer-events-none absolute inset-0 z-0 h-full w-full object-contain"
-							/>
-							<div class="absolute top-[18%] right-[5%] bottom-[5%] left-[5%] z-5">
-								<BeakerPhysics items={column.notes} {maxCapacity} />
-							</div>
-
-							<img
-								src={frontJar}
-								alt="Jar container graphic foreground"
-								class="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain"
-							/>
-						</button>
-					</div>
-				</div>
-			</div>
-		{:else}
-			<div
-				use:dndColumn={column.id}
-				class="relative m-2 flex max-h-full flex-col items-center {getColumnClass(
-					projectStore.current?.type,
-					column.specialType
-				)}"
-			>
-				<span class="mb-2 font-patrick-hand text-7xl font-bold">{column.name}</span>
-				<div class="doodle-border w-full flex-1 overflow-y-auto bg-white">
-					<div class="absolute top-22 right-4 z-10">
-						<SortFilter
-							activeSortKey={column.sortKey}
-							activeFilters={column.filters}
-							colorOptions={availableColors}
-							onSettingsChanged={(newFilters, newSortKey) =>
-								updateColumnSettings(column.id, newSortKey, newFilters)}
-						/>
-					</div>
-					<div class="relative flex h-full w-full flex-col items-center justify-start">
-						{#if column.id === hoveredColumnId}
-							<div
-								class="pointer-events-none absolute inset-0 z-40 m-1.5 rounded-xl border-2 border-dashed border-black/20 bg-[#f1ebd9]/50 backdrop-blur-[1px] transition-all duration-150"
-							>
-								<span
-									class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-patrick-hand text-lg font-bold tracking-wide text-black/40"
-								>
-									Drop notes here
-								</span>
-							</div>
-						{/if}
 						<div
-							class="grid w-full grid-cols-[repeat(auto-fill,minmax(120px,1fr))] content-start items-start gap-4 p-4"
+							class="{status.pulse
+								? 'animate-pulse'
+								: ''} relative mt-20 flex w-full flex-1 items-center justify-center rounded-xl border-2 p-4 transition-all duration-300"
+							style={status.style}
 						>
 							{#each column.notes as note (note.id)}
-								<div class="p-2">
-									<StickyNote {note} />
-								</div>
+								<div class="pointer-events-none absolute top-0 left-0 size-10 opacity-0"></div>
 							{/each}
+							<div class="flex items-center gap-2">
+								<span class="font-patrick-hand text-xl font-bold tracking-wide transition-all">
+									{status.message}
+								</span>
+							</div>
+						</div>
+
+						<!-- Jar Interactive Container Box -->
+						<div class="relative mt-4 flex min-h-0 w-full flex-initial items-center justify-center">
+							<button
+								type="button"
+								class="group relative max-h-11/12 overflow-hidden rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+							>
+								<img
+									src={backJar}
+									alt=""
+									class="pointer-events-none block w-full object-contain opacity-0"
+								/>
+
+								<img
+									src={backJar}
+									alt="Jar container graphic background"
+									class="pointer-events-none absolute inset-0 z-0 h-full w-full object-contain"
+								/>
+								<div class="absolute top-[18%] right-[5%] bottom-[5%] left-[5%] z-5">
+									<BeakerPhysics items={column.notes} {maxCapacity} />
+								</div>
+
+								<img
+									src={frontJar}
+									alt="Jar container graphic foreground"
+									class="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain"
+								/>
+							</button>
 						</div>
 					</div>
 				</div>
-				{#if column.specialType === 'inbox'}
-					<button
-						class="absolute right-0 bottom-0 m-2 size-15 cursor-pointer rounded-full border border-black bg-white p-2"
-						onclick={() => (showCreateNote = true)}
+			{:else}
+				<div
+					use:dndColumn={column.id}
+					class="relative m-2 flex max-h-full flex-col items-center {getColumnClass(
+						projectStore.current?.type,
+						column.specialType
+					)}"
+				>
+					<span class="mb-2 font-patrick-hand text-7xl font-bold">{column.name}</span>
+					<div class="doodle-border w-full flex-1 overflow-y-auto bg-white">
+						<div class="absolute top-22 right-4 z-10">
+							<SortFilter
+								activeSortKey={column.sortKey}
+								activeFilters={column.filters}
+								colorOptions={availableColors}
+								onSettingsChanged={(newFilters, newSortKey) =>
+									updateColumnSettings(column.id, newSortKey, newFilters)}
+							/>
+						</div>
+						<div class="relative flex h-full w-full flex-col items-center justify-start">
+							{#if column.id === hoveredColumnId}{@render dropOverlay()}{/if}
+							<div
+								class="grid w-full grid-cols-[repeat(auto-fill,minmax(120px,1fr))] content-start items-start gap-4 p-4"
+							>
+								{#each column.notes as note (note.id)}
+									<div class="p-2">
+										<StickyNote {note} />
+									</div>
+								{/each}
+							</div>
+						</div>
+					</div>
+					{#if column.specialType === 'inbox'}{@render createNoteButton()}{/if}
+				</div>
+			{/if}
+		{/each}
+	</div>
+{:else}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="flex h-full w-full flex-col items-center overflow-hidden p-2"
+		ontouchstart={handleTouchStart}
+		ontouchend={handleTouchEnd}
+	>
+		{#each columnItems as column (column.id)}
+			{#if column.position === scrollIdx}
+				{#if column.specialType === 'jar'}
+					{@const status = getJarStatus(column.notes.length)}
+					<div
+						use:dndColumn={column.id}
+						class="relative flex h-full min-h-0 w-full flex-col items-center"
 					>
-						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
-							><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path
-								d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z"
-							/></svg
+						<!-- Jar Column Layout Wrapper -->
+						<div class="flex h-full w-full flex-col justify-between gap-4">
+							<!-- Jar drop area -->
+							<div
+								class="{status.pulse
+									? 'animate-pulse'
+									: ''} relative mt-4 flex w-full flex-1 items-center justify-center rounded-xl border-2 p-4 transition-all duration-300"
+								style={status.style}
+							>
+								{#each column.notes as note (note.id)}
+									<div class="pointer-events-none absolute top-0 left-0 size-10 opacity-0"></div>
+								{/each}
+								<div class="flex items-center gap-2">
+									<span class="font-patrick-hand text-xl font-bold tracking-wide transition-all">
+										{status.message}
+									</span>
+								</div>
+							</div>
+
+							<!-- Jar Interactive Container Box -->
+							<div
+								class="relative flex min-h-0 w-full flex-initial items-center justify-center pb-4"
+							>
+								<button
+									type="button"
+									class="group relative max-h-[50vh] overflow-hidden rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+								>
+									<img
+										src={backJar}
+										alt=""
+										class="pointer-events-none block w-full object-contain opacity-0"
+									/>
+
+									<img
+										src={backJar}
+										alt="Jar container graphic background"
+										class="pointer-events-none absolute inset-0 z-0 h-full w-full object-contain"
+									/>
+									<div class="absolute top-[18%] right-[5%] bottom-[5%] left-[5%] z-5">
+										<BeakerPhysics items={column.notes} {maxCapacity} />
+									</div>
+
+									<img
+										src={frontJar}
+										alt="Jar container graphic foreground"
+										class="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain"
+									/>
+								</button>
+							</div>
+						</div>
+					</div>
+				{:else}
+					<div use:dndColumn={column.id} class="relative flex h-full min-h-0 w-full flex-col">
+						<!-- Mobile Column Header -->
+						<div
+							class="flex w-full shrink-0 items-center justify-between border-b-2 border-gray-500 px-1 pb-2"
 						>
-					</button>
+							<span class="font-patrick-hand text-5xl font-bold">{column.name}</span>
+							<SortFilter
+								activeSortKey={column.sortKey}
+								activeFilters={column.filters}
+								colorOptions={availableColors}
+								onSettingsChanged={(newFilters, newSortKey) =>
+									updateColumnSettings(column.id, newSortKey, newFilters)}
+							/>
+						</div>
+
+						<!-- Scrollable Note Grid Container -->
+						<div class="doodle-border relative mt-4 w-full flex-1 overflow-y-auto bg-white">
+							<div class="relative min-h-full w-full">
+								{#if column.id === hoveredColumnId}{@render dropOverlay()}{/if}
+
+								<!-- Smooth Fade-in Overlay Modal -->
+								{#if holdedNoteId !== null}
+									<button
+										transition:fade={{ duration: 180 }}
+										class="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px]"
+										aria-label="Backdrop, click to cancel moving note"
+										onclick={() => (holdedNoteId = null)}
+									></button>
+
+									<div
+										transition:fly={{ y: 24, duration: 200 }}
+										class="fixed bottom-[10%] z-51 flex w-full flex-row items-center justify-center gap-4 px-6"
+									>
+										{#each columnItems as col (col.position)}
+											{#if col.position !== scrollIdx}
+												<button
+													class="flex items-center gap-2 rounded-xl border-2 border-black bg-white px-4 py-2 font-patrick-hand text-2xl font-bold tracking-wide shadow-[3px_3px_0px_#000] transition-all hover:bg-amber-200 active:translate-y-0.5 active:shadow-none"
+													onclick={() => {
+														scrollIdx = col.position;
+														moveNote(holdedNoteId ?? '', col.id);
+														holdedNoteId = null;
+													}}
+												>
+													{#if col.specialType === 'jar'}
+														<img src={frontJar} alt="" class="h-7 w-auto object-contain" />
+													{/if}
+													<span>{col.name}</span>
+												</button>
+											{/if}
+										{/each}
+									</div>
+								{/if}
+
+								<div
+									class="grid w-full grid-cols-[repeat(auto-fill,minmax(120px,1fr))] content-start items-start gap-4 p-4"
+								>
+									{#each column.notes as note (note.id)}
+										<div
+											class="p-2 transition-all duration-200 {holdedNoteId !== null
+												? note.id === holdedNoteId
+													? 'z-50 scale-110 shadow-2xl'
+													: 'opacity-25 grayscale'
+												: ''}"
+										>
+											<StickyNote {note} bind:holdedNoteId />
+										</div>
+									{/each}
+								</div>
+							</div>
+						</div>
+
+						{#if column.specialType === 'inbox'}{@render createNoteButton()}{/if}
+					</div>
 				{/if}
-			</div>
-		{/if}
-	{/each}
-</div>
+			{/if}
+		{/each}
+
+		<!-- Bottom Dot Navigation -->
+		<div class="mt-10 mb-7 flex items-center gap-4">
+			{#each columnItems as column (column.id)}
+				<input
+					name="nav"
+					type="radio"
+					value={column.position}
+					bind:group={scrollIdx}
+					class="relative size-7 appearance-none rounded-full border-2
+                            border-gray-500
+                            checked:after:absolute
+                            checked:after:top-1/2
+                            checked:after:left-1/2
+                            checked:after:size-4
+                            checked:after:-translate-x-1/2
+                            checked:after:-translate-y-1/2
+                            checked:after:rounded-full
+                            checked:after:bg-gray-700
+                            checked:after:content-['']"
+				/>
+			{/each}
+		</div>
+	</div>
+{/if}

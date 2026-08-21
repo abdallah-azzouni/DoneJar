@@ -7,8 +7,8 @@
 	import { notify } from '$lib/stores/notificationStore';
 	import { draggable } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 
-	// Track the bindable hover property
-	let { note }: { note: NoteDocType } = $props();
+	let { note, holdedNoteId = $bindable() }: { note: NoteDocType; holdedNoteId?: string | null } =
+		$props();
 	let showNoteMenu = $state(false);
 
 	let infoColor = $derived(
@@ -33,6 +33,7 @@
 	}
 
 	let isDragging = $state(false);
+	let isPressing = $state(false);
 
 	function dndCardGridAction(node: HTMLElement) {
 		const cleanup = draggable({
@@ -42,16 +43,51 @@
 			onDrop: () => (isDragging = false)
 		});
 
+		let holdTimer: ReturnType<typeof setTimeout>;
+
+		function onTouchStart() {
+			isPressing = true;
+			holdTimer = setTimeout(() => {
+				holdedNoteId = note.id;
+				isPressing = false;
+			}, 300);
+		}
+		function onTouchMove() {
+			isPressing = false;
+			clearTimeout(holdTimer);
+		}
+		function onTouchEnd() {
+			isPressing = false;
+			clearTimeout(holdTimer);
+		}
+
+		node.addEventListener('touchstart', onTouchStart, { passive: true });
+		node.addEventListener('touchmove', onTouchMove, { passive: true });
+		node.addEventListener('touchend', onTouchEnd);
+
 		return {
-			destroy: cleanup
+			destroy: () => {
+				cleanup();
+				node.removeEventListener('touchstart', onTouchStart);
+				node.removeEventListener('touchmove', onTouchMove);
+				node.removeEventListener('touchend', onTouchEnd);
+			}
 		};
 	}
 </script>
 
-<div class="flex w-full flex-col">
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+	class="flex w-full flex-col select-none"
+	oncontextmenu={(e) => {
+		e.preventDefault();
+		e.stopPropagation();
+	}}
+>
 	<div
 		use:dndCardGridAction
-		class="group relative w-full cursor-grab transition-all duration-200 ease-out select-none
+		class="group relative w-full cursor-grab transition-all duration-300 ease-out select-none
+               {isPressing ? 'z-30 scale-105 rotate-1 shadow-2xl' : ''}
                {isDragging ? ' pointer-events-none scale-95 opacity-30 grayscale' : ''}"
 	>
 		<button
@@ -68,6 +104,7 @@
 				e.stopPropagation();
 				showNoteMenu = true;
 			}}
+			disabled={note.id === holdedNoteId}
 			onmousedown={(e) => e.stopPropagation()}
 			onpointerdown={(e) => e.stopPropagation()}
 			aria-label="Open {note.title} menu"

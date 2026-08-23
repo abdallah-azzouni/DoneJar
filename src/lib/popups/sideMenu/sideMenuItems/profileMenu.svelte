@@ -263,7 +263,7 @@
 	<Dialog.Portal to="body">
 		<Dialog.Overlay class="fixed inset-0 z-9998 bg-black/40 backdrop-blur-[2px]" />
 		<Dialog.Content
-			class="fixed top-1/2 left-1/2 z-9998 mx-auto flex h-[85vh] w-[90vw] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl shadow-2xl"
+			class="fixed top-1/2 left-1/2 z-9998 flex h-[85vh] w-[90vw] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl shadow-2xl sm:w-[80vw] md:w-[60vw] lg:w-[40vw]"
 		>
 			<!-- ── Doodle-Themed Header ── -->
 			<div

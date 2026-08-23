@@ -135,7 +135,7 @@
 	<Dialog.Portal to="body">
 		<Dialog.Overlay class="fixed inset-0 z-9998 bg-black/50 backdrop-blur-[1px]" />
 		<Dialog.Content
-			class="fixed top-[5%] left-1/2 z-9998 h-fit max-h-[90vh] w-1/2 -translate-x-1/2 justify-self-center overflow-y-auto rounded-2xl bg-white p-6 shadow-lg"
+			class="fixed top-[5%] left-1/2 z-9998 h-fit max-h-[90vh] w-[90vw] -translate-x-1/2 justify-self-center overflow-y-auto rounded-2xl bg-white p-6 shadow-lg sm:w-[50vw] lg:w-[40vw]"
 		>
 			<h2 class="mb-6 font-patrick-hand text-2xl font-bold">Import 📥</h2>
 

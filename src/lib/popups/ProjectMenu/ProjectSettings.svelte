@@ -150,7 +150,7 @@
 		<Dialog.Overlay class="fixed inset-0 z-9998 bg-black/50 backdrop-blur-[1px]" />
 		<Dialog.Content
 			interactOutsideBehavior="ignore"
-			class="fixed top-[7.5vh] left-1/2 z-9998 mx-auto h-[85vh] max-w-lg -translate-x-1/2 overflow-hidden rounded-xl border-2 border-black p-6 shadow-[6px_6px_0px_rgba(0,0,0,0.15)]"
+			class="fixed top-[7.5vh] left-1/2 z-9998 mx-auto h-[85vh] max-w-[90vw] -translate-x-1/2 overflow-hidden rounded-xl border-2 border-black p-6 shadow-[6px_6px_0px_rgba(0,0,0,0.15)]"
 		>
 			<form onsubmit={handleSubmit} class="flex h-full min-h-0 flex-col">
 				<h1

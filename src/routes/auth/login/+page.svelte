@@ -9,6 +9,13 @@
 	import { fade, fly } from 'svelte/transition';
 	import { Dialog } from 'bits-ui';
 	import { projectStore } from '$lib/stores/projects.svelte';
+	import { getAppState, UserState } from '$lib/stores/appState.svelte';
+
+	$effect(() => {
+		if (getAppState() === UserState.LOGGED_IN) {
+			goto(resolve('/app'));
+		}
+	});
 
 	let isLogin = $state(true);
 	let email = $state('');

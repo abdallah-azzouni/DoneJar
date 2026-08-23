@@ -2,35 +2,46 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { notify } from '$lib/stores/notificationStore';
-	import { confirmPasswordReset } from '$lib/sb/auth';
+	import { changePassword, signOut } from '$lib/sb/auth';
+	import { getAppState, UserState } from '$lib/stores/appState.svelte';
 
 	type State = 'idle' | 'loading' | 'success' | 'error';
 
 	let status: State = $state<State>('idle');
 	let errorMessage: string = $state('');
-	let password: string = $state('');
-	let confirm: string = $state('');
-	let showPassword: boolean = $state(false);
-	let showConfirm: boolean = $state(false);
+	let formData = $state({
+		current: '',
+		password: '',
+		confirm: ''
+	});
+
+	let showState = $state({
+		current: false,
+		password: false,
+		confirm: false
+	});
 
 	// Validation
 	const minLength = 8;
 	let passwordStrength = $derived.by(() => {
-		if (!password) return 0;
+		if (!formData.password) return 0;
 		let score = 0;
-		if (password.length >= minLength) score++;
-		if (/[A-Z]/.test(password)) score++;
-		if (/[0-9]/.test(password)) score++;
-		if (/[^A-Za-z0-9]/.test(password)) score++;
+		if (formData.password.length >= minLength) score++;
+		if (/[A-Z]/.test(formData.password)) score++;
+		if (/[0-9]/.test(formData.password)) score++;
+		if (/[^A-Za-z0-9]/.test(formData.password)) score++;
 		return score;
 	});
 
 	let strengthLabel = $derived(['', 'Weak', 'Fair', 'Good', 'Strong'][passwordStrength]);
 	let strengthColor = $derived(['', '#e05252', '#e09a3a', '#6ab04c', '#2ed573'][passwordStrength]);
 
-	let mismatch = $derived(confirm.length > 0 && password !== confirm);
+	let mismatch = $derived(formData.confirm.length > 0 && formData.password !== formData.confirm);
 	let canSubmit = $derived(
-		password.length >= minLength && password === confirm && status !== 'loading'
+		(formData.current.length > 0 || getAppState() !== UserState.LOGGED_IN) &&
+			formData.password.length >= minLength &&
+			formData.password === formData.confirm &&
+			status !== 'loading'
 	);
 
 	async function handleSubmit() {
@@ -38,12 +49,13 @@
 		status = 'loading';
 		errorMessage = '';
 		try {
-			const result = await confirmPasswordReset(password);
+			const result = await changePassword(formData.password, formData.current || undefined);
 			if (result.error) {
 				errorMessage = result.error?.message ?? 'Failed to reset password.';
 				status = 'error';
 				return;
 			}
+			await signOut('global');
 			status = 'success';
 			notify({ type: 'success', message: 'Password reset successful. You can now log in.' });
 		} catch (err) {
@@ -56,6 +68,56 @@
 		goto(resolve('/auth/login'));
 	}
 </script>
+
+{#snippet passwordField(target: 'current' | 'password' | 'confirm', label: string)}
+	<label for="password" class="label">{label}</label>
+	<div class="input-wrap">
+		<input
+			id={target}
+			type={showState[target] ? 'text' : 'password'}
+			class="input"
+			placeholder="Min. 8 characters"
+			autocomplete={target === 'current' ? 'current-password' : 'new-password'}
+			bind:value={formData[target]}
+			disabled={status === 'loading'}
+		/>
+		<button
+			type="button"
+			class="eye-btn"
+			onclick={() => (showState[target] = !showState[target])}
+			aria-label={showState[target] ? 'Hide password' : 'Show password'}
+		>
+			{#if showState[target]}
+				<!-- Eye-off -->
+				<svg
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+				>
+					<path
+						d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"
+					/>
+					<path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+					<line x1="1" y1="1" x2="23" y2="23" />
+				</svg>
+			{:else}
+				<!-- Eye -->
+				<svg
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+				>
+					<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+					<circle cx="12" cy="12" r="3" />
+				</svg>
+			{/if}
+		</button>
+	</div>
+{/snippet}
 
 <div class="page">
 	<div class="card" class:success={status === 'success'}>
@@ -115,58 +177,13 @@
 			<div class="fields">
 				<!-- Password -->
 				<div class="field">
-					<label for="password" class="label">Password</label>
-					<div class="input-wrap">
-						<input
-							id="password"
-							type={showPassword ? 'text' : 'password'}
-							class="input"
-							placeholder="Min. 8 characters"
-							autocomplete="new-password"
-							bind:value={password}
-							disabled={status === 'loading'}
-						/>
-						<button
-							type="button"
-							class="eye-btn"
-							onclick={() => (showPassword = !showPassword)}
-							aria-label={showPassword ? 'Hide password' : 'Show password'}
-						>
-							{#if showPassword}
-								<!-- Eye-off -->
-								<svg
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-								>
-									<path
-										d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"
-									/>
-									<path
-										d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"
-									/>
-									<line x1="1" y1="1" x2="23" y2="23" />
-								</svg>
-							{:else}
-								<!-- Eye -->
-								<svg
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-								>
-									<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-									<circle cx="12" cy="12" r="3" />
-								</svg>
-							{/if}
-						</button>
-					</div>
+					{#if getAppState() === UserState.LOGGED_IN}
+						{@render passwordField('current', 'Current password')}
+					{/if}
+					{@render passwordField('password', 'Password')}
 
 					<!-- Strength bar -->
-					{#if password.length > 0}
+					{#if formData.password.length > 0}
 						<div class="strength-wrap">
 							<div class="strength-bar">
 								{#each { length: 4 } as _, i (i)}
@@ -185,54 +202,7 @@
 
 				<!-- Confirm -->
 				<div class="field">
-					<label for="confirm" class="label">Confirm password</label>
-					<div class="input-wrap">
-						<input
-							id="confirm"
-							type={showConfirm ? 'text' : 'password'}
-							class="input"
-							class:input-error={mismatch}
-							placeholder="Repeat password"
-							autocomplete="new-password"
-							bind:value={confirm}
-							disabled={status === 'loading'}
-						/>
-						<button
-							type="button"
-							class="eye-btn"
-							onclick={() => (showConfirm = !showConfirm)}
-							aria-label={showConfirm ? 'Hide password' : 'Show password'}
-						>
-							{#if showConfirm}
-								<svg
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-								>
-									<path
-										d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"
-									/>
-									<path
-										d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"
-									/>
-									<line x1="1" y1="1" x2="23" y2="23" />
-								</svg>
-							{:else}
-								<svg
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-								>
-									<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-									<circle cx="12" cy="12" r="3" />
-								</svg>
-							{/if}
-						</button>
-					</div>
+					{@render passwordField('confirm', 'Confirm password')}
 					{#if mismatch}
 						<p class="field-error">Passwords don't match</p>
 					{/if}
@@ -277,9 +247,11 @@
 		{/if}
 	</div>
 
-	<p class="footer-link">
-		Remembered it? <button onclick={gotoLogin}>Log in</button>
-	</p>
+	{#if getAppState() !== UserState.LOGGED_IN}
+		<p class="footer-link">
+			Remembered it? <button type="button" onclick={gotoLogin}>Log in</button>
+		</p>
+	{/if}
 </div>
 
 <style>

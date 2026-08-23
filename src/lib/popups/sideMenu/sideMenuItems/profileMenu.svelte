@@ -9,6 +9,7 @@
 	import { userSessionsStore } from '$lib/stores/userSessionsStore.svelte';
 	import Bowser from 'bowser';
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { ROUTES } from '$lib/constants';
 	import { notify } from '$lib/stores/notificationStore';
 	import { confirmMenu } from '$lib/stores/dialog';
@@ -362,7 +363,7 @@
 								class="rounded-lg border-2 border-black bg-white px-3 py-1.5 font-patrick-hand text-xs font-bold hover:bg-gray-100"
 								onclick={() => {
 									close();
-									goto(ROUTES.PASSWORD_RESET);
+									goto(resolve(ROUTES.PASSWORD_RESET));
 								}}
 							>
 								Change Password

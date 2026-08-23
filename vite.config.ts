@@ -13,7 +13,9 @@ export default defineConfig({
 		sveltekit()
 	],
 	server: {
-		hmr: false
+		hmr: false,
+		host: true,
+		allowedHosts: true
 	},
 	ssr: {
 		noExternal: ['svelte-sonner']

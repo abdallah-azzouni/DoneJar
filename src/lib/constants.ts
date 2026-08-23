@@ -20,7 +20,8 @@ export const HEX_COLOR_REGEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|
 // ── Routes ────────────────────────────────────────────────────────────────────
 export const ROUTES = {
 	APP: '/app',
-	PROJECT: (id: string): `/app/project/${string}` => `/app/project/${id}`
+	PROJECT: (id: string): `/app/project/${string}` => `/app/project/${id}`,
+	PASSWORD_RESET: '/auth/reset-password'
 } as const;
 
 // ── Database ─────────────────────────────────────────────────────────────────

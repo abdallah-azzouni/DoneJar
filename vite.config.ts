@@ -12,6 +12,9 @@ export default defineConfig({
 		tailwindcss(),
 		sveltekit()
 	],
+	server: {
+		hmr: false
+	},
 	ssr: {
 		noExternal: ['svelte-sonner']
 	},

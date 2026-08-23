@@ -1,12 +1,13 @@
 import { browser } from '$app/environment';
-import { sessionStore } from '$lib/stores/currentUser.svelte';
+import { sessionStore, getIsRecovery } from '$lib/stores/currentUser.svelte';
 import { persisted } from 'svelte-persisted-store';
 
 export const UserState = {
 	LOGGED_IN: 'LOGGED_IN',
 	LOGGED_OUT: 'LOGGED_OUT',
 	GUEST_LOCAL: 'GUEST_LOCAL',
-	UNKNOWN: 'UNKNOWN'
+	UNKNOWN: 'UNKNOWN',
+	RECOVERY: 'RECOVERY'
 } as const;
 
 const isGuestLocal = persisted('isGuestLocal', false);
@@ -26,22 +27,15 @@ export function getIsGuestLocal() {
 }
 
 const currentAppState = $derived.by(() => {
-	if (sessionStore.current === undefined) {
-		return UserState.UNKNOWN;
-	}
+	if (sessionStore.current === undefined) return UserState.UNKNOWN;
 
 	if (sessionStore.current?.user) {
-		if (isGuestValue !== false) {
-			// Lazy check to save on storage writes.
-			isGuestLocal.set(false);
-		}
+		if (getIsRecovery()) return UserState.RECOVERY;
+		if (isGuestValue !== false) isGuestLocal.set(false);
 		return UserState.LOGGED_IN;
 	}
 
-	if (isGuestValue) {
-		return UserState.GUEST_LOCAL;
-	}
-
+	if (isGuestValue) return UserState.GUEST_LOCAL;
 	return UserState.LOGGED_OUT;
 });
 

@@ -48,73 +48,67 @@
 	}}
 >
 	<Dialog.Portal to="body">
-		<Dialog.Overlay class="feedback-overlay" />
-		<Dialog.Content class="feedback-content">
-			<Dialog.Title class="feedback-title">Feedback</Dialog.Title>
+		<Dialog.Overlay class="fixed inset-0 z-9998 bg-black/50 backdrop-blur-[1px]">
+			<Dialog.Content class="feedback-content">
+				<Dialog.Title class="feedback-title">Feedback</Dialog.Title>
 
-			<div class="type-select" role="radiogroup" aria-label="Feedback type">
-				<button
-					type="button"
-					class="type-btn"
-					class:selected={type === 'bug'}
-					aria-pressed={type === 'bug'}
-					onclick={() => (type = 'bug')}
-				>
-					🐛 Bug
-				</button>
-				<button
-					type="button"
-					class="type-btn"
-					class:selected={type === 'suggestion'}
-					aria-pressed={type === 'suggestion'}
-					onclick={() => (type = 'suggestion')}
-				>
-					💡 Suggestion
-				</button>
-				<button
-					type="button"
-					class="type-btn"
-					class:selected={type === 'other'}
-					aria-pressed={type === 'other'}
-					onclick={() => (type = 'other')}
-				>
-					💬 Other
-				</button>
-			</div>
+				<div class="type-select" role="radiogroup" aria-label="Feedback type">
+					<button
+						type="button"
+						class="type-btn"
+						class:selected={type === 'bug'}
+						aria-pressed={type === 'bug'}
+						onclick={() => (type = 'bug')}
+					>
+						🐛 Bug
+					</button>
+					<button
+						type="button"
+						class="type-btn"
+						class:selected={type === 'suggestion'}
+						aria-pressed={type === 'suggestion'}
+						onclick={() => (type = 'suggestion')}
+					>
+						💡 Suggestion
+					</button>
+					<button
+						type="button"
+						class="type-btn"
+						class:selected={type === 'other'}
+						aria-pressed={type === 'other'}
+						onclick={() => (type = 'other')}
+					>
+						💬 Other
+					</button>
+				</div>
 
-			<textarea
-				class="feedback-textarea"
-				bind:value={message}
-				placeholder={placeholders[type]}
-				maxlength="5000"
-				rows="5"
-			></textarea>
+				<textarea
+					class="feedback-textarea"
+					bind:value={message}
+					placeholder={placeholders[type]}
+					maxlength="5000"
+					rows="5"
+				></textarea>
 
-			<div class="feedback-actions">
-				<button type="button" class="btn btn-cancel" onclick={() => feedbackStore.close()}>
-					Cancel
-				</button>
-				<button
-					type="button"
-					class="btn btn-submit"
-					onclick={submitFeedback}
-					disabled={!message.trim() || submitting}
-				>
-					{submitting ? 'Sending…' : 'Send Feedback'}
-				</button>
-			</div>
-		</Dialog.Content>
+				<div class="feedback-actions">
+					<button type="button" class="btn btn-cancel" onclick={() => feedbackStore.close()}>
+						Cancel
+					</button>
+					<button
+						type="button"
+						class="btn btn-submit"
+						onclick={submitFeedback}
+						disabled={!message.trim() || submitting}
+					>
+						{submitting ? 'Sending…' : 'Send Feedback'}
+					</button>
+				</div>
+			</Dialog.Content>
+		</Dialog.Overlay>
 	</Dialog.Portal>
 </Dialog.Root>
 
 <style>
-	:global(.feedback-overlay) {
-		position: fixed;
-		inset: 0;
-		z-index: 9998;
-		background: rgba(0, 0, 0, 0.45);
-	}
-
 	:global(.feedback-content) {
 		position: fixed;
 		top: 50%;
@@ -127,7 +121,7 @@
 		border-radius: 20px;
 		padding: 24px 24px 20px;
 		box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.15);
-		font-family: cursive;
+		font-family: 'Patrick Hand';
 	}
 
 	:global(.feedback-title) {
@@ -140,13 +134,13 @@
 	.type-select {
 		display: flex;
 		gap: 8px;
-		margin-bottom: 16px;
+		margin-bottom: 20px;
 	}
 
 	.type-btn {
 		flex: 1;
 		font-family: inherit;
-		font-size: 15px;
+		font-size: 18px;
 		font-weight: 700;
 		color: #1a1a1a;
 		background: #fff;
@@ -176,7 +170,7 @@
 		width: 100%;
 		box-sizing: border-box;
 		font-family: inherit;
-		font-size: 16px;
+		font-size: 18px;
 		color: #1a1a1a;
 		background: #fff;
 		border: 2px solid #1a1a1a;
@@ -204,7 +198,7 @@
 
 	.btn {
 		font-family: inherit;
-		font-size: 16px;
+		font-size: 18px;
 		font-weight: 700;
 		border: 2.5px solid #1a1a1a;
 		border-radius: 999px;

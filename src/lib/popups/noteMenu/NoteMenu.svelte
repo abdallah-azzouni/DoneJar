@@ -9,23 +9,20 @@
 	import { emptyNote, failure } from '$lib/types';
 	import type { NoteDocType, AttachmentDocType } from '$lib/db/schemas/index';
 	import { MAX_NOTE_TITLE_LENGTH, DEFAULT_NOTE_COLOR, DEFAULT_MENU_COLORS } from '$lib/constants';
-	import { confirmMenu } from '$lib/stores/dialog';
+	import { confirmMenu, noteMenu } from '$lib/stores/dialog';
 	import { projectStore } from '$lib/stores/projects.svelte';
 	import { untrack } from 'svelte';
 	import { nanoid } from 'nanoid';
 	import { onMount, onDestroy } from 'svelte';
 	import { textColorFromHex } from '$lib/UiHelper';
-	import { SvelteMap } from 'svelte/reactivity';
+	import { SvelteMap, MediaQuery } from 'svelte/reactivity';
 	import { MAX_NOTE_ATTACHMENTS_SIZE } from '$lib/constants';
 	import { subscriptionStore } from '$lib/stores/subscription.svelte';
-
-	// ─── Props ───────────────────────────────────────
-	let { isOpen = $bindable(false), note }: { isOpen: boolean; note: NoteDocType | null } = $props();
 
 	// ─── Working Note State ───────────────────────────
 	let workingNote = $state(
 		untrack(() => {
-			if (note) return { ...note };
+			if (noteMenu.data) return { ...noteMenu.data };
 			let newNote: NoteDocType = emptyNote;
 			newNote.color = DEFAULT_NOTE_COLOR;
 
@@ -77,11 +74,11 @@
 			return;
 		}
 
-		isOpen = false;
+		noteMenu.close();
 	}
 
 	function handleCancel() {
-		isOpen = false;
+		noteMenu.close();
 	}
 
 	let attachments = $state([] as AttachmentDocType[]);
@@ -222,7 +219,6 @@
 			});
 			return;
 		}
-		isOpen = false;
 		const result = await confirmMenu({
 			title: 'Delete Note?',
 			body: `The "${workingNote.title}" note and all of its data will be permanently deleted.`,
@@ -230,11 +226,148 @@
 			actionColor: 'danger'
 		});
 		if (result) {
+			noteMenu.close();
 			const res = await deleteNote(workingNote.id);
 			notify(res);
 		}
 	}
+	const isWide = new MediaQuery('(min-width: 640px)');
 </script>
+
+{#snippet attachmentsSection()}
+	<div class="mt-2 flex min-h-0 flex-1 flex-col sm:mt-4">
+		<!-- Header Divider -->
+		<div class="flex w-full items-center gap-3 opacity-60">
+			<div class="flex-1 border-t-2 border-dashed border-gray-400"></div>
+			<span class="text-xs font-bold tracking-widest text-gray-500 uppercase"
+				>Attachments {subscriptionStore.isPro ? '' : '(Pro)'}</span
+			>
+			<!-- The "Add" Action -->
+			<input
+				bind:this={fileInput}
+				type="file"
+				multiple
+				class="hidden"
+				onchange={handleFileSelected}
+			/>
+			<button
+				type="button"
+				title="Add file or image"
+				class="flex size-7 items-center justify-center rounded-full border-2 border-black bg-amber-400 text-xl font-bold shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all hover:bg-amber-300 active:translate-y-px active:shadow-none"
+				onclick={() => {
+					if (subscriptionStore.isPro) {
+						handleAddAttachment();
+					} else {
+						confirmMenu({
+							title: 'Coming Soon',
+							body: 'Adding attachments is a Pro feature. Pro plans are coming soon!',
+							actionLabel: 'Got it',
+							actionColor: 'primary'
+						});
+					}
+				}}
+			>
+				+
+			</button>
+			<div class="flex-1 border-t-2 border-dashed border-gray-400"></div>
+		</div>
+
+		{#if subscriptionStore.isPro}
+			<div class=" gap-2 py-4 pr-2">
+				<!-- BIG PREVIEW: Image/Screenshot -->
+				<div class="flex w-full flex-wrap gap-3">
+					{#each attachments.filter( (a) => a.mimeType.startsWith('image/') ) as attachment (attachment.id)}
+						<div class="group relative mt-2 self-start">
+							<!-- Washi Tape Effect -->
+							<div
+								class="absolute -top-3 left-1/2 z-10 h-6 w-16 -translate-x-1/2 rotate-2 border border-blue-300 bg-blue-200/50 opacity-80 shadow-sm"
+							></div>
+
+							<div
+								class="doodle-border flex w-64 flex-col overflow-hidden bg-white p-2 transition-transform hover:rotate-1"
+							>
+								<div class="aspect-video w-full overflow-hidden border border-gray-200 bg-gray-100">
+									<img
+										src={getPreviewUrl(attachment)}
+										alt="Preview"
+										class="h-full w-full object-contain"
+									/>
+									<!-- File Size Badge -->
+									<span
+										class="text-xxs absolute top-1 right-1 rounded bg-black/70 px-1 py-0.5 font-bold text-white"
+									>
+										{formatSize(attachment.size)}
+									</span>
+								</div>
+								<div class="mt-2 flex items-center justify-between">
+									<span class="truncate text-xs font-bold italic">{attachment.filename}</span>
+									<div class="flex gap-1">
+										<button
+											type="button"
+											onclick={(e) => {
+												e.stopPropagation();
+												handlePinAttachment(attachment.id);
+											}}
+											class="size-6 rounded border border-black {attachment.pinned
+												? 'bg-amber-400'
+												: 'bg-white'} text-xs hover:bg-amber-200">📌</button
+										>
+										<button
+											type="button"
+											class="size-6 rounded border border-black bg-white text-xs hover:bg-red-200"
+											onclick={(e) => {
+												e.stopPropagation();
+												handleDeleteAttachment(attachment.id);
+											}}>x</button
+										>
+									</div>
+								</div>
+							</div>
+						</div>
+					{:else}
+						<span class="text-center text-sm italic text-gray-400">No image attachments...</span>
+					{/each}
+				</div>
+				<div class="mt-4 border-t-2 border-dashed border-gray-300 pt-4">
+					<!-- LIST ROW: Standard File -->
+					{#each attachments.filter((a) => !a.mimeType.startsWith('image/')) as attachment (attachment.id)}
+						<div class="doodle-border flex items-center gap-3 bg-white p-2 hover:bg-gray-50">
+							<span class="text-2xl">📄</span>
+							<div class="flex flex-1 flex-col">
+								<span class="text-sm leading-tight font-bold">{attachment.filename}</span>
+								<span class="text-xxs font-black text-gray-500 uppercase"
+									>{formatSize(attachment.size)}</span
+								>
+							</div>
+							<button
+								type="button"
+								class="size-8 rounded-full border border-black {attachment.pinned
+									? 'bg-amber-400'
+									: 'bg-white'} hover:bg-amber-200"
+								onclick={(e) => {
+									e.stopPropagation();
+									handlePinAttachment(attachment.id);
+								}}
+								title="Pin attachment">📌</button
+							>
+							<button
+								type="button"
+								class="size-8 rounded-full border border-black bg-white hover:bg-red-200"
+								onclick={(e) => {
+									e.stopPropagation(); // Prevent triggering parent click events
+									handleDeleteAttachment(attachment.id);
+								}}
+								title="Delete">x</button
+							>
+						</div>
+					{:else}
+						<span class="text-center text-sm italic text-gray-400">No file attachments...</span>
+					{/each}
+				</div>
+			</div>
+		{/if}
+	</div>
+{/snippet}
 
 <DatePicker
 	bind:isOpen={showDatePicker}
@@ -249,15 +382,22 @@
 		workingNote.dueDateHasTime = date?.hasTime ?? false;
 	}}
 />
-<Dialog.Root bind:open={isOpen}>
+<Dialog.Root bind:open={noteMenu.isOpen}>
 	<Dialog.Portal to="body">
 		<Dialog.Overlay class="fixed inset-0 z-9998 bg-black/50 backdrop-blur-[1px]" />
 		<Dialog.Content
 			interactOutsideBehavior="ignore"
-			class="fixed top-[5%] left-1/2 z-9998 h-5/6 w-5/6 -translate-x-1/2 rounded-2xl p-6 shadow-lg"
+			onOpenAutoFocus={(e) => {
+				if (!isWide.current) e.preventDefault();
+			}}
+			class="fixed top-1/2 left-1/2 z-9998 h-[95vh] w-[90vw] -translate-1/2 rounded-2xl p-6 shadow-lg sm:h-5/6 sm:w-5/6"
 		>
-			<div class="flex h-full flex-row">
-				<form class="flex min-h-0 flex-1 flex-col space-y-2 pr-2" onsubmit={handleSubmit}>
+			<div class="flex h-full flex-col sm:flex-row">
+				<form
+					id="title-description-form"
+					class="flex max-h-[48%] min-h-[36%] w-full flex-col space-y-2 pr-2 sm:max-h-full sm:min-h-full"
+					onsubmit={handleSubmit}
+				>
 					<input
 						type="text"
 						class="doodle-border w-full bg-white text-2xl font-bold outline-none"
@@ -270,177 +410,42 @@
 
 					<div class="overflow-y-auto">
 						<QEditor bind:description={workingNote.description} />
-						<div class="mt-4 flex min-h-0 flex-1 flex-col">
-							<!-- Header Divider -->
-							<div class="flex w-full items-center gap-3 opacity-60">
-								<div class="flex-1 border-t-2 border-dashed border-gray-400"></div>
-								<span class="text-xs font-bold tracking-widest text-gray-500 uppercase"
-									>Attachments {subscriptionStore.isPro ? '' : '(Pro)'}</span
-								>
-								<!-- The "Add" Action -->
-								<input
-									bind:this={fileInput}
-									type="file"
-									multiple
-									class="hidden"
-									onchange={handleFileSelected}
-								/>
-								<button
-									type="button"
-									title="Add file or image"
-									class="flex size-7 items-center justify-center rounded-full border-2 border-black bg-amber-400 text-xl font-bold shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all hover:bg-amber-300 active:translate-y-px active:shadow-none"
-									onclick={() => {
-										if (subscriptionStore.isPro) {
-											handleAddAttachment();
-										} else {
-											confirmMenu({
-												title: 'Coming Soon',
-												body: 'Adding attachments is a Pro feature. Pro plans are coming soon!',
-												actionLabel: 'Got it',
-												actionColor: 'primary'
-											});
-										}
-									}}
-								>
-									+
-								</button>
-								<div class="flex-1 border-t-2 border-dashed border-gray-400"></div>
-							</div>
-
-							{#if subscriptionStore.isPro}
-								<div class=" gap-2 py-4 pr-2">
-									<!-- BIG PREVIEW: Image/Screenshot -->
-									<div class="flex w-full flex-wrap gap-3">
-										{#each attachments.filter( (a) => a.mimeType.startsWith('image/') ) as attachment (attachment.id)}
-											<div class="group relative mt-2 self-start">
-												<!-- Washi Tape Effect -->
-												<div
-													class="absolute -top-3 left-1/2 z-10 h-6 w-16 -translate-x-1/2 rotate-2 border border-blue-300 bg-blue-200/50 opacity-80 shadow-sm"
-												></div>
-
-												<div
-													class="doodle-border flex w-64 flex-col overflow-hidden bg-white p-2 transition-transform hover:rotate-1"
-												>
-													<div
-														class="aspect-video w-full overflow-hidden border border-gray-200 bg-gray-100"
-													>
-														<img
-															src={getPreviewUrl(attachment)}
-															alt="Preview"
-															class="h-full w-full object-contain"
-														/>
-														<!-- File Size Badge -->
-														<span
-															class="text-xxs absolute top-1 right-1 rounded bg-black/70 px-1 py-0.5 font-bold text-white"
-														>
-															{formatSize(attachment.size)}
-														</span>
-													</div>
-													<div class="mt-2 flex items-center justify-between">
-														<span class="truncate text-xs font-bold italic"
-															>{attachment.filename}</span
-														>
-														<div class="flex gap-1">
-															<button
-																type="button"
-																onclick={(e) => {
-																	e.stopPropagation();
-																	handlePinAttachment(attachment.id);
-																}}
-																class="size-6 rounded border border-black {attachment.pinned
-																	? 'bg-amber-400'
-																	: 'bg-white'} text-xs hover:bg-amber-200">📌</button
-															>
-															<button
-																type="button"
-																class="size-6 rounded border border-black bg-white text-xs hover:bg-red-200"
-																onclick={(e) => {
-																	e.stopPropagation();
-																	handleDeleteAttachment(attachment.id);
-																}}>x</button
-															>
-														</div>
-													</div>
-												</div>
-											</div>
-										{:else}
-											<span class="text-center text-sm italic text-gray-400"
-												>No image attachments...</span
-											>
-										{/each}
-									</div>
-									<div class="mt-4 border-t-2 border-dashed border-gray-300 pt-4">
-										<!-- LIST ROW: Standard File -->
-										{#each attachments.filter((a) => !a.mimeType.startsWith('image/')) as attachment (attachment.id)}
-											<div
-												class="doodle-border flex items-center gap-3 bg-white p-2 hover:bg-gray-50"
-											>
-												<span class="text-2xl">📄</span>
-												<div class="flex flex-1 flex-col">
-													<span class="text-sm leading-tight font-bold">{attachment.filename}</span>
-													<span class="text-xxs font-black text-gray-500 uppercase"
-														>{formatSize(attachment.size)}</span
-													>
-												</div>
-												<button
-													type="button"
-													class="size-8 rounded-full border border-black {attachment.pinned
-														? 'bg-amber-400'
-														: 'bg-white'} hover:bg-amber-200"
-													onclick={(e) => {
-														e.stopPropagation();
-														handlePinAttachment(attachment.id);
-													}}
-													title="Pin attachment">📌</button
-												>
-												<button
-													type="button"
-													class="size-8 rounded-full border border-black bg-white hover:bg-red-200"
-													onclick={(e) => {
-														e.stopPropagation(); // Prevent triggering parent click events
-														handleDeleteAttachment(attachment.id);
-													}}
-													title="Delete">x</button
-												>
-											</div>
-										{:else}
-											<span class="text-center text-sm italic text-gray-400"
-												>No file attachments...</span
-											>
-										{/each}
-									</div>
-								</div>
-							{/if}
+						{#if isWide.current}
+							{@render attachmentsSection()}
+						{/if}
+					</div>
+					{#if isWide.current}
+						<div class="mx-2 mt-auto flex justify-end gap-3 border-t-2 border-gray-200 pt-4">
+							<button
+								class="rounded-2xl border-2 border-black bg-white px-6 py-2 font-bold transition-transform active:translate-y-1"
+								type="button"
+								onclick={handleCancel}
+							>
+								Cancel
+							</button>
+							<button
+								class="rounded-2xl border-2 border-black bg-green-400 px-8 py-2 font-bold shadow-[4px_4px_0px_rgba(0,0,0,1)] transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+								type="submit"
+								form="title-description-form"
+							>
+								Save Note
+							</button>
 						</div>
-					</div>
-
-					<div class="mx-2 mt-auto flex justify-end gap-3 border-t-2 border-gray-200 pt-4">
-						<button
-							class="rounded-2xl border-2 border-black bg-white px-6 py-2 font-bold transition-transform active:translate-y-1"
-							type="button"
-							onclick={handleCancel}
-						>
-							Cancel
-						</button>
-						<button
-							class="rounded-2xl border-2 border-black bg-green-400 px-8 py-2 font-bold shadow-[4px_4px_0px_rgba(0,0,0,1)] transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
-							type="submit"
-						>
-							Save Note
-						</button>
-					</div>
+					{/if}
 				</form>
 				<div
-					class="flex w-60 flex-col gap-1 border-l-2 border-gray-500 pl-4 font-patrick-hand text-xl"
+					class="flex w-full flex-col gap-1 overflow-y-auto border-gray-500 pl-4 font-patrick-hand text-xl sm:w-5/6 sm:overflow-hidden sm:border-l-2 md:w-2/3 lg:w-1/2 xl:w-2/5 2xl:w-1/3"
 				>
-					<div class="overflow-x-hidden overflow-y-auto p-1">
+					<div
+						class="space-y-2 overflow-x-hidden overflow-y-auto *:flex *:flex-row *:gap-3 sm:space-y-0 sm:*:flex-col sm:*:gap-0"
+					>
 						<div>
 							<span class="mb-1 block">Project</span>
 							<div class="relative">
 								<span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2">📁</span>
 								<select
 									bind:value={noteProjectId}
-									class="doodle-border w-full cursor-pointer bg-white py-2 pr-4 pl-10"
+									class="doodle-border w-full cursor-pointer bg-white pr-4 pl-10"
 								>
 									{#each projectStore.projects as project (project.id)}
 										<option value={project.id}>{project.name}</option>
@@ -532,15 +537,38 @@
 								>
 							</div>
 						</div>
+						<div>
+							{#if !isWide.current}
+								{@render attachmentsSection()}
+							{/if}
+						</div>
 					</div>
 					<div class="mt-auto flex justify-end gap-3 border-t-2 border-gray-200 pt-2">
 						<button
-							class="mt-auto ml-auto size-fit rounded-2xl bg-red-700 px-5 py-3 font-bold text-white"
+							class="mt-auto ml-auto w-full rounded-2xl bg-red-700 px-5 py-3 font-bold text-white sm:size-fit"
 							class:hidden={workingNote.id === ''}
 							onclick={async () => await handleDeleteNote()}>Delete</button
 						>
 					</div>
 				</div>
+				{#if !isWide.current}
+					<div class="mt-auto flex justify-between border-t-2 border-gray-200 pt-4">
+						<button
+							class="rounded-2xl border-2 border-black bg-white px-6 py-2 font-bold transition-transform active:translate-y-1"
+							type="button"
+							onclick={handleCancel}
+						>
+							Cancel
+						</button>
+						<button
+							class="rounded-2xl border-2 border-black bg-green-400 px-8 py-2 font-bold shadow-[4px_4px_0px_rgba(0,0,0,1)] transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+							type="submit"
+							form="title-description-form"
+						>
+							Save Note
+						</button>
+					</div>
+				{/if}
 			</div>
 		</Dialog.Content>
 	</Dialog.Portal>

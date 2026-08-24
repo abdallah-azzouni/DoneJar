@@ -1,6 +1,6 @@
 import { createDialogStore } from './dialogFactory.svelte.ts';
 import { type ConfirmTarget } from '$lib/types';
-import type { ProjectDocType } from '$lib/db/schemas';
+import type { ProjectDocType, NoteDocType } from '$lib/db/schemas';
 
 export * from './dialogFactory.svelte.ts';
 
@@ -49,6 +49,10 @@ export const projectSettingStore = createDialogStore<ProjectDocType | null>(fals
 export const openProjectSetting = (project: ProjectDocType | null = null) =>
 	projectSettingStore.open(project);
 export const closeProjectSetting = () => projectSettingStore.close();
+
+export const noteMenu = createDialogStore<NoteDocType | null>(false, null);
+export const openNoteMenu = (note: NoteDocType | null = null) => noteMenu.open(note);
+export const closeNoteMenu = () => noteMenu.close();
 
 // --- CONFIRMATION MENU ---
 export const confirmMenuStore = createDialogStore<ConfirmTarget | null>(false, null);

@@ -1,15 +1,14 @@
 <script lang="ts">
 	import { textColorFromHex, formatDueDate, isDueDatePast } from '$lib/UiHelper';
 	import { now } from '$lib/stores/timer';
-	import NoteMenu from '$lib/popups/noteMenu/NoteMenu.svelte';
 	import type { NoteDocType } from '$lib/db/schemas';
 	import { togglePinNote } from '$lib/actions';
 	import { notify } from '$lib/stores/notificationStore';
 	import { draggable } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+	import { openNoteMenu } from '$lib/stores/dialog';
 
 	let { note, holdedNoteId = $bindable() }: { note: NoteDocType; holdedNoteId?: string | null } =
 		$props();
-	let showNoteMenu = $state(false);
 
 	let infoColor = $derived(
 		note.priority === 'high'
@@ -102,7 +101,7 @@
 		<button
 			onclick={(e) => {
 				e.stopPropagation();
-				showNoteMenu = true;
+				openNoteMenu(note);
 			}}
 			disabled={note.id === holdedNoteId}
 			onmousedown={(e) => e.stopPropagation()}
@@ -177,7 +176,4 @@
 			>
 		</button>
 	</div>
-	{#key showNoteMenu}
-		<NoteMenu bind:isOpen={showNoteMenu} {note} />
-	{/key}
 </div>

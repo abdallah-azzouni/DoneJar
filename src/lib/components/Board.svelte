@@ -12,6 +12,7 @@
 	import { projectStore } from '$lib/stores/projects.svelte';
 	import { columnRepository } from '$lib/db/dal';
 	import { searchQuery } from '$lib/stores/search';
+	import { openNoteMenu, noteMenu } from '$lib/stores/dialog';
 
 	// actions
 	import { moveNote } from '$lib/actions';
@@ -25,37 +26,15 @@
 	} from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 	import { fade, fly } from 'svelte/transition';
 	import { getSortComparator } from '$lib/sort';
-	import { SvelteSet } from 'svelte/reactivity';
+	import { SvelteSet, MediaQuery } from 'svelte/reactivity';
 
-	// --- Mobile
-	let width = $state(0);
-	let height = $state(0);
-	$effect(() => {
-		const update = () => {
-			width = window.visualViewport?.width ?? window.innerWidth;
-			height = window.visualViewport?.height ?? window.innerHeight;
-		};
-
-		update();
-		window.visualViewport?.addEventListener('resize', update);
-
-		return () => window.visualViewport?.removeEventListener('resize', update);
-	});
-
-	let viewMode: 'desktop' | 'mobile' = $derived.by(() => {
-		const w = width;
-		const h = height;
-		if (h > w * 1.15) return 'mobile';
-		return 'desktop';
-	});
+	const isWide = new MediaQuery('(min-width: 640px)');
 
 	let scrollIdx = $state(0);
 
 	let holdedNoteId = $state<string | null>(null);
 
 	// ---
-
-	let showCreateNote = $state(false);
 
 	let columns = $state<ColumnWithNotes[]>([]);
 
@@ -300,7 +279,7 @@
 {/snippet}
 {#snippet createNoteButton()}<button
 		class="absolute right-0 bottom-0 m-2 size-15 cursor-pointer rounded-full border border-black bg-white p-2"
-		onclick={() => (showCreateNote = true)}
+		onclick={() => openNoteMenu()}
 	>
 		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
 			><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path
@@ -310,10 +289,10 @@
 	</button>
 {/snippet}
 
-{#key showCreateNote}
-	<NoteMenu bind:isOpen={showCreateNote} note={null} />
+{#key noteMenu.isOpen}
+	<NoteMenu />
 {/key}
-{#if viewMode === 'desktop'}
+{#if isWide.current}
 	<div class="flex h-full w-full flex-row overflow-hidden">
 		{#each columnItems as column (column.id)}
 			{#if column.specialType === 'jar'}

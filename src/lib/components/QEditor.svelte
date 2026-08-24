@@ -82,7 +82,7 @@
 	});
 </script>
 
-<div class="editor-wrapper doodle-border w-full overflow-hidden bg-white">
+<div class="editor-wrapper doodle-border max-h-full w-full overflow-hidden bg-white sm:max-h-[72%]">
 	<div bind:this={editor}></div>
 </div>
 
@@ -90,8 +90,7 @@
 	.editor-wrapper {
 		display: flex;
 		flex-direction: column;
-		max-height: 72%;
-		min-height: 0; /* Important for flex child behavior */
+		min-height: 0;
 	}
 
 	.editor-wrapper :global(.ql-toolbar.ql-snow) {

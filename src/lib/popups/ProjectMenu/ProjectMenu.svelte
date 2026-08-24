@@ -25,6 +25,7 @@
 			title: 'Delete Project?',
 			body: `The "${data.project.name}" project and all of its tasks will be permanently deleted.`,
 			actionLabel: 'Delete',
+			cancelLabel: 'Cancel',
 			actionColor: 'danger'
 		});
 		if (confirm) {

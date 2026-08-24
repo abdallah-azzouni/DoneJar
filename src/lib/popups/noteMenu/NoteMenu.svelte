@@ -223,6 +223,7 @@
 			title: 'Delete Note?',
 			body: `The "${workingNote.title}" note and all of its data will be permanently deleted.`,
 			actionLabel: 'Delete',
+			cancelLabel: 'Cancel',
 			actionColor: 'danger'
 		});
 		if (result) {

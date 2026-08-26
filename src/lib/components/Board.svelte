@@ -288,7 +288,69 @@
 		>
 	</button>
 {/snippet}
+{#snippet jarColumn(column: ColumnWithNotes, isWide: boolean)}
+	{@const status = getJarStatus(column.notes.length)}
+	<div
+		use:dndColumn={column.id}
+		class="{isWide
+			? 'relative m-2 flex max-h-full flex-col items-center'
+			: 'relative flex h-full min-h-0 w-full flex-col items-center'} {isWide
+			? getColumnClass(projectStore.current?.type, column.specialType)
+			: ''}"
+	>
+		<div class="flex h-full w-full flex-col justify-between {isWide ? '' : 'gap-4'}">
+			<!-- Jar Drop Area -->
+			<div
+				class="{status.pulse ? 'animate-pulse' : ''} {isWide
+					? 'mt-20'
+					: 'mt-4'} relative flex w-full flex-1 items-center justify-center rounded-xl border-2 p-4 transition-all duration-300"
+				style={status.style}
+			>
+				{#each column.notes as note (note.id)}
+					<div class="pointer-events-none absolute top-0 left-0 size-10 opacity-0"></div>
+				{/each}
+				<div class="flex items-center gap-2">
+					<span class="font-patrick-hand text-xl font-bold tracking-wide transition-all">
+						{status.message}
+					</span>
+				</div>
+			</div>
 
+			<!-- Jar Interactive Container Box -->
+			<div
+				class="relative flex min-h-0 w-full flex-initial items-center justify-center {isWide
+					? 'mt-4'
+					: 'pb-4'}"
+			>
+				<button
+					type="button"
+					class="group relative {isWide
+						? 'max-h-11/12'
+						: 'max-h-[50vh]'} overflow-hidden rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+				>
+					<img
+						src={backJar}
+						alt=""
+						class="pointer-events-none block w-full object-contain opacity-0"
+					/>
+					<img
+						src={backJar}
+						alt="Jar container graphic background"
+						class="pointer-events-none absolute inset-0 z-0 h-full w-full object-contain"
+					/>
+					<div class="absolute top-[18%] right-[5%] bottom-[5%] left-[5%] z-5">
+						<BeakerPhysics items={column.notes} {maxCapacity} />
+					</div>
+					<img
+						src={frontJar}
+						alt="Jar container graphic foreground"
+						class="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain"
+					/>
+				</button>
+			</div>
+		</div>
+	</div>
+{/snippet}
 {#key noteMenu.isOpen}
 	<NoteMenu />
 {/key}
@@ -296,64 +358,7 @@
 	<div class="flex h-full w-full flex-row overflow-hidden">
 		{#each columnItems as column (column.id)}
 			{#if column.specialType === 'jar'}
-				{@const status = getJarStatus(column.notes.length)}
-				<div
-					use:dndColumn={column.id}
-					class="relative m-2 flex max-h-full flex-col items-center {getColumnClass(
-						projectStore.current?.type,
-						column.specialType
-					)}"
-				>
-					<!-- Jar Column Layout Wrapper -->
-					<div class="flex h-full w-full flex-col justify-between">
-						<!-- Jar drop area -->
-
-						<div
-							class="{status.pulse
-								? 'animate-pulse'
-								: ''} relative mt-20 flex w-full flex-1 items-center justify-center rounded-xl border-2 p-4 transition-all duration-300"
-							style={status.style}
-						>
-							{#each column.notes as note (note.id)}
-								<div class="pointer-events-none absolute top-0 left-0 size-10 opacity-0"></div>
-							{/each}
-							<div class="flex items-center gap-2">
-								<span class="font-patrick-hand text-xl font-bold tracking-wide transition-all">
-									{status.message}
-								</span>
-							</div>
-						</div>
-
-						<!-- Jar Interactive Container Box -->
-						<div class="relative mt-4 flex min-h-0 w-full flex-initial items-center justify-center">
-							<button
-								type="button"
-								class="group relative max-h-11/12 overflow-hidden rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-							>
-								<img
-									src={backJar}
-									alt=""
-									class="pointer-events-none block w-full object-contain opacity-0"
-								/>
-
-								<img
-									src={backJar}
-									alt="Jar container graphic background"
-									class="pointer-events-none absolute inset-0 z-0 h-full w-full object-contain"
-								/>
-								<div class="absolute top-[18%] right-[5%] bottom-[5%] left-[5%] z-5">
-									<BeakerPhysics items={column.notes} {maxCapacity} />
-								</div>
-
-								<img
-									src={frontJar}
-									alt="Jar container graphic foreground"
-									class="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain"
-								/>
-							</button>
-						</div>
-					</div>
-				</div>
+				{@render jarColumn(column, true)}
 			{:else}
 				<div
 					use:dndColumn={column.id}
@@ -401,62 +406,7 @@
 		{#each columnItems as column (column.id)}
 			{#if column.position === scrollIdx}
 				{#if column.specialType === 'jar'}
-					{@const status = getJarStatus(column.notes.length)}
-					<div
-						use:dndColumn={column.id}
-						class="relative flex h-full min-h-0 w-full flex-col items-center"
-					>
-						<!-- Jar Column Layout Wrapper -->
-						<div class="flex h-full w-full flex-col justify-between gap-4">
-							<!-- Jar drop area -->
-							<div
-								class="{status.pulse
-									? 'animate-pulse'
-									: ''} relative mt-4 flex w-full flex-1 items-center justify-center rounded-xl border-2 p-4 transition-all duration-300"
-								style={status.style}
-							>
-								{#each column.notes as note (note.id)}
-									<div class="pointer-events-none absolute top-0 left-0 size-10 opacity-0"></div>
-								{/each}
-								<div class="flex items-center gap-2">
-									<span class="font-patrick-hand text-xl font-bold tracking-wide transition-all">
-										{status.message}
-									</span>
-								</div>
-							</div>
-
-							<!-- Jar Interactive Container Box -->
-							<div
-								class="relative flex min-h-0 w-full flex-initial items-center justify-center pb-4"
-							>
-								<button
-									type="button"
-									class="group relative max-h-[50vh] overflow-hidden rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-								>
-									<img
-										src={backJar}
-										alt=""
-										class="pointer-events-none block w-full object-contain opacity-0"
-									/>
-
-									<img
-										src={backJar}
-										alt="Jar container graphic background"
-										class="pointer-events-none absolute inset-0 z-0 h-full w-full object-contain"
-									/>
-									<div class="absolute top-[18%] right-[5%] bottom-[5%] left-[5%] z-5">
-										<BeakerPhysics items={column.notes} {maxCapacity} />
-									</div>
-
-									<img
-										src={frontJar}
-										alt="Jar container graphic foreground"
-										class="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain"
-									/>
-								</button>
-							</div>
-						</div>
-					</div>
+					{@render jarColumn(column, false)}
 				{:else}
 					<div use:dndColumn={column.id} class="relative flex h-full min-h-0 w-full flex-col">
 						<!-- Mobile Column Header -->

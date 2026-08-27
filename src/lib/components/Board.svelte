@@ -5,6 +5,7 @@
 	import SortFilter from '$lib/components/SortFilter.svelte';
 	// popups
 	import NoteMenu from '$lib/popups/noteMenu/NoteMenu.svelte';
+	import JarMenu from '$lib/popups/JarMenu/JarMenu.svelte';
 	// assets
 	import frontJar from '$lib/assets/elements/front-jar.png';
 	import backJar from '$lib/assets/elements/back-jar.png';
@@ -28,6 +29,7 @@
 	import { getSortComparator } from '$lib/sort';
 	import { SvelteSet, MediaQuery } from 'svelte/reactivity';
 
+	let jarMenuOpen = $state(false);
 	const isWide = new MediaQuery('(min-width: 640px)');
 
 	let scrollIdx = $state(0);
@@ -327,6 +329,9 @@
 					class="group relative {isWide
 						? 'max-h-11/12'
 						: 'max-h-[50vh]'} overflow-hidden rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+					onclick={() => {
+						jarMenuOpen = true;
+					}}
 				>
 					<img
 						src={backJar}
@@ -354,6 +359,14 @@
 {#key noteMenu.isOpen}
 	<NoteMenu />
 {/key}
+
+{#if columnItems.find((column) => column.specialType === 'jar')}
+	<JarMenu
+		bind:isOpen={jarMenuOpen}
+		columnItem={columnItems.find((column) => column.specialType === 'jar')!}
+	/>
+{/if}
+
 {#if isWide.current}
 	<div class="flex h-full w-full flex-row overflow-hidden">
 		{#each columnItems as column (column.id)}

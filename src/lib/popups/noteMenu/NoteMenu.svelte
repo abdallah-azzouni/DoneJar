@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createNote, editNote, saveNoteAttachments, deleteNote } from '$lib/actions';
+	import { createNote, editNote, moveNote, saveNoteAttachments, deleteNote } from '$lib/actions';
 	import { attachmentRepository, columnRepository } from '$lib/db/dal';
 	import { Dialog } from 'bits-ui';
 	import DatePicker from './DatePicker.svelte';
@@ -22,7 +22,7 @@
 	// ─── Working Note State ───────────────────────────
 	let workingNote = $state(
 		untrack(() => {
-			if (noteMenu.data) return { ...noteMenu.data };
+			if (noteMenu.data?.note) return { ...noteMenu.data.note };
 			let newNote: NoteDocType = emptyNote;
 			newNote.color = DEFAULT_NOTE_COLOR;
 
@@ -79,6 +79,18 @@
 
 	function handleCancel() {
 		noteMenu.close();
+	}
+
+	async function handleRestore() {
+		const col = await columnRepository.findInboxColumn(noteProjectId);
+		if (!col) {
+			notify(failure('No inbox column found for this project.'));
+			return;
+		}
+		const plain = $state.snapshot(workingNote) as unknown as NoteDocType;
+		await moveNote(plain.id, col.id);
+		noteMenu.close();
+		notify({ type: 'success', message: 'Note restored successfully' });
 	}
 
 	let attachments = $state([] as AttachmentDocType[]);
@@ -232,6 +244,8 @@
 			notify(res);
 		}
 	}
+
+	const readOnly = $derived(noteMenu.data?.readOnly === true);
 	const isWide = new MediaQuery('(min-width: 640px)');
 </script>
 
@@ -254,7 +268,9 @@
 			<button
 				type="button"
 				title="Add file or image"
-				class="flex size-7 items-center justify-center rounded-full border-2 border-black bg-amber-400 text-xl font-bold shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all hover:bg-amber-300 active:translate-y-px active:shadow-none"
+				class="flex size-7 {readOnly
+					? 'hidden'
+					: ''} items-center justify-center rounded-full border-2 border-black bg-amber-400 text-xl font-bold shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all hover:bg-amber-300 active:translate-y-px active:shadow-none"
 				onclick={() => {
 					if (subscriptionStore.isPro) {
 						handleAddAttachment();
@@ -401,16 +417,17 @@
 				>
 					<input
 						type="text"
-						class="doodle-border w-full bg-white text-2xl font-bold outline-none"
+						class="doodle-border w-full bg-white text-2xl font-bold outline-none disabled:pointer-events-none"
 						placeholder="Note title..."
 						maxlength={MAX_NOTE_TITLE_LENGTH}
 						bind:value={workingNote.title}
 						required
+						disabled={readOnly}
 					/>
 					<hr class=" border border-gray-500" />
 
 					<div class="overflow-y-auto">
-						<QEditor bind:description={workingNote.description} />
+						<QEditor bind:description={workingNote.description} isReadOnly={readOnly} />
 						{#if isWide.current}
 							{@render attachmentsSection()}
 						{/if}
@@ -424,13 +441,23 @@
 							>
 								Cancel
 							</button>
-							<button
-								class="rounded-2xl border-2 border-black bg-green-400 px-8 py-2 font-bold shadow-[4px_4px_0px_rgba(0,0,0,1)] transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
-								type="submit"
-								form="title-description-form"
-							>
-								Save Note
-							</button>
+							{#if !readOnly}
+								<button
+									class="rounded-2xl border-2 border-black bg-green-400 px-8 py-2 font-bold shadow-[4px_4px_0px_rgba(0,0,0,1)] transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+									type="submit"
+									form="title-description-form"
+								>
+									Save Note
+								</button>
+							{:else}
+								<button
+									class="rounded-2xl border-2 border-black bg-yellow-400 px-8 py-2 font-bold"
+									type="button"
+									onclick={() => handleRestore()}
+								>
+									Restore
+								</button>
+							{/if}
 						</div>
 					{/if}
 				</form>
@@ -446,7 +473,8 @@
 								<span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2">📁</span>
 								<select
 									bind:value={noteProjectId}
-									class="doodle-border w-full cursor-pointer bg-white pr-4 pl-10"
+									disabled={readOnly}
+									class="doodle-border w-full cursor-pointer bg-white pr-4 pl-10 disabled:appearance-none"
 								>
 									{#each projectStore.projects as project (project.id)}
 										<option value={project.id}>{project.name}</option>
@@ -457,39 +485,51 @@
 						<div>
 							<span class="mb-1 block">Color</span>
 							<div class="flex gap-1 p-1">
-								{#each DEFAULT_MENU_COLORS as paletteColor (paletteColor)}
+								{#if !readOnly}
+									{#each DEFAULT_MENU_COLORS as paletteColor (paletteColor)}
+										<button
+											type="button"
+											class="size-10 rounded-xl border-2 border-black transition-all"
+											style:background-color={paletteColor}
+											class:border-4={workingNote.color === paletteColor}
+											onclick={() => (workingNote.color = paletteColor)}
+											title="Select color {paletteColor}"
+										>
+										</button>
+									{/each}
+
+									<label
+										class="relative flex size-10 transform cursor-pointer items-center justify-center rounded-full border-2 border-black transition-all hover:scale-110 active:scale-100"
+										style:background-color={workingNote.color}
+										class:border-4={!DEFAULT_MENU_COLORS.includes(workingNote.color)}
+									>
+										<span class="text-m font-bold" style:color={textColorFromHex(workingNote.color)}
+											>+</span
+										>
+										<input
+											type="color"
+											bind:value={workingNote.color}
+											class="absolute inset-0 cursor-pointer opacity-0"
+										/>
+									</label>
+								{:else}
 									<button
 										type="button"
-										class="size-10 rounded-xl border-2 border-black transition-all"
-										style:background-color={paletteColor}
-										class:border-4={workingNote.color === paletteColor}
-										onclick={() => (workingNote.color = paletteColor)}
-										title="Select color {paletteColor}"
+										disabled={true}
+										class="pointer-events-none size-10 rounded-xl border-2 border-black transition-all"
+										style:background-color={workingNote.color}
+										title="Color {workingNote.color}"
 									>
 									</button>
-								{/each}
-
-								<label
-									class="relative flex size-10 transform cursor-pointer items-center justify-center rounded-full border-2 border-black transition-all hover:scale-110 active:scale-100"
-									style:background-color={workingNote.color}
-									class:border-4={!DEFAULT_MENU_COLORS.includes(workingNote.color)}
-								>
-									<span class="text-m font-bold" style:color={textColorFromHex(workingNote.color)}
-										>+</span
-									>
-									<input
-										type="color"
-										bind:value={workingNote.color}
-										class="absolute inset-0 cursor-pointer opacity-0"
-									/>
-								</label>
+								{/if}
 							</div>
 						</div>
 
 						<div>
 							<span class="mb-1 block">Due Date</span>
 							<button
-								class="doodle-border flex w-full items-center justify-center gap-2 bg-white py-2"
+								disabled={readOnly}
+								class="doodle-border flex w-full items-center justify-center gap-2 bg-white py-2 disabled:pointer-events-none"
 								onclick={() => (showDatePicker = true)}
 							>
 								{#if workingNote.dueDateTimestamp}
@@ -504,34 +544,50 @@
 									>
 										{formatDueDate(workingNote.dueDateTimestamp, workingNote.dueDateHasTime)}
 									</span>
-								{:else}
+								{:else if !readOnly}
 									<span class="text-gray-400">Set Date...</span>
+								{:else}
+									<span class="text-gray-400">No Due Date</span>
 								{/if}
 							</button>
 						</div>
 						<div>
-							<span class="mb-1 block">Priority</span>
+							<span class="mb-1 block"
+								>{readOnly && !workingNote.priority ? 'No Priority' : 'Priority'}</span
+							>
 							<div class="flex w-full items-center gap-2 font-patrick-hand text-2xl">
 								<button
-									class="doodle-border flex-1 {workingNote.priority === 'low'
+									class="doodle-border flex-1 disabled:pointer-events-none {workingNote.priority ===
+									'low'
 										? 'bg-blue-100 text-blue-800'
-										: 'bg-white'}"
+										: readOnly
+											? 'hidden'
+											: 'bg-white'}"
+									disabled={readOnly}
 									onclick={() => {
 										workingNote.priority = workingNote.priority === 'low' ? null : 'low';
 									}}>Low</button
 								>
 								<button
-									class=" doodle-border flex-1 {workingNote.priority === 'medium'
+									class=" doodle-border flex-1 disabled:pointer-events-none {workingNote.priority ===
+									'medium'
 										? 'bg-amber-100 text-amber-800'
-										: 'bg-white'}"
+										: readOnly
+											? 'hidden'
+											: 'bg-white'}"
+									disabled={readOnly}
 									onclick={() => {
 										workingNote.priority = workingNote.priority === 'medium' ? null : 'medium';
 									}}>Medium</button
 								>
 								<button
-									class=" doodle-border flex-1 {workingNote.priority === 'high'
+									class=" doodle-border flex-1 disabled:pointer-events-none {workingNote.priority ===
+									'high'
 										? 'bg-red-100 text-red-800'
-										: 'bg-white'}"
+										: readOnly
+											? 'hidden'
+											: 'bg-white'}"
+									disabled={readOnly}
 									onclick={() => {
 										workingNote.priority = workingNote.priority === 'high' ? null : 'high';
 									}}>High</button
@@ -561,13 +617,23 @@
 						>
 							Cancel
 						</button>
-						<button
-							class="rounded-2xl border-2 border-black bg-green-400 px-8 py-2 font-bold shadow-[4px_4px_0px_rgba(0,0,0,1)] transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
-							type="submit"
-							form="title-description-form"
-						>
-							Save Note
-						</button>
+						{#if !readOnly}
+							<button
+								class="rounded-2xl border-2 border-black bg-green-400 px-8 py-2 font-bold shadow-[4px_4px_0px_rgba(0,0,0,1)] transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+								type="submit"
+								form="title-description-form"
+							>
+								Save Note
+							</button>
+						{:else}
+							<button
+								class="rounded-2xl border-2 border-black bg-yellow-400 px-8 py-2 font-bold"
+								type="button"
+								onclick={() => handleRestore()}
+							>
+								Restore
+							</button>
+						{/if}
 					</div>
 				{/if}
 			</div>

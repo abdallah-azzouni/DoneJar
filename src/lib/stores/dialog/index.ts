@@ -50,8 +50,12 @@ export const openProjectSetting = (project: ProjectDocType | null = null) =>
 	projectSettingStore.open(project);
 export const closeProjectSetting = () => projectSettingStore.close();
 
-export const noteMenu = createDialogStore<NoteDocType | null>(false, null);
-export const openNoteMenu = (note: NoteDocType | null = null) => noteMenu.open(note);
+export const noteMenu = createDialogStore<{ note: NoteDocType | null; readOnly: boolean } | null>(
+	false,
+	null
+);
+export const openNoteMenu = (note: NoteDocType | null = null, readOnly: boolean = false) =>
+	noteMenu.open({ note: note, readOnly: readOnly });
 export const closeNoteMenu = () => noteMenu.close();
 
 // --- CONFIRMATION MENU ---

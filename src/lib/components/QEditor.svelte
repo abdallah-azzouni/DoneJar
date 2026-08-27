@@ -4,7 +4,10 @@
 	import { notify } from '$lib/stores/notificationStore';
 
 	let editor: HTMLElement;
-	let { description = $bindable() }: { description: string | null } = $props();
+	let {
+		description = $bindable(),
+		isReadOnly
+	}: { description: string | null; isReadOnly: boolean | undefined } = $props();
 
 	let toolbarOptions = [
 		[{ header: 1 }, { header: 2 }, { align: [] }, 'blockquote', 'code', 'link'],
@@ -42,11 +45,12 @@
 			// 'image' excluded intentionally
 		];
 		const quill: QuillType = new Quill(editor, {
+			readOnly: isReadOnly,
 			modules: {
-				toolbar: toolbarOptions
+				toolbar: isReadOnly ? [] : toolbarOptions
 			},
 			theme: 'snow',
-			placeholder: 'Write something...',
+			placeholder: isReadOnly ? 'No text' : 'Write something...',
 			formats: formats
 		});
 

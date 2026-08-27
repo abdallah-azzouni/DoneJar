@@ -143,10 +143,10 @@
 		<Dialog.Overlay class="fixed inset-0 z-9999 bg-black/50 backdrop-blur-[1px]" />
 		<Dialog.Content
 			interactOutsideBehavior="ignore"
-			class="fixed top-[5%] left-1/2 z-9999 max-h-3/4 -translate-x-1/2 justify-self-center rounded-2xl bg-white p-6 shadow-lg"
+			class="fixed top-[5%] left-1/2 z-9999 max-h-3/4 max-w-11/12 -translate-x-1/2 justify-self-center rounded-2xl bg-white shadow-lg sm:max-w-2/3 md:max-w-2/5 lg:max-w-1/3 xl:max-w-1/4"
 		>
 			<div
-				class="border-dark-10 bg-background-alt shadow-card rounded-15px mt-6 flex max-w-81 flex-col gap-4 border p-5.5"
+				class="border-dark-10 bg-background-alt shadow-card rounded-15px flex h-full w-full flex-col gap-4 border p-5.5"
 			>
 				<Calendar.Root
 					weekdayFormat="short"

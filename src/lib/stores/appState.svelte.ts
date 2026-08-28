@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { sessionStore, getIsRecovery } from '$lib/stores/currentUser.svelte';
+import { supabase } from '$lib/sb/sb';
 import { persisted } from 'svelte-persisted-store';
 
 export const UserState = {
@@ -19,8 +20,14 @@ isGuestLocal.subscribe((value) => {
 });
 
 // Action for the UI to toggle local mode
-export function goLocalMode() {
-	isGuestLocal.set(true);
+export async function goLocalMode() {
+	if (!getIsGuestLocal()) {
+		isGuestLocal.set(true);
+		const { error } = await supabase.rpc('increment_guest_sessions');
+		if (error) {
+			console.error('Failed to increment guest sessions:', error);
+		}
+	}
 }
 export function getIsGuestLocal() {
 	return isGuestValue;

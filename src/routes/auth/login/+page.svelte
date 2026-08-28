@@ -75,8 +75,8 @@
 		password = '';
 	}
 
-	function continueLocal() {
-		goLocalMode();
+	async function continueLocal() {
+		await goLocalMode();
 		goto(resolve('/app'));
 	}
 
@@ -151,7 +151,9 @@
 	</Dialog.Portal>
 </Dialog.Root>
 
-<div class="flex min-h-svh items-center justify-center bg-stone-100 px-4 py-12 dark:bg-zinc-950">
+<div
+	class="flex min-h-svh flex-col items-center justify-center bg-stone-100 px-4 py-12 dark:bg-zinc-950"
+>
 	<div
 		class="w-full max-w-sm rounded-2xl border border-black/10 bg-white p-8 dark:border-white/8 dark:bg-zinc-900"
 	>
@@ -323,5 +325,24 @@
 				{isLogin ? 'Create one free' : 'Sign in'}
 			</button>
 		</p>
+	</div>
+	<div class="flex gap-2">
+		<a
+			href={resolve('/privacy')}
+			target="_blank"
+			rel="noopener noreferrer"
+			class="font-patrick-hand text-lg text-gray-700 transition-colors hover:text-gray-900"
+		>
+			Privacy
+		</a>
+		<p>.</p>
+		<a
+			href={resolve('/terms')}
+			target="_blank"
+			rel="noopener noreferrer"
+			class="font-patrick-hand text-lg text-gray-700 transition-colors hover:text-gray-900"
+		>
+			Terms
+		</a>
 	</div>
 </div>

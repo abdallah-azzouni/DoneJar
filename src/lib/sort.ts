@@ -15,6 +15,16 @@ export const sortOptions: SortOption[] = [
 		compare: (a, b) => a.createdAt.localeCompare(b.createdAt)
 	},
 	{
+		key: 'newest_updated',
+		label: 'Newest updated',
+		compare: (a, b) => b.updatedAt.localeCompare(a.updatedAt)
+	},
+	{
+		key: 'oldest_updated',
+		label: 'Oldest updated',
+		compare: (a, b) => a.updatedAt.localeCompare(b.updatedAt)
+	},
+	{
 		key: 'due-date',
 		label: 'Due date',
 		compare: (a, b) => {

@@ -363,7 +363,7 @@
 {#if columnItems.find((column) => column.specialType === 'jar')}
 	<JarMenu
 		bind:isOpen={jarMenuOpen}
-		columnItem={columnItems.find((column) => column.specialType === 'jar')!}
+		column={columns.find((column) => column.specialType === 'jar')!}
 	/>
 {/if}
 

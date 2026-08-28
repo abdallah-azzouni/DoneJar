@@ -3,8 +3,7 @@
 	import { type ColumnWithNotes } from '$lib/types';
 	import archive from './Archive.svelte';
 
-	let { isOpen = $bindable(), columnItem }: { isOpen: boolean; columnItem: ColumnWithNotes } =
-		$props();
+	let { isOpen = $bindable(), column }: { isOpen: boolean; column: ColumnWithNotes } = $props();
 
 	const tabs = [
 		{ label: 'Archive', slug: 'archive', component: archive },
@@ -79,7 +78,7 @@
 					</div>
 
 					{#if activeTab.component}
-						<activeTab.component {columnItem} />
+						<activeTab.component {column} />
 					{/if}
 				</div>
 			</div>

@@ -3,6 +3,7 @@
 	import { openNoteMenu } from '$lib/stores/dialog';
 	import Ticket from '$lib/components/Ticket.svelte';
 	import SortFilter from '$lib/components/SortFilter.svelte';
+	import { getSortComparator } from '$lib/sort';
 	import { type ColumnWithNotes } from '$lib/types';
 	import { SvelteSet } from 'svelte/reactivity';
 
@@ -26,17 +27,36 @@
 		return Array.from(colors);
 	});
 
-	let { columnItem }: { columnItem: ColumnWithNotes } = $props();
+	let { column }: { column: ColumnWithNotes } = $props();
+
+	const columnItem = $derived.by(() => {
+		const parsedFilters = JSON.parse(column.filters || '{}');
+
+		const cmp = column.sortKey
+			? getSortComparator(column.sortKey)
+			: getSortComparator('newest_updated');
+
+		let filteredNotes = column.notes.filter((note) => {
+			// A. Check Column Specific Filters
+			if (parsedFilters.color?.length && !parsedFilters.color.includes(note.color)) return false;
+			if (parsedFilters.priority?.length && !parsedFilters.priority.includes(note.priority || '')) {
+				return false;
+			}
+
+			return true;
+		});
+		filteredNotes.sort(cmp);
+
+		return { ...column, filters: parsedFilters, notes: filteredNotes };
+	});
 </script>
 
-<div
-	class="doodle-border relative flex h-full w-full flex-col gap-5 overflow-y-auto bg-white p-5 sm:p-10"
->
-	<div class="absolute top-17 right-5 z-10 sm:top-21 sm:right-9">
+<div class="doodle-border flex h-full w-full flex-col gap-5 overflow-y-auto bg-white p-5 sm:p-10">
+	<div class="absolute top-20 right-5 z-10 sm:top-22 sm:right-9">
 		<!-- Filters already prased from board -->
 		<SortFilter
 			activeSortKey={columnItem.sortKey}
-			activeFilters={columnItem.filters as unknown as Record<string, string[]>}
+			activeFilters={columnItem.filters}
 			colorOptions={availableColors}
 			onSettingsChanged={(newFilters, newSortKey) =>
 				updateColumnSettings(columnItem.id, newSortKey, newFilters)}

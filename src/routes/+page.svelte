@@ -205,10 +205,31 @@
 	</section>
 
 	<!-- Footer -->
-	<footer class="border-t-2 border-gray-300 bg-gray-50 py-12">
+	<footer class="border-t-2 border-gray-300 bg-gray-50 py-5">
 		<div class="container mx-auto px-6">
 			<div class="flex flex-col items-center justify-between md:flex-row">
-				<p class="mb-4 font-patrick-hand text-2xl text-gray-600 md:mb-0">© 2026 DoneJar</p>
+				<div class="flex flex-col">
+					<p class="mb-4 font-patrick-hand text-2xl text-gray-600 md:mb-0">© 2026 DoneJar</p>
+					<div class="flex gap-2">
+						<a
+							href={resolve('/privacy')}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="font-patrick-hand text-lg text-gray-700 transition-colors hover:text-gray-900"
+						>
+							Privacy
+						</a>
+						<p>.</p>
+						<a
+							href={resolve('/terms')}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="font-patrick-hand text-lg text-gray-700 transition-colors hover:text-gray-900"
+						>
+							Terms
+						</a>
+					</div>
+				</div>
 				<div class="flex gap-8">
 					<a
 						href="https://github.com/abdallah-azzouni/DoneJar"

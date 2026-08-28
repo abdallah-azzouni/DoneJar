@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
-	import { getAppState } from '$lib/stores/appState.svelte';
+	import { getAppState, UserState } from '$lib/stores/appState.svelte';
 	import { sessionStore } from '$lib/stores/currentUser.svelte';
 	import { type Profile } from '$lib/types';
 	import { supabase } from '$lib/sb/sb';
@@ -19,13 +19,13 @@
 
 	const profileId = 4;
 
-	const disabledIds = $derived(getAppState() !== 'LOGGED_IN' ? [2, 3] : [2]);
+	const disabledIds = $derived(getAppState() !== UserState.LOGGED_IN ? [2, 3] : [2]);
 	$effect(() => {
 		sideMenuRows.map((row) => {
 			row.items.map((item) => {
 				if (item.id === 3) {
 					item.label =
-						getAppState() !== 'LOGGED_IN' ? 'Feedback 💬 (Login Required)' : 'Feedback 💬';
+						getAppState() !== UserState.LOGGED_IN ? 'Feedback 💬 (Login Required)' : 'Feedback 💬';
 				}
 			});
 		});
@@ -39,21 +39,25 @@
 	});
 
 	async function fetchProfileData() {
-		const { data, error } = await supabase
-			.from('profiles')
-			.select('id, display_name, email, created_at')
-			.eq('id', sessionStore.current?.user?.id)
-			.single();
+		if (getAppState() === UserState.LOGGED_IN) {
+			const { data, error } = await supabase
+				.from('profiles')
+				.select('id, display_name, email, created_at')
+				.eq('id', sessionStore.current?.user?.id)
+				.single();
 
-		if (error) {
-			console.error('Error fetching profile data:', error);
-		} else {
-			profile = data as Profile;
+			if (error) {
+				console.error('Error fetching profile data:', error);
+			} else {
+				profile = data as Profile;
+			}
 		}
 	}
 
 	onMount(async () => {
-		await fetchProfileData();
+		if (getAppState() === UserState.LOGGED_IN) {
+			await fetchProfileData();
+		}
 	});
 </script>
 
@@ -84,7 +88,7 @@
 	{/each}
 	<hr class="my-4 mt-auto border-2 border-dashed border-gray-300" />
 
-	{#if getAppState() === 'LOGGED_IN'}
+	{#if getAppState() === UserState.LOGGED_IN}
 		<button
 			class="doodle-border mb-4 flex w-full shrink-0 items-center gap-4 rounded-lg bg-white p-1.5 text-left font-patrick-hand text-xl"
 			onclick={() => {

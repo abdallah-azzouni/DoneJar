@@ -111,6 +111,8 @@
 	});
 	const columnItems = $derived.by(() => {
 		return columns.map((col) => {
+			if (col.specialType === 'jar') return col; // Skip filtering for jar column
+
 			const parsedFilters = JSON.parse(col.filters || '{}');
 
 			const cmp = col.sortKey ? getSortComparator(col.sortKey) : getSortComparator('newest');

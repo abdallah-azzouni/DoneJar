@@ -2,6 +2,8 @@
 	import type QuillType from 'quill';
 	import { onMount } from 'svelte';
 	import { notify } from '$lib/stores/notificationStore';
+	import Quill from 'quill';
+	import 'quill/dist/quill.snow.css';
 
 	let editor: HTMLElement;
 	let {
@@ -16,9 +18,7 @@
 		['video', 'clean']
 	];
 
-	onMount(async () => {
-		const { default: Quill } = await import('quill');
-		await import('quill/dist/quill.snow.css');
+	onMount(() => {
 		if (!editor) return;
 
 		var formats = [

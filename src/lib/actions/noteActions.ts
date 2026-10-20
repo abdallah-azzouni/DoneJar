@@ -3,15 +3,25 @@ import { noteRepository } from '$lib/db/dal';
 
 import { failure, success, type ActionResult } from '$lib/types';
 import type { NoteDocType } from '$lib/db/schemas/note';
+import type { AttachmentDocType } from '$lib/db/schemas/attachment';
+import { saveNoteAttachments } from './attachmentActions';
 
 /**
  * Creates a new note in the inbox column of a project.
  * @param note the note payload (title, color, etc.)
  */
-export async function createNote(note: NoteDocType): Promise<ActionResult> {
+export async function createNote(
+	note: NoteDocType,
+	attachmentInput?: {
+		attachments: AttachmentDocType[];
+		deletedIds: string[];
+		blobs: Map<string, Blob>;
+	}
+): Promise<ActionResult> {
 	try {
+		const noteId = nanoid();
 		const newNote: NoteDocType = {
-			id: note.id || nanoid(),
+			id: noteId,
 			userId: null,
 			columnId: note.columnId,
 			title: note.title,
@@ -27,6 +37,15 @@ export async function createNote(note: NoteDocType): Promise<ActionResult> {
 		};
 
 		await noteRepository.add(newNote);
+
+		if (attachmentInput) {
+			await saveNoteAttachments(
+				noteId,
+				attachmentInput.attachments,
+				attachmentInput.deletedIds,
+				attachmentInput.blobs
+			);
+		}
 	} catch (error) {
 		return failure(`Error creating note: ${error}`);
 	}

@@ -6,7 +6,7 @@
 	import QEditor from '$lib/components/QEditor.svelte';
 	import { formatDueDate, isDueDatePast } from '$lib/UiHelper';
 	import { notify } from '$lib/stores/notificationStore';
-	import { emptyNote, failure } from '$lib/types';
+	import { emptyNote, failure, type ActionResult } from '$lib/types';
 	import type { NoteDocType, AttachmentDocType } from '$lib/db/schemas/index';
 	import { MAX_NOTE_TITLE_LENGTH, DEFAULT_NOTE_COLOR, DEFAULT_MENU_COLORS } from '$lib/constants';
 	import { confirmMenu, noteMenu } from '$lib/stores/dialog';
@@ -32,16 +32,10 @@
 
 	let original_description = $state('');
 
-	// noteId is stable per dialog open because parent uses {#key} to remount this component
-	const noteId = workingNote.id || nanoid();
-
 	let showDatePicker = $state(false);
 
 	// ─── Handlers ────────────────────────────────────
 	async function handleSubmit() {
-		const action = workingNote.id === '' ? createNote : editNote;
-		workingNote.id = noteId;
-
 		let col = workingNote.columnId ? await columnRepository.get(workingNote.columnId) : undefined;
 		if (workingNote.columnId === '' || col?.projectId !== noteProjectId) {
 			col = await columnRepository.findInboxColumn(noteProjectId);
@@ -53,24 +47,34 @@
 		}
 
 		const plain = $state.snapshot(workingNote) as unknown as NoteDocType; // snapshot to unwarp any proxies made by $state
-		const result = await action(plain);
-
-		if (result.type === 'error') {
-			notify(result);
-			return;
-		}
 
 		const plainAttachments = $state.snapshot(attachments) as unknown as AttachmentDocType[]; // snapshot to unwarp any proxies made by $state
 		const newAttachments = plainAttachments.filter((a) => !a.createdAt); // only save new attachments.
-		const attachmentResults = await saveNoteAttachments(
-			noteId,
-			newAttachments,
-			deletedAttachmentIds,
-			blobs
-		); // create after note has been created.
 
-		if (attachmentResults.type === 'error') {
-			notify(attachmentResults);
+		let result: ActionResult;
+		if (workingNote.id === '') {
+			result = await createNote(plain, {
+				attachments: newAttachments,
+				deletedIds: deletedAttachmentIds,
+				blobs
+			});
+		} else {
+			result = await editNote(plain);
+
+			const attachmentResults = await saveNoteAttachments(
+				workingNote.id,
+				newAttachments,
+				deletedAttachmentIds,
+				blobs
+			);
+			if (attachmentResults.type === 'error') {
+				notify(attachmentResults);
+				return;
+			}
+		}
+
+		if (result.type === 'error') {
+			notify(result);
 			return;
 		}
 
@@ -160,7 +164,7 @@
 			const newAttachment: AttachmentDocType = {
 				id: id,
 				userId: null,
-				noteId,
+				noteId: workingNote.id,
 				filename: file.name,
 				mimeType: file.type,
 				size: file.size,

@@ -32,13 +32,30 @@ export function formatDueDate(timestamp: string, hasTime: boolean | null): strin
 	const now = new Date();
 	const sameYear = d.getFullYear() === now.getFullYear();
 
-	const dateStr = d.toLocaleDateString(undefined, {
+	const midnight = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+	const daysApart = Math.round((midnight(d) - midnight(now)) / 86_400_000);
+	const isRelative = daysApart >= 0 && daysApart <= 7;
+
+	let dateStr = d.toLocaleDateString(undefined, {
 		month: 'short',
 		day: 'numeric',
 		...(sameYear ? {} : { year: 'numeric' })
 	});
 
-	if (!hasTime || !sameYear) return dateStr;
+	if (isRelative) {
+		switch (daysApart) {
+			case 0:
+				dateStr = 'Today';
+				break;
+			case 1:
+				dateStr = 'Tomorrow';
+				break;
+			default:
+				dateStr = d.toLocaleDateString(undefined, { weekday: 'short' });
+		}
+	}
+
+	if (!hasTime || (!sameYear && !isRelative)) return dateStr;
 
 	const timeStr = d.toLocaleTimeString(undefined, {
 		hour: 'numeric',

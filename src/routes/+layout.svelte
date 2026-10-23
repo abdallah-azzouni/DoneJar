@@ -3,14 +3,13 @@
 	import { Toaster } from 'svelte-sonner';
 	import { initLifecycle } from '$lib/lifecycle.svelte';
 	import 'doodle.css/doodle.css';
-	import favicon from '$lib/assets/favicon.png';
 
 	initLifecycle();
 
 	let { children } = $props();
 </script>
 
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
+<svelte:head><link rel="icon" href="/favicon.png" type="image/png" sizes="192x192" /></svelte:head>
 {@render children()}
 <Toaster
 	position="bottom-right"

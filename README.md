@@ -39,7 +39,7 @@ DoneJar is an offline-first, kanban-style task manager where your completed task
 - **Rich Text**: Quill 2.0 (with Quill Delta support)
 - **Drag and Drop**: Atlassian's Pragmatic Drag and Drop
 - **UI Components & A11y**: Bits UI (headless primitives), Vaul Svelte (accessible drawer/bottom sheets), Svelte Sonner (toast notifications), Runed (runes utilities), Phosphor Svelte (icons)
-- **Monitoring**: Sentry (Full client-side and server-side error logging, session replays, and performance tracking)
+- **Monitoring**: Sentry (Full client-side and server-side error logging, and performance tracking)
 - **Validation & Helpers**: Ajv, NanoID, Bowser (device & user agent detection)
 
 ---

@@ -2,9 +2,23 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
 	--font-patrick-hand: 'Patrick Hand', cursive;
-	--app-bg-color: #f4efe6;
+	--color-page: #f4efe6;
+	--color-panel: #ffffff;
+	--color-sidebar: #e6dec9;
+	--color-border-main: #000000;
+	--color-text-main: #171717;
+}
+
+.dark {
+	--color-page: #1d2021;
+	--color-panel: #282828;
+	--color-sidebar: #1d2021;
+	--color-border-main: #7c6f64;
+	--color-text-main: #f1f1f1;
 }
 
 /* Base Styles & HTML Overrides */
@@ -14,7 +28,7 @@
 	}
 
 	body [data-dialog-content] {
-		background-color: var(--app-bg-color);
+		background-color: var(--color-page);
 	}
 
 	/* Universal Button Base Styling */

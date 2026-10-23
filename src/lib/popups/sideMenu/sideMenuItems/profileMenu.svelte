@@ -182,7 +182,7 @@
 		<Dialog.Overlay class="fixed inset-0 z-9999 bg-black/40 backdrop-blur-xs" />
 		<Dialog.Content
 			interactOutsideBehavior="ignore"
-			class="fixed top-[5%] left-1/2 z-9999 w-full max-w-lg -translate-x-1/2 rounded-2xl border-3 border-black bg-[#fbf9f1] p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+			class="fixed top-[5%] left-1/2 z-9999 w-full max-w-lg -translate-x-1/2 rounded-2xl border-3 border-black  p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
 		>
 			<!-- Header with sketchy accent -->
 			<div class="flex items-center justify-between border-b-2 border-black/80 pb-3">
@@ -191,16 +191,20 @@
 				</Dialog.Title>
 			</div>
 
-			<Dialog.Description class="mt-4 font-patrick-hand text-lg leading-relaxed text-gray-800">
+			<Dialog.Description
+				class="mt-4 font-patrick-hand text-lg leading-relaxed text-gray-800 text-text-main"
+			>
 				Are you sure you want to delete your account? This action is <strong
 					class="underline decoration-red-500 decoration-2">irreversible</strong
 				> and all your jar data, notes, and boards will be wiped out forever.
 			</Dialog.Description>
 
-			<div class="mt-5 flex flex-col gap-3 font-patrick-hand text-base font-bold text-gray-800">
+			<div
+				class="mt-5 flex flex-col gap-3 font-patrick-hand text-base font-bold text-gray-800 text-text-main"
+			>
 				<!-- OTP Input Row -->
 				<div
-					class="flex items-center justify-between gap-3 rounded-xl border-2 border-dashed border-gray-400 bg-[#f4efe0] p-3"
+					class="flex items-center justify-between gap-3 rounded-xl border-2 border-dashed border-gray-400 bg-panel p-3"
 				>
 					<label for="otp-input" class="text-lg">OTP code from email:</label>
 					<input
@@ -209,13 +213,13 @@
 						bind:value={otpCode}
 						inputmode="numeric"
 						placeholder="123456"
-						class="w-32 rounded-lg border-2 border-black bg-white px-3 py-1 text-center font-patrick-hand text-xl font-bold tracking-widest text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:ring-2 focus:ring-black focus:outline-none"
+						class="w-32 rounded-lg border-2 border-black bg-panel px-3 py-1 text-center font-patrick-hand text-xl font-bold tracking-widest text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:ring-2 focus:ring-black focus:outline-none"
 					/>
 				</div>
 
 				<!-- Confirmation String Row -->
 				<div
-					class="flex items-center justify-between gap-3 rounded-xl border-2 border-dashed border-gray-400 bg-[#f4efe0] p-3"
+					class="flex items-center justify-between gap-3 rounded-xl border-2 border-dashed border-gray-400 bg-panel p-3"
 				>
 					<label for="text-confirm" class="text-lg">
 						Type <span
@@ -228,7 +232,7 @@
 						type="text"
 						bind:value={textConfirm}
 						placeholder="DELETE"
-						class="w-36 rounded-lg border-2 border-black bg-white px-3 py-1 text-center font-patrick-hand text-xl font-bold tracking-wider text-red-600 uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:ring-2 focus:ring-red-500 focus:outline-none"
+						class="w-36 rounded-lg border-2 border-black bg-panel px-3 py-1 text-center font-patrick-hand text-xl font-bold tracking-wider text-red-600 uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:ring-2 focus:ring-red-500 focus:outline-none"
 					/>
 				</div>
 			</div>
@@ -264,11 +268,11 @@
 	<Dialog.Portal to="body">
 		<Dialog.Overlay class="fixed inset-0 z-9998 bg-black/40 backdrop-blur-[2px]" />
 		<Dialog.Content
-			class="fixed top-1/2 left-1/2 z-9998 flex h-[85vh] w-[90vw] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl shadow-2xl sm:w-[80vw] md:w-[60vw] lg:w-[40vw]"
+			class="fixed top-1/2 left-1/2 z-9998 flex h-[85vh] w-[90vw] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl text-text-main shadow-2xl sm:w-[80vw] md:w-[60vw] lg:w-[40vw]"
 		>
 			<!-- ── Doodle-Themed Header ── -->
 			<div
-				class="flex shrink-0 items-center gap-4 border-b-2 border-black bg-[#e6dec9] px-6 pt-5 pb-4"
+				class="flex shrink-0 items-center gap-4 border-b-2 border-black bg-sidebar px-6 pt-5 pb-4"
 			>
 				<!-- Avatar -->
 				<div
@@ -284,7 +288,7 @@
 							<input
 								type="text"
 								bind:value={nameValue}
-								class="w-full rounded-md border-2 border-black bg-white px-2 py-0.5 font-patrick-hand text-lg font-bold focus:outline-none"
+								class="w-full rounded-md border-2 border-black bg-panel px-2 py-0.5 font-patrick-hand text-lg font-bold focus:outline-none"
 								onkeydown={(e) => {
 									if (e.key === 'Enter') saveName();
 									if (e.key === 'Escape') {
@@ -294,14 +298,14 @@
 								}}
 							/>
 							<button
-								class="rounded-md border-2 border-black bg-white px-2 py-0.5 font-patrick-hand text-xs font-bold hover:bg-gray-100"
+								class="rounded-md border-2 border-black bg-panel px-2 py-0.5 font-patrick-hand text-xs font-bold hover:bg-gray-100"
 								onclick={saveName}
 								disabled={savingName}
 							>
 								{savingName ? '...' : '✓'}
 							</button>
 							<button
-								class="rounded-md border-2 border-black bg-white px-2 py-0.5 font-patrick-hand text-xs font-bold hover:bg-gray-100"
+								class="rounded-md border-2 border-black bg-panel px-2 py-0.5 font-patrick-hand text-xs font-bold hover:bg-gray-100"
 								onclick={() => {
 									editingName = false;
 									nameValue = profile.display_name ?? '';
@@ -311,7 +315,7 @@
 						</div>
 					{:else}
 						<button
-							class="flex items-center gap-1.5 font-patrick-hand text-xl font-bold text-black hover:opacity-80"
+							class="flex items-center gap-1.5 font-patrick-hand text-xl font-bold hover:opacity-80"
 							onclick={startEditing}
 							title="Edit display name"
 						>
@@ -338,7 +342,7 @@
 						class="flex-1 border-r-2 border-black py-2.5 font-patrick-hand text-sm font-bold transition-colors last:border-r-0
                     {activeTab === tab.id
 							? 'bg-[#f5a623] text-black'
-							: 'bg-white text-gray-500 hover:bg-orange-50'}"
+							: 'bg-panel text-gray-500 hover:bg-orange-50'}"
 						onclick={() => (activeTab = tab.id)}
 					>
 						{tab.icon}
@@ -348,19 +352,19 @@
 			</div>
 
 			<!-- ── Tab Content ── -->
-			<div class="flex-1 overflow-y-auto bg-[#f4efe6] px-6 py-4">
+			<div class="flex-1 overflow-y-auto bg-page px-6 py-4">
 				{#if activeTab === 'account'}
 					<div class="space-y-4">
 						<!-- Password -->
-						<div class="doodle-border rounded-xl bg-gray-50 p-3.5">
-							<p class="font-patrick-hand text-sm font-bold text-black">Password & Auth</p>
+						<div class="doodle-border rounded-xl bg-panel p-3.5">
+							<p class="font-patrick-hand text-sm font-bold">Password & Auth</p>
 							<p class="mb-2 text-xs text-gray-600">
 								Update your password anytime. You'll need to enter your current password to save
 								changes.
 							</p>
 
 							<button
-								class="rounded-lg border-2 border-black bg-white px-3 py-1.5 font-patrick-hand text-xs font-bold hover:bg-gray-100"
+								class="rounded-lg border-2 border-black bg-panel px-3 py-1.5 font-patrick-hand text-xs font-bold hover:bg-gray-100"
 								onclick={() => {
 									close();
 									goto(resolve(ROUTES.PASSWORD_RESET));
@@ -371,7 +375,7 @@
 						</div>
 
 						<!-- Active Devices (Compact) -->
-						<div class="doodle-border rounded-xl bg-gray-50 p-3.5">
+						<div class="doodle-border rounded-xl bg-panel p-3.5">
 							<p class="mb-2 text-xs font-bold tracking-wider text-gray-400 uppercase">
 								Active Devices
 							</p>
@@ -388,7 +392,7 @@
 											class="flex items-center justify-between border-b border-dashed border-gray-300 pb-2 last:border-0 last:pb-0"
 										>
 											<div class="min-w-0 pr-2">
-												<p class="truncate text-xs font-bold text-black">
+												<p class="truncate text-xs font-bold">
 													{parseUserAgent(session.user_agent)}
 												</p>
 												<p class="text-xxs text-gray-500">
@@ -399,7 +403,7 @@
 											</div>
 											{#if session.session_id !== currentSessionId()}
 												<button
-													class="shrink-0 rounded-md border border-red-500 bg-white px-2 py-0.5 font-patrick-hand text-xs font-bold text-red-600 hover:bg-red-50"
+													class="shrink-0 rounded-md border border-red-500 bg-panel px-2 py-0.5 font-patrick-hand text-xs font-bold text-red-600 hover:bg-red-50"
 													onclick={() => userSessionsStore.kickDevice(session.session_id)}
 													disabled={session.isKicking}
 												>
@@ -414,7 +418,7 @@
 
 						<!-- Logout -->
 						<button
-							class="w-full rounded-xl border-2 border-black bg-white py-2.5 font-patrick-hand text-sm font-bold text-red-600 transition-colors hover:bg-red-50"
+							class="w-full rounded-xl border-2 border-black bg-panel py-2.5 font-patrick-hand text-sm font-bold text-red-600 transition-colors hover:bg-red-50"
 							onclick={HandleLogout}
 						>
 							🚪 Log Out
@@ -422,25 +426,25 @@
 					</div>
 				{:else if activeTab === 'danger'}
 					<div class="space-y-3">
-						<div class="doodle-border rounded-xl bg-gray-50 p-3.5">
-							<p class="font-patrick-hand text-sm font-bold text-black">Export Data</p>
+						<div class="doodle-border rounded-xl bg-panel p-3.5">
+							<p class="font-patrick-hand text-sm font-bold">Export Data</p>
 							<p class="mb-2 text-xs text-gray-600">
 								Download a full backup of all your notes and jars.
 							</p>
 							<button
-								class="rounded-lg border-2 border-black bg-white px-3 py-1.5 font-patrick-hand text-xs font-bold hover:bg-gray-100"
+								class="rounded-lg border-2 border-black bg-panel px-3 py-1.5 font-patrick-hand text-xs font-bold hover:bg-gray-100"
 								onclick={exportRedirect}
 							>
 								🍰 Go to Export
 							</button>
 						</div>
 
-						<div class="doodle-border rounded-xl bg-[#fef9f9] p-3.5">
+						<div class="doodle-border rounded-xl bg-panel p-3.5">
 							<p class="font-patrick-hand text-sm font-bold text-red-800">Delete Account</p>
 							<p class="mb-2 text-xs text-red-600">Permanently delete your account and all data.</p>
 							<button
 								type="button"
-								class="rounded-lg border border-red-400 bg-white px-3 py-1.5 font-patrick-hand text-xs font-bold text-red-500"
+								class="rounded-lg border border-red-400 bg-panel px-3 py-1.5 font-patrick-hand text-xs font-bold text-red-500"
 								onclick={() => handleDeleteAccount()}
 							>
 								🗑 Delete Account

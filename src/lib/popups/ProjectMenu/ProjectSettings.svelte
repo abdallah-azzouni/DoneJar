@@ -158,10 +158,8 @@
 			}}
 			class="fixed top-[7.5vh] left-1/2 z-9998 mx-auto h-[85vh] max-w-[90vw] -translate-x-1/2 overflow-hidden rounded-xl border-2 border-black p-6 shadow-[6px_6px_0px_rgba(0,0,0,0.15)]"
 		>
-			<form onsubmit={handleSubmit} class="flex h-full min-h-0 flex-col">
-				<h1
-					class="text-center font-patrick-hand text-3xl font-bold tracking-wide text-gray-900 uppercase"
-				>
+			<form onsubmit={handleSubmit} class="flex h-full min-h-0 flex-col text-text-main">
+				<h1 class="text-center font-patrick-hand text-3xl font-bold tracking-wide uppercase">
 					{#if newProject.id === ''}Create Project{:else}Edit Project{/if}
 				</h1>
 				<div class="flex-1 overflow-y-auto p-4">
@@ -171,7 +169,7 @@
 							<input
 								type="text"
 								bind:value={newProject.name}
-								class="w-full rounded-xl border-2 border-black bg-white px-4 py-3 text-lg font-bold placeholder-gray-400 shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all focus:ring-2 focus:ring-amber-200 focus:outline-none"
+								class="w-full rounded-xl border-2 border-black bg-panel px-4 py-3 text-lg font-bold placeholder-gray-400 shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all focus:ring-2 focus:ring-amber-200 focus:outline-none"
 								required
 								placeholder="Project Name..."
 								maxlength={MAX_PROJECT_NAME_LENGTH}
@@ -180,9 +178,7 @@
 
 						<!-- Project Color (Imported from Note Component) -->
 						<div>
-							<span class="mb-2 block font-patrick-hand text-xl font-bold text-gray-800"
-								>Project Color</span
-							>
+							<span class="mb-2 block font-patrick-hand text-xl font-bold">Project Color</span>
 							<div class="flex flex-wrap gap-2">
 								{#each DEFAULT_MENU_COLORS as paletteColor (paletteColor)}
 									<button
@@ -216,11 +212,11 @@
 						<!-- Max Capacity (Range + Number Input) -->
 						<div>
 							<div class="mb-2 flex items-center gap-3">
-								<span class="font-patrick-hand text-xl font-bold text-gray-800">Max Capacity</span>
+								<span class="font-patrick-hand text-xl font-bold">Max Capacity</span>
 								<input
 									type="number"
 									bind:value={newProject.maxCapacity}
-									class="w-20 rounded-lg border-2 border-black bg-white px-2 py-1 text-center font-bold shadow-[1px_1px_0px_rgba(0,0,0,1)] focus:ring-2 focus:ring-amber-200 focus:outline-none"
+									class="w-20 rounded-lg border-2 border-black bg-panel px-2 py-1 text-center font-bold shadow-[1px_1px_0px_rgba(0,0,0,1)] focus:ring-2 focus:ring-amber-200 focus:outline-none"
 									min="1"
 									max="500"
 									required
@@ -241,12 +237,10 @@
 						<!-- Project Type (Only on Create) -->
 						{#if newProject.id === ''}
 							<div>
-								<span class="mb-2 block font-patrick-hand text-xl font-bold text-gray-800"
-									>Type</span
-								>
+								<span class="mb-2 block font-patrick-hand text-xl font-bold">Type</span>
 								<select
 									bind:value={newProject.type}
-									class="w-full cursor-pointer rounded-xl border-2 border-black bg-white px-4 py-3 font-bold shadow-[2px_2px_0px_rgba(0,0,0,1)] focus:outline-none"
+									class="w-full cursor-pointer rounded-xl border-2 border-black bg-panel px-4 py-3 font-bold shadow-[2px_2px_0px_rgba(0,0,0,1)] focus:outline-none"
 								>
 									<option value="default">Default (TODO, DOING, DONE)</option>
 									<option value="blank">Blank (no default columns)</option>
@@ -258,7 +252,7 @@
 						<!-- Custom Columns Section -->
 						{#if newProject.type === 'custom' && newProject.id === ''}
 							<div
-								class="mt-4 rounded-xl border-2 border-black bg-white p-4 shadow-[2px_2px_0px_rgba(0,0,0,1)]"
+								class="mt-4 rounded-xl border-2 border-black bg-panel p-4 shadow-[2px_2px_0px_rgba(0,0,0,1)]"
 							>
 								{#if customColumns.length > 0}
 									<div class="mb-4 overflow-hidden">

@@ -411,7 +411,7 @@
 			onOpenAutoFocus={(e) => {
 				if (!isWide.current) e.preventDefault();
 			}}
-			class="fixed top-1/2 left-1/2 z-9998 h-[95vh] w-[90vw] -translate-1/2 rounded-2xl p-6 shadow-lg sm:h-5/6 sm:w-5/6"
+			class="fixed top-1/2 left-1/2 z-9998 h-[95vh] w-[90vw] -translate-1/2 rounded-2xl p-6 text-text-main shadow-lg sm:h-5/6 sm:w-5/6"
 		>
 			<div class="flex h-full flex-col sm:flex-row">
 				<form
@@ -421,7 +421,7 @@
 				>
 					<input
 						type="text"
-						class="doodle-border w-full bg-white text-2xl font-bold outline-none disabled:pointer-events-none"
+						class="doodle-border w-full bg-panel text-2xl font-bold outline-none disabled:pointer-events-none"
 						placeholder="Note title..."
 						maxlength={MAX_NOTE_TITLE_LENGTH}
 						bind:value={workingNote.title}
@@ -439,7 +439,7 @@
 					{#if isWide.current}
 						<div class="mx-2 mt-auto flex justify-end gap-3 border-t-2 border-gray-200 pt-4">
 							<button
-								class="rounded-2xl border-2 border-black bg-white px-6 py-2 font-bold transition-transform active:translate-y-1"
+								class="rounded-2xl border-2 border-black bg-panel px-6 py-2 font-bold transition-transform active:translate-y-1"
 								type="button"
 								onclick={handleCancel}
 							>
@@ -478,7 +478,7 @@
 								<select
 									bind:value={noteProjectId}
 									disabled={readOnly}
-									class="doodle-border w-full cursor-pointer bg-white pr-4 pl-10 disabled:appearance-none"
+									class="doodle-border w-full cursor-pointer bg-panel pr-4 pl-10 disabled:appearance-none"
 								>
 									{#each projectStore.projects as project (project.id)}
 										<option value={project.id}>{project.name}</option>
@@ -533,7 +533,7 @@
 							<span class="mb-1 block">Due Date</span>
 							<button
 								disabled={readOnly}
-								class="doodle-border flex w-full items-center justify-center gap-2 bg-white py-2 disabled:pointer-events-none"
+								class="doodle-border flex w-full items-center justify-center gap-2 bg-panel py-2 disabled:pointer-events-none"
 								onclick={() => (showDatePicker = true)}
 							>
 								{#if workingNote.dueDateTimestamp}
@@ -566,7 +566,7 @@
 										? 'bg-blue-100 text-blue-800'
 										: readOnly
 											? 'hidden'
-											: 'bg-white'}"
+											: 'bg-panel'}"
 									disabled={readOnly}
 									onclick={() => {
 										workingNote.priority = workingNote.priority === 'low' ? null : 'low';
@@ -578,7 +578,7 @@
 										? 'bg-amber-100 text-amber-800'
 										: readOnly
 											? 'hidden'
-											: 'bg-white'}"
+											: 'bg-panel'}"
 									disabled={readOnly}
 									onclick={() => {
 										workingNote.priority = workingNote.priority === 'medium' ? null : 'medium';
@@ -590,7 +590,7 @@
 										? 'bg-red-100 text-red-800'
 										: readOnly
 											? 'hidden'
-											: 'bg-white'}"
+											: 'bg-panel'}"
 									disabled={readOnly}
 									onclick={() => {
 										workingNote.priority = workingNote.priority === 'high' ? null : 'high';
@@ -615,7 +615,7 @@
 				{#if !isWide.current}
 					<div class="mt-auto flex justify-between border-t-2 border-gray-200 pt-4">
 						<button
-							class="rounded-2xl border-2 border-black bg-white px-6 py-2 font-bold transition-transform active:translate-y-1"
+							class="rounded-2xl border-2 border-black bg-panel px-6 py-2 font-bold transition-transform active:translate-y-1"
 							type="button"
 							onclick={handleCancel}
 						>

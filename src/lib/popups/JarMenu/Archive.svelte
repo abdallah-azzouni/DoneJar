@@ -51,7 +51,7 @@
 	});
 </script>
 
-<div class="doodle-border flex h-full w-full flex-col gap-5 overflow-y-auto bg-white p-5 sm:p-10">
+<div class="doodle-border flex h-full w-full flex-col gap-5 overflow-y-auto bg-panel p-5 sm:p-10">
 	<div class="absolute top-20 right-5 z-10 sm:top-22 sm:right-9">
 		<!-- Filters already prased from board -->
 		<SortFilter

@@ -50,17 +50,17 @@
 	<DropdownMenu.Portal to="body">
 		<DropdownMenu.Content
 			forceMount
-			class="z-9999 focus:outline-none"
+			class="z-9999 text-text-main focus:outline-none"
 			style="position: fixed; top: {data?.position.y ?? 0}px; left: {data?.position.x ?? 0}px;"
 		>
 			{#snippet child({ props, open })}
 				{#if open}
 					<div
 						{...props}
-						class="z-9999 flex w-48 flex-col overflow-hidden rounded-xl border-2 border-black bg-[#FDFBF7] shadow-[4px_4px_0px_rgba(0,0,0,0.15)]"
+						class="z-9999 flex w-48 flex-col overflow-hidden rounded-xl border-2 border-black bg-panel text-text-main shadow-[4px_4px_0px_rgba(0,0,0,0.15)]"
 					>
 						<DropdownMenu.Item
-							class="w-full cursor-pointer border-b-2 border-black/5 px-4 py-3 text-left font-bold text-gray-800 transition-colors outline-none data-highlighted:bg-gray-200"
+							class="w-full cursor-pointer border-b-2 border-black/5 px-4 py-3 text-left font-bold transition-colors outline-none data-highlighted:bg-gray-200"
 							onSelect={() => {
 								closeProjectMenu();
 								openProjectSetting(data?.project);

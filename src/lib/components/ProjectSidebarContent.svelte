@@ -9,7 +9,7 @@
 <div class="flex max-h-full flex-col items-center gap-2 text-sm">
 	<div>
 		<button
-			class="doodle-border relative bg-[repeating-linear-gradient(45deg,#05df72_0,#05df72_2px,transparent_0,transparent_50%)] bg-size-[10px_10px] bg-fixed"
+			class="doodle-border relative bg-[repeating-linear-gradient(45deg,#05df72_0,#05df72_2px,transparent_0,transparent_50%)] bg-size-[10px_10px] bg-fixed dark:bg-[repeating-linear-gradient(45deg,#1a7a45_0,#1a7a45_2px,transparent_0,transparent_50%)]"
 			onclick={() => {
 				if (!subscriptionStore.isPro && projectStore.projects.length >= FREE_MAX_PROJECTS) {
 					confirmMenu({
@@ -28,12 +28,12 @@
 				<div
 					class="absolute -inset-2 z-10 flex items-center justify-center rounded bg-slate-900/60 backdrop-blur-xs"
 				>
-					<span class="flex items-center gap-1 font-patrick-hand text-sm font-bold text-[#e6dec9]">
+					<span class="flex items-center gap-1 font-patrick-hand text-sm font-bold text-[#f1f1f1]">
 						🔒 Upgrade
 					</span>
 				</div>
 			{/if}
-			<span class="font-patrick-hand text-xl font-bold">Create ➕</span>
+			<span class="font-patrick-hand text-xl font-bold text-text-main">Create ➕</span>
 		</button>
 	</div>
 	<div class="w-full border-t-2 border-dashed border-gray-500"></div>

@@ -79,7 +79,7 @@
 {#if !appStore.isLoaded || !projectStore.isReady || (!subscriptionStore.isReady && getAppState() !== UserState.GUEST_LOCAL)}
 	<Loading />
 {:else}
-	<div class="flex h-screen flex-col overflow-hidden bg-[#f4efe6]">
+	<div class="flex h-screen flex-col overflow-hidden bg-page">
 		<div class="m-2">
 			<AppHeader />
 			{#if !dismissed && getAppState() === UserState.GUEST_LOCAL}
@@ -113,7 +113,7 @@
 				{#if projectSideBarStore.isOpen}
 					<aside
 						transition:fly={{ x: -100, duration: 200, easing: quintOut }}
-						class="hand-drawn-border doodle-border m-2 flex w-40 flex-col bg-[#E6DEC9]"
+						class="hand-drawn-border doodle-border m-2 flex w-40 flex-col bg-sidebar"
 					>
 						<ProjectSidebarContent />
 					</aside>

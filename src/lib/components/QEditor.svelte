@@ -86,7 +86,9 @@
 	});
 </script>
 
-<div class="editor-wrapper doodle-border max-h-full w-full overflow-hidden bg-white sm:max-h-[72%]">
+<div
+	class="editor-wrapper doodle-border max-h-full w-full overflow-hidden bg-panel text-text-main sm:max-h-[72%]"
+>
 	<div bind:this={editor}></div>
 </div>
 

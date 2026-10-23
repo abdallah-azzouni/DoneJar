@@ -8,8 +8,10 @@
 
 <div class="flex h-full w-full flex-1 flex-col items-center justify-center">
 	{#if projectStore.projects.length === 0}
-		<div class="doodle-border max-w-2xl bg-white p-12 text-center shadow-xl">
-			<h1 class="mb-4 font-patrick-hand text-6xl font-bold text-gray-900">Let's Get Started! 🎉</h1>
+		<div class="doodle-border max-w-2xl bg-panel p-12 text-center shadow-xl">
+			<h1 class="mb-4 font-patrick-hand text-6xl font-bold text-text-main">
+				Let's Get Started! 🎉
+			</h1>
 			<p class="mb-8 text-xl text-gray-600">
 				Create your first project to start tracking tasks. Projects help you organize work, personal
 				life, or anything else separately.
@@ -24,8 +26,8 @@
 				Tip: Try naming it something like "Work" or "Personal"
 			</p>
 		</div>{:else}
-		<div class="doodle-border max-w-md bg-white p-10 text-center shadow-xl">
-			<h1 class="mb-4 font-patrick-hand text-5xl font-bold text-gray-900">Nothing selected 👈</h1>
+		<div class="doodle-border max-w-md bg-panel p-10 text-center shadow-xl">
+			<h1 class="mb-4 font-patrick-hand text-5xl font-bold text-text-main">Nothing selected 👈</h1>
 			<p class="mb-6 text-lg text-gray-600">
 				Pick a project from the sidebar or create a new one to get started.
 			</p>
@@ -49,9 +51,7 @@
 					<div
 						class="absolute -inset-2 z-10 flex items-center justify-center rounded bg-slate-900/60 backdrop-blur-xs"
 					>
-						<span
-							class="flex items-center gap-1 font-patrick-hand text-sm font-bold text-[#e6dec9]"
-						>
+						<span class="flex items-center gap-1 font-patrick-hand text-sm font-bold text-sidebar">
 							🔒 Upgrade
 						</span>
 					</div>

@@ -338,12 +338,12 @@
 					<img
 						src={backJar}
 						alt=""
-						class="pointer-events-none block w-full object-contain opacity-0"
+						class="pointer-events-none block w-full object-contain opacity-0 dark:invert"
 					/>
 					<img
 						src={backJar}
 						alt="Jar container graphic background"
-						class="pointer-events-none absolute inset-0 z-0 h-full w-full object-contain"
+						class="pointer-events-none absolute inset-0 z-0 h-full w-full object-contain dark:invert"
 					/>
 					<div class="absolute top-[18%] right-[5%] bottom-[5%] left-[5%] z-5">
 						<BeakerPhysics items={column.notes} {maxCapacity} />
@@ -370,7 +370,7 @@
 {/if}
 
 {#if isWide.current}
-	<div class="flex h-full w-full flex-row overflow-hidden">
+	<div class="flex h-full w-full flex-row overflow-hidden text-text-main">
 		{#each columnItems as column (column.id)}
 			{#if column.specialType === 'jar'}
 				{@render jarColumn(column, true)}
@@ -383,7 +383,7 @@
 					)}"
 				>
 					<span class="mb-2 font-patrick-hand text-7xl font-bold">{column.name}</span>
-					<div class="doodle-border w-full flex-1 overflow-y-auto bg-white">
+					<div class="doodle-border w-full flex-1 overflow-y-auto bg-panel">
 						<div class="absolute top-22 right-4 z-10">
 							<SortFilter
 								activeSortKey={column.sortKey}
@@ -414,7 +414,7 @@
 {:else}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
-		class="flex h-full w-full flex-col items-center overflow-hidden p-2"
+		class="flex h-full w-full flex-col items-center overflow-hidden p-2 text-text-main"
 		ontouchstart={handleTouchStart}
 		ontouchend={handleTouchEnd}
 	>

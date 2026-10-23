@@ -24,13 +24,13 @@
 
 <SideMenu />
 
-<header class="doodle-border relative bg-white px-4">
+<header class="doodle-border relative bg-panel px-4">
 	<span
 		class="text-xxs absolute -top-3 -left-3 rounded-full border border-black bg-sky-100 px-2 py-0.5 font-extrabold tracking-widest text-sky-900 uppercase shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] select-none"
 	>
 		BETA
 	</span>
-	<div class="flex h-16 items-center justify-between">
+	<div class="flex h-16 items-center justify-between text-text-main">
 		<div class="flex items-center gap-4">
 			<button
 				onclick={() => {
@@ -42,12 +42,12 @@
 					<img
 						src={sidebarLeft}
 						alt="sidebarLeft"
-						class="pointer-events-none size-10 select-none"
+						class="pointer-events-none size-10 select-none dark:invert"
 					/>{:else}
 					<img
 						src={sidebarRight}
 						alt="sidebarRight"
-						class="pointer-events-none size-10 select-none"
+						class="pointer-events-none size-10 select-none dark:invert"
 					/>
 				{/if}
 			</button>
@@ -64,9 +64,9 @@
 		</div>
 		<div class="flex">
 			<button
-				class="rounded-xl border border-black {searchOpen
+				class="rounded-xl border border-border-main {searchOpen
 					? 'bg-gray-200'
-					: 'bg-white'} p-3 backdrop-blur-md"
+					: 'bg-panel'} p-3 backdrop-blur-md"
 				onclick={() => {
 					toggleSearch();
 				}}
@@ -83,7 +83,7 @@
 						}}
 						use:focus
 						type="text"
-						class="w-80 rounded-xl border border-black bg-white/20 p-3 backdrop-blur-md focus:ring-0 focus:outline-none md:w-105"
+						class="w-80 rounded-xl border border-border-main bg-white/20 p-3 backdrop-blur-md focus:ring-0 focus:outline-none md:w-105"
 						placeholder="Search or filter: color:red, priority:high"
 						bind:value={$searchQuery}
 					/>
@@ -91,10 +91,10 @@
 			{/if}
 
 			<button
-				class="ml-3 size-12 rounded-full border border-black bg-transparent p-2 hover:bg-gray-100"
+				class="ml-3 size-12 rounded-full border border-border-main bg-transparent p-2 hover:bg-gray-100"
 				onclick={() => sideMenuStore.open()}
 			>
-				<img src={menu} alt="menu" class="pointer-events-none size-full select-none" />
+				<img src={menu} alt="menu" class="pointer-events-none size-full select-none dark:invert" />
 			</button>
 		</div>
 	</div>

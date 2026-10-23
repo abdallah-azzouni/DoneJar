@@ -24,14 +24,14 @@
 			<div class="flex h-full w-full flex-row gap-4">
 				<!-- Side bar -->
 				<div
-					class="doodle-border hidden h-full w-1/3 flex-col gap-4 bg-[#e6dec9] p-3 font-patrick-hand text-xl sm:flex"
+					class="doodle-border hidden h-full w-1/3 flex-col gap-4 bg-sidebar p-3 font-patrick-hand text-xl sm:flex"
 				>
 					{#each tabs as tab (tab.slug)}
 						<button
 							class="w-full rounded-xl border-3 border-black p-3 disabled:pointer-events-none {activeTab.slug ===
 							tab.slug
-								? 'bg-white'
-								: 'bg-gray-200'}"
+								? 'bg-panel'
+								: 'brightness-85'}"
 							disabled={disabledTabs.includes(tab.slug)}
 							onclick={() => {
 								activeTab = tab;
@@ -66,7 +66,7 @@
 						</div>
 						<div class="flex-1 text-right">
 							<button
-								class="rounded-2xl border-2 border-black bg-white px-6 py-2 font-bold transition-transform active:translate-y-1"
+								class="rounded-2xl border-2 border-black bg-panel px-6 py-2 font-bold transition-transform active:translate-y-1"
 								type="button"
 								onclick={() => {
 									isOpen = false;

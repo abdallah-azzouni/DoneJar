@@ -10,8 +10,8 @@
 	<Board />
 {:else}
 	<div class="flex h-full w-full flex-1 flex-col items-center justify-center gap-6">
-		<div class="doodle-border max-w-md bg-white p-10 text-center shadow-xl">
-			<h1 class="mb-4 font-patrick-hand text-5xl font-bold text-gray-900">Oops! 🔍</h1>
+		<div class="doodle-border max-w-md bg-panel p-10 text-center shadow-xl">
+			<h1 class="mb-4 font-patrick-hand text-5xl font-bold text-text-main">Oops! 🔍</h1>
 			<p class="mb-6 text-lg text-gray-600">
 				We couldn't find that project. It may have been deleted, the link may be invalid, or you may
 				not have permission to access it.

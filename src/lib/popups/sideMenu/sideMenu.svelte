@@ -69,7 +69,7 @@
 {#snippet content()}
 	{#each sideMenuRows as row, i (i)}
 		<div
-			class="mb-4 grid gap-3 [*&>button]:bg-white"
+			class="mb-4 grid gap-3 [*&>button]:bg-panel"
 			style="grid-template-columns: repeat({row.items.length}, minmax(0, 1fr));"
 		>
 			{#each row.items.filter((item) => item.id !== profileId) as item (item.id)}
@@ -90,7 +90,7 @@
 
 	{#if getAppState() === UserState.LOGGED_IN}
 		<button
-			class="doodle-border mb-4 flex w-full shrink-0 items-center gap-4 rounded-lg bg-white p-1.5 text-left font-patrick-hand text-xl"
+			class="doodle-border mb-4 flex w-full shrink-0 items-center gap-4 rounded-lg bg-panel p-1.5 text-left font-patrick-hand text-xl"
 			onclick={() => {
 				sideMenuStore.close();
 				sideMenuRows[3].items[0].action();
@@ -131,9 +131,9 @@
 		<Drawer.Portal>
 			<Drawer.Overlay class="fixed inset-0 z-9997 bg-black/50 backdrop-blur-[1px]" />
 			<Drawer.Content
-				class="fixed bottom-0 z-9997 max-h-2/3 w-full max-w-none rounded-t-2xl bg-white p-6 shadow-lg"
+				class="fixed bottom-0 z-9997 max-h-2/3 w-full max-w-none rounded-t-2xl bg-panel p-6 shadow-lg"
 			>
-				<div class="flex h-full flex-col">
+				<div class="flex h-full flex-col text-text-main">
 					<hr class="mx-auto mb-6 w-1/3 rounded-3xl border-2 border-gray-500 bg-gray-500" />
 					{@render content()}
 				</div>
@@ -151,7 +151,7 @@
 		<Dialog.Portal to="body">
 			<Dialog.Overlay class="fixed inset-0 z-9997 bg-black/50 backdrop-blur-[1px]" />
 			<Dialog.Content
-				class="fixed top-[-5%] right-[-4%] z-9997 mt-10 mr-12 ml-auto h-3/4 w-1/3 rounded-2xl p-6 shadow-lg"
+				class="fixed top-[-5%] right-[-4%] z-9997 mt-10 mr-12 ml-auto h-3/4 w-1/3 rounded-2xl p-6 text-text-main shadow-lg"
 			>
 				<div class="flex h-full flex-col">
 					{@render content()}

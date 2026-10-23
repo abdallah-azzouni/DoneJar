@@ -87,7 +87,7 @@
 
 	{#if isOpen}
 		<div
-			class="doodle-border absolute right-0 z-50 mt-1 max-h-80 w-52 overflow-y-auto bg-white p-3 font-patrick-hand shadow-lg"
+			class="doodle-border absolute right-0 z-50 mt-1 max-h-80 w-52 overflow-y-auto bg-panel p-3 font-patrick-hand shadow-lg"
 			onclick={(e) => e.stopPropagation()}
 			onkeydown={(e) => e.key === 'Escape' && (isOpen = false)}
 			role="menu"

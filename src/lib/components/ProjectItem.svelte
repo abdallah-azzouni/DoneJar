@@ -17,7 +17,7 @@
 
 <div
 	class="doodle-border {projectStore.current?.id === project.id
-		? 'bg-white'
+		? 'bg-panel'
 		: 'is-hidden'} {isMenuOpen ? 'is-menu-open' : ''} *:z-10"
 >
 	<a
@@ -30,7 +30,7 @@
 			src={grayBG}
 			alt=""
 			aria-hidden="true"
-			class="bg pointer-events-none absolute inset-0 -z-10 h-full w-full scale-[1.2] object-cover object-center"
+			class="bg pointer-events-none absolute inset-0 -z-10 h-full w-full scale-[1.2] object-cover object-center dark:invert"
 		/>
 
 		<!-- Project Avatar -->
@@ -58,7 +58,7 @@
 				}}
 				aria-label={`Project Menu ${project.name}`}
 			>
-				<img src={kebabMenu} alt="Menu" class="pointer-events-none select-none" />
+				<img src={kebabMenu} alt="Menu" class="pointer-events-none select-none dark:invert" />
 			</button>
 		</div>
 	</a>

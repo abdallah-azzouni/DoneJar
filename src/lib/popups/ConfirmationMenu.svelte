@@ -22,15 +22,15 @@
 		<Dialog.Overlay class="fixed inset-0 z-9999 bg-black/50 backdrop-blur-[1px]" />
 		<Dialog.Content
 			interactOutsideBehavior="ignore"
-			class="fixed top-[15%] left-1/2 z-9999 w-full max-w-lg -translate-x-1/2 rounded-2xl bg-white p-6 shadow-xl"
+			class="fixed top-[15%] left-1/2 z-9999 w-full max-w-lg -translate-x-1/2 rounded-2xl bg-panel p-6 shadow-xl"
 		>
-			<Dialog.Title class="m-2 text-xl font-bold text-gray-900">
+			<Dialog.Title class="m-2 text-xl font-bold">
 				{target?.title ?? 'Confirm Action'}
 			</Dialog.Title>
 
 			<hr class="my-3 border border-gray-300" />
 
-			<Dialog.Description class="m-2 leading-relaxed whitespace-pre-line text-gray-600">
+			<Dialog.Description class="m-2 leading-relaxed whitespace-pre-line">
 				{target?.body ?? 'Are you sure you want to proceed?'}
 			</Dialog.Description>
 

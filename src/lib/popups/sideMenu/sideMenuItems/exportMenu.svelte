@@ -106,7 +106,7 @@
 	<Dialog.Portal to="body">
 		<Dialog.Overlay class="fixed inset-0 z-9998 bg-black/50 backdrop-blur-[1px]" />
 		<Dialog.Content
-			class="fixed top-[5%] left-1/2 z-9998 h-fit w-[90vw] -translate-x-1/2 justify-self-center rounded-2xl bg-white p-6 shadow-lg sm:w-[50vw] lg:w-[40vw]"
+			class="fixed top-[5%] left-1/2 z-9998 h-fit w-[90vw] -translate-x-1/2 justify-self-center rounded-2xl p-6  text-text-main shadow-lg sm:w-[50vw] lg:w-[40vw]"
 		>
 			<div>
 				<h2 class="mb-6 font-patrick-hand text-2xl font-bold">Export 📤</h2>
@@ -137,7 +137,7 @@
 							<div class="doodle-border overflow-hidden rounded-xl">
 								<!-- Project header -->
 								<div
-									class="flex w-full items-center gap-3 bg-gray-50 px-3 py-2.5 transition-colors select-none hover:bg-gray-100"
+									class="flex w-full items-center gap-3 bg-panel px-3 py-2.5 transition-colors select-none hover:brightness-85"
 								>
 									<input
 										type="checkbox"
@@ -156,7 +156,7 @@
 				<!-- Actions -->
 				<div class="mt-6 flex justify-end gap-3">
 					<button
-						class="doodle-border rounded-lg px-4 py-2 font-patrick-hand text-lg hover:bg-gray-100"
+						class="doodle-border rounded-lg px-4 py-2 font-patrick-hand text-lg hover:bg-gray-100 hover:text-neutral-900"
 						onclick={exportStore.close}
 					>
 						Cancel

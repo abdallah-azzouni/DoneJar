@@ -160,7 +160,7 @@
 		<!-- Wordmark -->
 		<div class="mb-8 flex items-center gap-2.5">
 			<svg
-				class="size-8 shrink-0 text-zinc-900 dark:text-zinc-100"
+				class="size-8 shrink-0 text-text-main"
 				viewBox="0 0 36 36"
 				fill="none"
 				aria-hidden="true"
@@ -181,13 +181,11 @@
 					stroke-linejoin="round"
 				/>
 			</svg>
-			<span class="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100"
-				>DoneJar</span
-			>
+			<span class="text-lg font-semibold tracking-tight text-text-main">DoneJar</span>
 		</div>
 
 		<!-- Heading -->
-		<h1 class="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+		<h1 class="text-xl font-semibold tracking-tight text-text-main">
 			{isLogin ? 'Sign in' : 'Create account'}
 		</h1>
 		<p class="mt-1 mb-7 text-sm text-zinc-500 dark:text-zinc-400">
@@ -320,7 +318,7 @@
 			<button
 				type="button"
 				onclick={toggleMode}
-				class="ml-1 font-semibold text-zinc-900 underline decoration-amber-400 decoration-2 underline-offset-4 transition hover:text-amber-600 dark:text-zinc-100 dark:hover:text-amber-400"
+				class="ml-1 font-semibold text-text-main underline decoration-amber-400 decoration-2 underline-offset-4 transition hover:text-amber-600 dark:hover:text-amber-400"
 			>
 				{isLogin ? 'Create one free' : 'Sign in'}
 			</button>

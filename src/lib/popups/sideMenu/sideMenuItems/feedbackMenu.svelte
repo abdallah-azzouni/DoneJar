@@ -6,15 +6,27 @@
 	import { success, failure } from '$lib/types';
 	import { Dialog } from 'bits-ui';
 
-	let type: 'bug' | 'suggestion' | 'other' = 'bug';
+	type FeedbackType = 'bug' | 'suggestion' | 'other';
+
+	let type: FeedbackType = 'bug';
 	let message = '';
 	let submitting = false;
 
-	const placeholders: Record<'bug' | 'suggestion' | 'other', string> = {
+	const placeholders: Record<FeedbackType, string> = {
 		bug: 'What happened? What did you expect instead?',
 		suggestion: "What's the idea? What problem would it solve?",
 		other: "What's on your mind?"
 	};
+
+	// Full class strings must stay literal so Tailwind can detect them
+	const typeBtnBase =
+		'flex-1 [font-family:inherit] text-[18px] font-bold border-2 border-[#1a1a1a] rounded-[14px] px-1.5 py-2 cursor-pointer transition-[background-color,transform] duration-[120ms] ease-[ease] active:scale-[0.97]';
+	const typeBtnIdle = 'bg-(--color-panel) dark:hover:text-neutral-900 hover:bg-[#f0ead6]';
+	const typeBtnSelected = 'bg-[#ffd166] dark:text-neutral-900 shadow-[2px_2px_0_rgba(0,0,0,0.2)]';
+
+	function typeBtnClass(t: FeedbackType) {
+		return `${typeBtnBase} ${type === t ? typeBtnSelected : typeBtnIdle}`;
+	}
 
 	async function submitFeedback() {
 		if (!message.trim() || submitting) return;
@@ -49,14 +61,15 @@
 >
 	<Dialog.Portal to="body">
 		<Dialog.Overlay class="fixed inset-0 z-9998 bg-black/50 backdrop-blur-[1px]">
-			<Dialog.Content class="feedback-content">
-				<Dialog.Title class="feedback-title">Feedback</Dialog.Title>
+			<Dialog.Content
+				class="rounded-card-lg fixed top-1/2 left-1/2 z-9998 w-[min(90vw,460px)] -translate-x-1/2 -translate-y-1/2 border-[2.5px] border-[#1a1a1a] px-6 pt-6 pb-5 font-['Patrick_Hand'] text-text-main shadow-[6px_6px_0_rgba(0,0,0,0.15)]"
+			>
+				<Dialog.Title class="m-0 mb-4 text-[26px] font-bold">Feedback</Dialog.Title>
 
-				<div class="type-select" role="radiogroup" aria-label="Feedback type">
+				<div class="mb-5 flex gap-2" role="radiogroup" aria-label="Feedback type">
 					<button
 						type="button"
-						class="type-btn"
-						class:selected={type === 'bug'}
+						class={typeBtnClass('bug')}
 						aria-pressed={type === 'bug'}
 						onclick={() => (type = 'bug')}
 					>
@@ -64,8 +77,7 @@
 					</button>
 					<button
 						type="button"
-						class="type-btn"
-						class:selected={type === 'suggestion'}
+						class={typeBtnClass('suggestion')}
 						aria-pressed={type === 'suggestion'}
 						onclick={() => (type = 'suggestion')}
 					>
@@ -73,8 +85,7 @@
 					</button>
 					<button
 						type="button"
-						class="type-btn"
-						class:selected={type === 'other'}
+						class={typeBtnClass('other')}
 						aria-pressed={type === 'other'}
 						onclick={() => (type = 'other')}
 					>
@@ -83,20 +94,24 @@
 				</div>
 
 				<textarea
-					class="feedback-textarea"
+					class="mb-5 box-border min-h-27.5 w-full resize-y rounded-[14px] border-2 border-border-main bg-panel px-3.5 py-3 font-[inherit] text-[18px] focus:shadow-[2px_2px_0_rgba(0,0,0,0.2)] focus:outline-none"
 					bind:value={message}
 					placeholder={placeholders[type]}
 					maxlength="5000"
 					rows="5"
 				></textarea>
 
-				<div class="feedback-actions">
-					<button type="button" class="btn btn-cancel" onclick={() => feedbackStore.close()}>
+				<div class="flex justify-end gap-3">
+					<button
+						type="button"
+						class="cursor-pointer rounded-full border-[2.5px] border-border-main bg-panel px-6 py-2.5 font-[inherit] text-[18px] font-bold transition-transform duration-50 ease-[ease] hover:bg-[#f0ead6] active:scale-[0.97] dark:hover:text-neutral-900"
+						onclick={() => feedbackStore.close()}
+					>
 						Cancel
 					</button>
 					<button
 						type="button"
-						class="btn btn-submit"
+						class="cursor-pointer rounded-full border-[2.5px] border-border-main bg-[#4ade80] px-6 py-2.5 font-[inherit] text-[18px] font-bold text-[#0d3b1e] transition-transform duration-50 ease-[ease] active:scale-[0.97] enabled:hover:bg-[#3fd374] disabled:cursor-not-allowed disabled:opacity-50"
 						onclick={submitFeedback}
 						disabled={!message.trim() || submitting}
 					>
@@ -107,130 +122,3 @@
 		</Dialog.Overlay>
 	</Dialog.Portal>
 </Dialog.Root>
-
-<style>
-	:global(.feedback-content) {
-		position: fixed;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		z-index: 9998;
-		width: min(90vw, 460px);
-		background: #f4efe6;
-		border: 2.5px solid #1a1a1a;
-		border-radius: 20px;
-		padding: 24px 24px 20px;
-		box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.15);
-		font-family: 'Patrick Hand';
-	}
-
-	:global(.feedback-title) {
-		font-size: 26px;
-		font-weight: 700;
-		color: #1a1a1a;
-		margin: 0 0 16px;
-	}
-
-	.type-select {
-		display: flex;
-		gap: 8px;
-		margin-bottom: 20px;
-	}
-
-	.type-btn {
-		flex: 1;
-		font-family: inherit;
-		font-size: 18px;
-		font-weight: 700;
-		color: #1a1a1a;
-		background: #fff;
-		border: 2px solid #1a1a1a;
-		border-radius: 14px;
-		padding: 8px 6px;
-		cursor: pointer;
-		transition:
-			background 0.12s ease,
-			transform 0.05s ease;
-	}
-
-	.type-btn:hover {
-		background: #f0ead6;
-	}
-
-	.type-btn:active {
-		transform: scale(0.97);
-	}
-
-	.type-btn.selected {
-		background: #ffd166;
-		box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
-	}
-
-	.feedback-textarea {
-		width: 100%;
-		box-sizing: border-box;
-		font-family: inherit;
-		font-size: 18px;
-		color: #1a1a1a;
-		background: #fff;
-		border: 2px solid #1a1a1a;
-		border-radius: 14px;
-		padding: 12px 14px;
-		resize: vertical;
-		min-height: 110px;
-		margin-bottom: 20px;
-	}
-
-	.feedback-textarea::placeholder {
-		color: #8a8577;
-	}
-
-	.feedback-textarea:focus {
-		outline: none;
-		box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
-	}
-
-	.feedback-actions {
-		display: flex;
-		justify-content: flex-end;
-		gap: 12px;
-	}
-
-	.btn {
-		font-family: inherit;
-		font-size: 18px;
-		font-weight: 700;
-		border: 2.5px solid #1a1a1a;
-		border-radius: 999px;
-		padding: 10px 24px;
-		cursor: pointer;
-		transition: transform 0.05s ease;
-	}
-
-	.btn:active {
-		transform: scale(0.97);
-	}
-
-	.btn-cancel {
-		background: #fff;
-		color: #1a1a1a;
-	}
-
-	.btn-cancel:hover {
-		background: #f0ead6;
-	}
-
-	.btn-submit {
-		background: #4ade80;
-		color: #0d3b1e;
-	}
-
-	.btn-submit:hover:not(:disabled) {
-		background: #3fd374;
-	}
-
-	.btn-submit:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-</style>

@@ -89,8 +89,12 @@
 	}
 
 	function handleSave() {
-		onSave?.({ timestamp: toTimestamp(), hasTime: value.hasTime });
-		isOpen = false;
+		if (value.timestamp) {
+			onSave?.({ timestamp: toTimestamp(), hasTime: value.hasTime });
+			isOpen = false;
+		} else {
+			handleClear();
+		}
 	}
 
 	function handleClear() {

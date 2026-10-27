@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { signIn, signUp, sendPasswordResetEmail } from '$lib/sb/auth';
+	import { signIn, signUp, sendPasswordResetEmail, signInWithGoogle } from '$lib/sb/auth';
 	import { clearDatabase } from '$lib/db/dal';
 	import { goLocalMode, getIsGuestLocal } from '$lib/stores/appState.svelte';
 	import { notify } from '$lib/stores/notificationStore';
@@ -10,12 +10,15 @@
 	import { Dialog } from 'bits-ui';
 	import { projectStore } from '$lib/stores/projects.svelte';
 	import { getAppState, UserState } from '$lib/stores/appState.svelte';
+	import GoogleSignInButton from '$lib/components/GoogleSignInButton.svelte';
 
 	$effect(() => {
 		if (getAppState() === UserState.LOGGED_IN) {
 			goto(resolve('/app'));
 		}
 	});
+
+	let loading = $state(false);
 
 	let isLogin = $state(true);
 	let email = $state('');
@@ -28,6 +31,8 @@
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
+
+		loading = true;
 
 		if (isLogin) {
 			hasExistingProjects = getIsGuestLocal();
@@ -51,6 +56,8 @@
 			name = '';
 			isLogin = true;
 		}
+
+		loading = false;
 	}
 
 	async function handleForgotPassword() {
@@ -91,6 +98,21 @@
 			goto(resolve('/app'));
 		} catch {
 			notify(failure('Something went wrong. Please try again.'));
+		}
+	}
+
+	async function continueWithGoogle() {
+		loading = true;
+		try {
+			const { error } = await signInWithGoogle();
+			if (error) {
+				notify(failure(error.message));
+			}
+			// on success the browser will auto redirect to /app, nothing else to do
+		} catch {
+			notify(failure('Something went wrong. Please try again.'));
+		} finally {
+			loading = false;
 		}
 	}
 
@@ -278,6 +300,18 @@
 				</svg>
 			</button>
 		</form>
+
+		<!-- Divider -->
+		<div class="my-5 flex items-center gap-3">
+			<div class="h-px flex-1 bg-black/8 dark:bg-white/8"></div>
+			<span class="text-xs text-zinc-400">or</span>
+			<div class="h-px flex-1 bg-black/8 dark:bg-white/8"></div>
+		</div>
+
+		<!-- Continue with Google -->
+		<div class="flex w-full justify-center">
+			<GoogleSignInButton onclick={continueWithGoogle} disabled={loading} />
+		</div>
 
 		<!-- Divider -->
 		<div class="my-5 flex items-center gap-3">

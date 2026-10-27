@@ -1,4 +1,5 @@
 import { supabase } from '$lib/sb/sb';
+import { resolve } from '$app/paths';
 
 export async function signIn(email: string, password: string) {
 	const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -10,6 +11,14 @@ export async function signUp(email: string, display_name: string, password: stri
 		email,
 		password,
 		options: { data: { display_name } }
+	});
+	return { data, error };
+}
+
+export async function signInWithGoogle() {
+	const { data, error } = await supabase.auth.signInWithOAuth({
+		provider: 'google',
+		options: { redirectTo: `${location.origin}${resolve('/app')}` }
 	});
 	return { data, error };
 }

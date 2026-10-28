@@ -26,6 +26,7 @@
 	let name = $state('');
 
 	let hasExistingProjects = $state(false);
+	let provider = $state<'google' | 'email'>();
 
 	let deleting = $state(false);
 
@@ -35,6 +36,7 @@
 		loading = true;
 
 		if (isLogin) {
+			provider = 'email';
 			hasExistingProjects = getIsGuestLocal();
 
 			if (!hasExistingProjects) {
@@ -102,13 +104,22 @@
 	}
 
 	async function continueWithGoogle() {
+		const { error } = await signInWithGoogle();
+		if (error) {
+			notify(failure(error.message));
+		}
+		// on success the browser will auto redirect to /app, nothing else to do
+	}
+
+	async function handleGoogleSignIn() {
 		loading = true;
 		try {
-			const { error } = await signInWithGoogle();
-			if (error) {
-				notify(failure(error.message));
+			provider = 'google';
+			hasExistingProjects = getIsGuestLocal();
+
+			if (!hasExistingProjects) {
+				await continueWithGoogle();
 			}
-			// on success the browser will auto redirect to /app, nothing else to do
 		} catch {
 			notify(failure('Something went wrong. Please try again.'));
 		} finally {
@@ -122,7 +133,11 @@
 		try {
 			await clearDatabase();
 			projectStore.reset();
-			await continueOnline();
+			if (provider === 'google') {
+				await continueWithGoogle();
+			} else if (provider === 'email') {
+				await continueOnline();
+			}
 		} catch {
 			notify(failure('Something went wrong. Please try again.'));
 		} finally {
@@ -310,7 +325,7 @@
 
 		<!-- Continue with Google -->
 		<div class="flex w-full justify-center">
-			<GoogleSignInButton onclick={continueWithGoogle} disabled={loading} />
+			<GoogleSignInButton onclick={handleGoogleSignIn} disabled={loading} />
 		</div>
 
 		<!-- Divider -->

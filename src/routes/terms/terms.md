@@ -1,7 +1,7 @@
 # Terms of Service
 
 **DoneJar** — donejar.app  
-**Last updated:** August 2026
+**Last updated:** October 2026
 
 ---
 
@@ -30,7 +30,7 @@ We do not knowingly allow accounts for users under 13. If we become aware that a
 
 You are responsible for:
 
-- Keeping your password secure and confidential
+- Keeping your password (or, if you sign in with Google, your Google account) secure and confidential
 - All activity that occurs under your account
 - Notifying us promptly if you suspect unauthorized access
 

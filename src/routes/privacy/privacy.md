@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **DoneJar** — donejar.app  
-**Effective date:** October 21, 2026
+**Effective date:** October 28, 2026
 
 This privacy policy ("Policy") describes how DoneJar ("we", "us", "our") handles your information when you use donejar.app and any associated applications (the "Services"). By using the Services, you accept the practices described here. If you do not agree, do not use the Services.
 
@@ -13,7 +13,7 @@ DoneJar is operated by Abdallah Azzouni, based in Qatar. Contact: a.azzouni25@gm
 
 **Information you provide to us**
 
-- **Account information**: your email address and password when you create an account.
+- **Account information**: your email address and password if you create an account with email, or your name, email address, and profile picture address if you sign in with Google.
 - **Your content**: tasks, notes, projects, columns, and file attachments you create within the Services.
 
 **Information automatically collected**
@@ -51,7 +51,14 @@ Certain third-party services we use may set session-level cookies for their own 
 
 We do not sell your information. We do not share it with advertisers.
 
-We work with third-party service providers to operate the Services, including providers of infrastructure and hosting, database and file storage, error monitoring, and analytics. These providers access your information only as necessary to perform services on our behalf.
+We work with third-party service providers to operate the Services, including providers of infrastructure and hosting, database and file storage, error monitoring, and analytics. These providers access your information only as necessary to perform services on our behalf. They currently include:
+
+- **Supabase**: database, authentication, and file storage (hosted in Ireland, EU)
+- **Cloudflare**: hosting and content delivery
+- **Sentry**: error monitoring
+- **Google**: optional sign-in. If you choose to sign in with Google, Google authenticates you and shares your basic profile information (name, email address, and profile picture address) with us. Google's handling of your data is governed by Google's own privacy policy.
+
+DoneJar's use and transfer of information received from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements.
 
 We are not responsible for the privacy practices of third-party services. We encourage you to review the privacy policies of any third-party services you interact with.
 

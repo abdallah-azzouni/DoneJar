@@ -5,7 +5,7 @@ import type { ProjectDocType, NoteDocType } from '$lib/db/schemas';
 export * from './dialogFactory.svelte.ts';
 
 // --- SIDE MENU & SUBMENUS ---
-// note: side menu items placed in AppHeader.svelte
+// note: side menu items placed in sideMenu.svelte
 
 export const sideMenuStore = createDialogStore();
 
@@ -18,7 +18,7 @@ export const sideMenuRows = [
 		]
 	},
 	{
-		items: [{ id: 2, label: 'Settings ⚙️ (Soon...)', action: () => settingsStore.open() }]
+		items: [{ id: 2, label: 'Settings ⚙️', action: () => settingsStore.open() }]
 	},
 	{
 		items: [{ id: 3, label: 'Feedback 💬', action: () => feedbackStore.open() }]

@@ -3,6 +3,19 @@
 	import { Toaster } from 'svelte-sonner';
 	import { initLifecycle } from '$lib/lifecycle.svelte';
 	import 'doodle.css/doodle.css';
+	import { theme } from '$lib/stores/settings';
+
+	$effect(() => {
+		const mq = matchMedia('(prefers-color-scheme: dark)');
+		const apply = () =>
+			document.documentElement.classList.toggle(
+				'dark',
+				$theme === 'dark' || ($theme === 'system' && mq.matches)
+			);
+		apply();
+		mq.addEventListener('change', apply);
+		return () => mq.removeEventListener('change', apply);
+	});
 
 	initLifecycle();
 

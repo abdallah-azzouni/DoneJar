@@ -12,6 +12,7 @@
 	import { Dialog } from 'bits-ui';
 	import ImportMenu from '$lib/popups/sideMenu/sideMenuItems/importMenu.svelte';
 	import ExportMenu from '$lib/popups/sideMenu/sideMenuItems/exportMenu.svelte';
+	import SettingsMenu from '$lib/popups/sideMenu/sideMenuItems/settingsMenu.svelte';
 	import FeedbackMenu from '$lib/popups/sideMenu/sideMenuItems/feedbackMenu.svelte';
 	import ProfileMenu from '$lib/popups/sideMenu/sideMenuItems/profileMenu.svelte';
 
@@ -19,7 +20,7 @@
 
 	const profileId = 4;
 
-	const disabledIds = $derived(getAppState() !== UserState.LOGGED_IN ? [2, 3] : [2]);
+	const disabledIds = $derived(getAppState() !== UserState.LOGGED_IN ? [3] : []);
 	$effect(() => {
 		sideMenuRows.map((row) => {
 			row.items.map((item) => {
@@ -63,6 +64,7 @@
 
 <ImportMenu />
 <ExportMenu />
+<SettingsMenu />
 <FeedbackMenu />
 <ProfileMenu {profile} onProfileUpdated={fetchProfileData} />
 

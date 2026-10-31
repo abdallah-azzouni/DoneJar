@@ -11,14 +11,17 @@
 	--color-sidebar: #e6dec9;
 	--color-border-main: #000000;
 	--color-text-main: #171717;
+	--color-active: #fff085;
 }
 
 .dark {
+	color-scheme: dark;
 	--color-page: #1d2021;
 	--color-panel: #282828;
 	--color-sidebar: #1d2021;
 	--color-border-main: #7c6f64;
 	--color-text-main: #f1f1f1;
+	--color-active: #575342;
 }
 
 /* Base Styles & HTML Overrides */

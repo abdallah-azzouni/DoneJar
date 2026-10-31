@@ -234,7 +234,11 @@
 		else if (count >= nearFullThreshold) message = `${count}/${MAX_CAPACITY}, nearly full`;
 
 		return {
-			style: `background-color: ${bgColor}; border-color: ${borderColor}; color: ${textColor};`,
+			style: {
+				bg: bgColor,
+				border: borderColor,
+				text: textColor
+			},
 			pulse: count >= nearFullThreshold,
 			message
 		};
@@ -307,8 +311,9 @@
 			<div
 				class="{status.pulse ? 'animate-pulse' : ''} {isWide
 					? 'mt-20'
-					: 'mt-4'} relative flex w-full flex-1 items-center justify-center rounded-xl border-2 p-4 transition-all duration-300"
-				style={status.style}
+					: 'mt-4'} relative flex w-full flex-1 items-center justify-center rounded-xl border-2 border-(--jar-border) bg-(--jar-bg) p-4 text-(--jar-text) transition-all duration-300 dark:bg-(--jar-text) dark:text-(--jar-bg)"
+				style="--jar-bg: {status.style.bg}; --jar-text: {status.style.text}; --jar-border: {status
+					.style.border};"
 			>
 				{#each column.notes as note (note.id)}
 					<div class="pointer-events-none absolute top-0 left-0 size-10 opacity-0"></div>

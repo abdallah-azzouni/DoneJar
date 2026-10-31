@@ -74,7 +74,7 @@
 <div class="relative" bind:this={panelEl}>
 	<button
 		class="flex items-center justify-center rounded-full p-1.5 {hasActive
-			? 'bg-yellow-200'
+			? 'bg-active'
 			: 'hover:bg-gray-100'}"
 		onclick={(e) => {
 			e.stopPropagation();
